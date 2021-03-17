@@ -1,0 +1,25 @@
+{
+  "name": "overprot-viewer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/overprot-viewer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "d3": "^5.15.0",
+    "d3-selection-multi": "^1.0.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^7.0.0",
+    "@types/d3": "^5.7.2",
+    "@types/d3-selection-multi": "^1.0.7",
+    "express": "^4.17.1",
+    "node-minify": "^3.6.0",
+    "rollup": "^1.29.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "typescript": "^3.7.5"
+  }
+}

@@ -1,0 +1,38 @@
+<html>
+    <head>	
+        <meta charset='UTF-8'>
+        <base href='../..'>
+        <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+        <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+        <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+        <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+    </head>
+    <body>
+        <h1>OverProt Page for COVID-19 </h1>
+        <hr>
+        <h2>Spike glycoprotein (P0DTC2) – 10 available structures, only 3 almost-complete structures </h2>
+        
+        <h4>A) All structures, 1 chain per PDB entry = 10 chains</h4>   
+        <p>Problem – structure consensus from MAPSCI covers only small part of the whole structure --> wrong structural alignement</p>
+        <overprot-viewer id='spike' file='sample_data/covid19/P0DTC2.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        
+        <h4>B) Complete structures, 1 chain per PDB entry = 3 chains</h4>
+        <p>Problem – 6vxx contains 3 closed-state chains; 6vsb and 6vyb contain 2 closed-state chains and 1 open-state chain --> 1 chain per structure is not representative</p>
+        <overprot-viewer id='spike' file='sample_data/covid19/P0DTC2_whole.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        
+        <h4>C) Complete structures, all chains = 9 chains</h4>
+        <p>Sheet 4 (red) – conformation change (closed --> open state) --> not annotated in open state --> lower occurrence </p>
+        <overprot-viewer id='spike' file='sample_data/covid19/P0DTC2_whole_all_chains.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+
+        <h4>D) All structures, structure consensus built from complete structures = 38 chains</h4>
+        <p>Occurrences are low because most structures contain only a part of the whole structure.</p>
+        <overprot-viewer id='spike' file='sample_data/covid19/P0DTC2_cons_from_whole.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+
+        <hr>
+    </body>
+</html>
+ 

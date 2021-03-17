@@ -1,0 +1,163 @@
+<html>
+    <head>	
+        <meta charset='UTF-8'>
+        <base href='../..'>
+        <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+        <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+        <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+        <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+        <style type="text/css">
+            table.tableizer-table {
+                font-size: 12px;
+                border: 1px solid #CCC; 
+                font-family: Arial, Helvetica, sans-serif;
+            } 
+            .tableizer-table td {
+                padding: 4px;
+                margin: 3px;
+                border: 1px solid #CCC;
+            }
+            .tableizer-table th {
+                background-color: #104E8B; 
+                color: #FFF;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>OverProt Page for COVID-19 </h1>
+        <hr>
+        <h2>Spike glycoprotein (P0DTC2) – division into domains</h2>
+
+        <table><tr>
+        <td>
+            <h4>Pfam annotation - shitty</h4>
+            <img src='sample_data/covid19/6vxx_Pfam_annotations.png' width="600">
+        </td>
+        <td>
+            <h4>Manual annotation</h4>
+            <img src='sample_data/covid19/6vxx_manual_annotations.png' width="600">
+        </td>
+        </tr></table>
+
+        <h4>Datasets</h4>
+
+        <p>Datasets are based on manual annotation, because Pfam annotations are inaccurate (e.g. S1_N contains part of S1_C and S1_RBD).</p>
+        <p>S1_Y is my invention - it's simply the rest of the protein.</p>
+        <p>
+            The seed domain is cut from the seed PDB according to the manual annotation. 
+            Then DALI server is used to find similar domains. 
+            For each domain 3 datasets are produced:
+            <ul>
+                <li>This = DALI results against UniProt ID of our protein of interest</li>
+                <li>Similar = DALI results against whole PDB</li>
+                <li>Similar-PDB90 = DALI results against PDB90 (90% non-redundant)</li>
+            </ul>
+        </p>
+
+        <p>The numbers in the table are: n_domains / n_PDB_entries</p>
+
+        <table class="tableizer-table">
+        <thead><tr class="tableizer-firstrow"><th>Domain</th><th>Seed PDB</th><th>Pfam range</th><th>Manual range</th><th>This</th><th>Similar</th><th>Similar-PDB90</th><th>Color</th></tr></thead><tbody>
+         <tr><td><b>P0DTC2</b></td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td><b>31 / 13</b></td><td>&nbsp;</td><td>&nbsp;</td><td></td></tr>
+         <tr><td>S1_N</td><td>6vxxA</td><td>33-337</td><td>27-307</td><td>9 / 3</td><td>2486 / 1236</td><td>350 / 346</td><td>blue</td></tr>
+         <tr><td>S1_RBD</td><td>6vxxA</td><td>349-526</td><td>333-526</td><td>21 / 11</td><td>214 / 88</td><td>&nbsp;</td><td>green</td></tr>
+         <tr><td>S1_C</td><td>6vxxA</td><td>536-592</td><td>322-330+536-590</td><td>9 / 3</td><td>161 / 55</td><td>&nbsp;</td><td>orange</td></tr>
+         <tr><td>S1_Y</td><td>6vxxA</td><td>&nbsp;</td><td>310-320+592-698</td><td>9 / 3</td><td>5381 / 3934</td><td>528 / 519</td><td>red</td></tr>
+         <tr><td>S2</td><td>6vxxA</td><td>711-1232</td><td>711-1232</td><td>9 / 3</td><td>171 / 57</td><td></td><td>magenta</td></tr>
+        </tbody></table>
+
+        <hr>
+        
+        <h4>S1_N – this</h4>
+        <overprot-viewer id='S1_N-this' file='sample_data/covid19/S1_N-this-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_N-this-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_N-this-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_N-this-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_N-this-sample.json'>sample.json</a>
+
+        <h4>S1_N – similar</h4>
+        <overprot-viewer id='S1_N-similar' file='sample_data/covid19/S1_N-similar-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_N-similar-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_N-similar-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_N-similar-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_N-similar-sample.json'>sample.json</a>
+
+        <hr>
+        
+        <h4>S1_RBD – this</h4>
+        <overprot-viewer id='S1_RBD-this' file='sample_data/covid19/S1_RBD-this-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_RBD-this-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_RBD-this-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_RBD-this-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_RBD-this-sample.json'>sample.json</a>
+
+        <h4>S1_RBD – similar</h4>
+        <overprot-viewer id='S1_RBD-similar' file='sample_data/covid19/S1_RBD-similar-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_RBD-similar-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_RBD-similar-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_RBD-similar-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_RBD-similar-sample.json'>sample.json</a>
+
+        <hr>
+        
+        <h4>S1_C – this</h4>
+        <overprot-viewer id='S1_C-this' file='sample_data/covid19/S1_C-this-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_C-this-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_C-this-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_C-this-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_C-this-sample.json'>sample.json</a>
+
+        <h4>S1_C – similar</h4>
+        <overprot-viewer id='S1_C-similar' file='sample_data/covid19/S1_C-similar-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_C-similar-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_C-similar-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_C-similar-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_C-similar-sample.json'>sample.json</a>
+
+        <hr>
+        
+        <h4>S1_Y – this</h4>
+        <overprot-viewer id='S1_Y-this' file='sample_data/covid19/S1_Y-this-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_Y-this-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_Y-this-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_Y-this-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_Y-this-sample.json'>sample.json</a>
+
+        <h4>S1_Y – similar</h4>
+        <overprot-viewer id='S1_Y-similar' file='sample_data/covid19/S1_Y-similar-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S1_Y-similar-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S1_Y-similar-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S1_Y-similar-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S1_Y-similar-sample.json'>sample.json</a>
+
+        <hr>
+        
+        <h4>S2 – this</h4>
+        <overprot-viewer id='S2-this' file='sample_data/covid19/S2-this-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S2-this-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S2-this-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S2-this-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S2-this-sample.json'>sample.json</a>
+
+        <h4>S2 – similar</h4>
+        <overprot-viewer id='S2-similar' file='sample_data/covid19/S2-similar-diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        Download: <a href='sample_data/covid19/S2-similar-consensus.pse'>consensus.pse</a>
+        | <a href='sample_data/covid19/S2-similar-consensus.sses.json'>consensus.sses.json</a>
+        | <a href='sample_data/covid19/S2-similar-family.json'>family.json</a>
+        | <a href='sample_data/covid19/S2-similar-sample.json'>sample.json</a>
+
+        <hr>
+    </body>
+</html>
+ 

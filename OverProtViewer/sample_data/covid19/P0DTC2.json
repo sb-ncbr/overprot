@@ -1,0 +1,2617 @@
+{
+    "nodes": [
+        {
+            "label": "E0",
+            "occurrence": 0.3,
+            "avg_length": 3.0,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 11.001,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E1",
+            "occurrence": 0.2,
+            "avg_length": 1.5,
+            "type": "e",
+            "sheet_id": 15,
+            "stdev3d": 13.797,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    1,
+                    0.9
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E2",
+            "occurrence": 0.3,
+            "avg_length": 8.66667,
+            "type": "e",
+            "sheet_id": 6,
+            "stdev3d": 17.673,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    8,
+                    0.8
+                ],
+                [
+                    9,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E3",
+            "occurrence": 0.3,
+            "avg_length": 4.33333,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 12.405,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    3,
+                    0.8
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E4",
+            "occurrence": 0.1,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E5",
+            "occurrence": 0.3,
+            "avg_length": 2.33333,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 12.376,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    1,
+                    0.8
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E6",
+            "occurrence": 0.3,
+            "avg_length": 6.66667,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 8.416,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    5,
+                    0.8
+                ],
+                [
+                    7,
+                    0.9
+                ],
+                [
+                    8,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E7",
+            "occurrence": 0.3,
+            "avg_length": 5.33333,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 15.631,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    4,
+                    0.8
+                ],
+                [
+                    5,
+                    0.9
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E8",
+            "occurrence": 0.3,
+            "avg_length": 6.0,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 19.139,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E9",
+            "occurrence": 0.2,
+            "avg_length": 4.5,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 5.865,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    0.9
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E10",
+            "occurrence": 0.1,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E11",
+            "occurrence": 0.2,
+            "avg_length": 3.5,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 5.457,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E12",
+            "occurrence": 0.3,
+            "avg_length": 9.33333,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 11.272,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    8,
+                    0.8
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E13",
+            "occurrence": 0.3,
+            "avg_length": 9.66667,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 13.384,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    9,
+                    0.8
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E14",
+            "occurrence": 0.2,
+            "avg_length": 1.5,
+            "type": "e",
+            "sheet_id": 15,
+            "stdev3d": 15.308,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    1,
+                    0.9
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E15",
+            "occurrence": 0.3,
+            "avg_length": 5.66667,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 17.079,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    4,
+                    0.8
+                ],
+                [
+                    6,
+                    0.9
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E16",
+            "occurrence": 0.1,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E17",
+            "occurrence": 0.3,
+            "avg_length": 5.66667,
+            "type": "e",
+            "sheet_id": 5,
+            "stdev3d": 15.256,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    4,
+                    0.8
+                ],
+                [
+                    5,
+                    0.9
+                ],
+                [
+                    8,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E18",
+            "occurrence": 0.3,
+            "avg_length": 4.66667,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 9.144,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    3,
+                    0.8
+                ],
+                [
+                    5,
+                    0.9
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E19",
+            "occurrence": 0.3,
+            "avg_length": 9.0,
+            "type": "e",
+            "sheet_id": 6,
+            "stdev3d": 16.031,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    9,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E20",
+            "occurrence": 0.3,
+            "avg_length": 6.0,
+            "type": "e",
+            "sheet_id": 6,
+            "stdev3d": 15.398,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H21",
+            "occurrence": 0.2,
+            "avg_length": 9.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.181,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    9,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E22",
+            "occurrence": 0.2,
+            "avg_length": 9.0,
+            "type": "e",
+            "sheet_id": 7,
+            "stdev3d": 1.028,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    9,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E23",
+            "occurrence": 0.3,
+            "avg_length": 3.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 10.465,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    1,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E24",
+            "occurrence": 0.7,
+            "avg_length": 1.14286,
+            "type": "e",
+            "sheet_id": 9,
+            "stdev3d": 1.792,
+            "cdf": [
+                [
+                    0,
+                    0.3
+                ],
+                [
+                    1,
+                    0.9
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H25",
+            "occurrence": 0.9,
+            "avg_length": 7.11111,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 6.505,
+            "cdf": [
+                [
+                    0,
+                    0.1
+                ],
+                [
+                    6,
+                    0.8
+                ],
+                [
+                    7,
+                    0.9
+                ],
+                [
+                    15,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E26",
+            "occurrence": 0.6,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 0.593,
+            "cdf": [
+                [
+                    0,
+                    0.4
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H27",
+            "occurrence": 0.4,
+            "avg_length": 3.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.704,
+            "cdf": [
+                [
+                    0,
+                    0.6
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E28",
+            "occurrence": 0.8,
+            "avg_length": 4.75,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 2.868,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    3,
+                    0.3
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E29",
+            "occurrence": 0.7,
+            "avg_length": 1.85714,
+            "type": "e",
+            "sheet_id": 9,
+            "stdev3d": 1.324,
+            "cdf": [
+                [
+                    0,
+                    0.3
+                ],
+                [
+                    1,
+                    0.4
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E30",
+            "occurrence": 0.1,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 9,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H31",
+            "occurrence": 0.7,
+            "avg_length": 6.14286,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.702,
+            "cdf": [
+                [
+                    0,
+                    0.3
+                ],
+                [
+                    5,
+                    0.4
+                ],
+                [
+                    6,
+                    0.8
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E32",
+            "occurrence": 0.8,
+            "avg_length": 4.375,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 1.896,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    4,
+                    0.7
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H33",
+            "occurrence": 0.1,
+            "avg_length": 3.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H34",
+            "occurrence": 0.3,
+            "avg_length": 5.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 3.078,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    3,
+                    0.8
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E35",
+            "occurrence": 0.7,
+            "avg_length": 1.42857,
+            "type": "e",
+            "sheet_id": 9,
+            "stdev3d": 2.11,
+            "cdf": [
+                [
+                    0,
+                    0.3
+                ],
+                [
+                    1,
+                    0.7
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E36",
+            "occurrence": 0.8,
+            "avg_length": 9.75,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 1.55,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    9,
+                    0.4
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H37",
+            "occurrence": 0.8,
+            "avg_length": 7.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.596,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H38",
+            "occurrence": 0.6,
+            "avg_length": 6.16667,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.615,
+            "cdf": [
+                [
+                    0,
+                    0.4
+                ],
+                [
+                    6,
+                    0.9
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E39",
+            "occurrence": 0.8,
+            "avg_length": 6.875,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 1.896,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    6,
+                    0.4
+                ],
+                [
+                    7,
+                    0.9
+                ],
+                [
+                    8,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H40",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.282,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E41",
+            "occurrence": 0.5,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 14,
+            "stdev3d": 0.867,
+            "cdf": [
+                [
+                    0,
+                    0.5
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E42",
+            "occurrence": 0.8,
+            "avg_length": 3.25,
+            "type": "e",
+            "sheet_id": 8,
+            "stdev3d": 4.161,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    2,
+                    0.3
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E43",
+            "occurrence": 0.4,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 12,
+            "stdev3d": 0.812,
+            "cdf": [
+                [
+                    0,
+                    0.6
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E44",
+            "occurrence": 0.4,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 12,
+            "stdev3d": 1.007,
+            "cdf": [
+                [
+                    0,
+                    0.6
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E45",
+            "occurrence": 0.4,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 12,
+            "stdev3d": 0.812,
+            "cdf": [
+                [
+                    0,
+                    0.6
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E46",
+            "occurrence": 0.8,
+            "avg_length": 3.125,
+            "type": "e",
+            "sheet_id": 8,
+            "stdev3d": 3.926,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    2,
+                    0.3
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E47",
+            "occurrence": 0.5,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 14,
+            "stdev3d": 0.721,
+            "cdf": [
+                [
+                    0,
+                    0.5
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H48",
+            "occurrence": 0.4,
+            "avg_length": 3.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.609,
+            "cdf": [
+                [
+                    0,
+                    0.6
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E49",
+            "occurrence": 0.8,
+            "avg_length": 9.5,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 3.006,
+            "cdf": [
+                [
+                    0,
+                    0.2
+                ],
+                [
+                    8,
+                    0.4
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E50",
+            "occurrence": 0.7,
+            "avg_length": 1.85714,
+            "type": "e",
+            "sheet_id": 9,
+            "stdev3d": 1.525,
+            "cdf": [
+                [
+                    0,
+                    0.3
+                ],
+                [
+                    1,
+                    0.4
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E51",
+            "occurrence": 0.3,
+            "avg_length": 6.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 12.119,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E52",
+            "occurrence": 0.3,
+            "avg_length": 9.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 17.954,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    9,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E53",
+            "occurrence": 0.2,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 5.333,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    1,
+                    0.9
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E54",
+            "occurrence": 0.1,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E55",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 4.949,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E56",
+            "occurrence": 0.3,
+            "avg_length": 5.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 19.827,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E57",
+            "occurrence": 0.2,
+            "avg_length": 8.0,
+            "type": "e",
+            "sheet_id": 7,
+            "stdev3d": 1.224,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    8,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E58",
+            "occurrence": 0.2,
+            "avg_length": 5.0,
+            "type": "e",
+            "sheet_id": 7,
+            "stdev3d": 1.536,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E59",
+            "occurrence": 0.2,
+            "avg_length": 3.5,
+            "type": "e",
+            "sheet_id": 7,
+            "stdev3d": 3.987,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E60",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 7,
+            "stdev3d": 1.439,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E61",
+            "occurrence": 0.2,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 10,
+            "stdev3d": 2.379,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X62",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E63",
+            "occurrence": 0.2,
+            "avg_length": 3.5,
+            "type": "e",
+            "sheet_id": 10,
+            "stdev3d": 1.734,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E64",
+            "occurrence": 0.3,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 10,
+            "stdev3d": 13.465,
+            "cdf": [
+                [
+                    0,
+                    0.7
+                ],
+                [
+                    2,
+                    0.8
+                ],
+                [
+                    4,
+                    0.9
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E65",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 10,
+            "stdev3d": 5.961,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    2,
+                    0.9
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X66",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E67",
+            "occurrence": 0.2,
+            "avg_length": 3.5,
+            "type": "e",
+            "sheet_id": 10,
+            "stdev3d": 10.387,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X68",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E69",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 13,
+            "stdev3d": 1.873,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H70",
+            "occurrence": 0.2,
+            "avg_length": 6.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.929,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H71",
+            "occurrence": 0.2,
+            "avg_length": 10.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 2.627,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H72",
+            "occurrence": 0.2,
+            "avg_length": 26.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 3.758,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    25,
+                    0.9
+                ],
+                [
+                    27,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X73",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X74",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H75",
+            "occurrence": 0.2,
+            "avg_length": 9.5,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 2.225,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    9,
+                    0.9
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E76",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 13,
+            "stdev3d": 2.186,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H77",
+            "occurrence": 0.2,
+            "avg_length": 18.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.685,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    18,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H78",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 4.219,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    3,
+                    0.9
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H79",
+            "occurrence": 0.2,
+            "avg_length": 12.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.155,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    12,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H80",
+            "occurrence": 0.2,
+            "avg_length": 7.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.855,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H81",
+            "occurrence": 0.2,
+            "avg_length": 22.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.241,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    22,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H82",
+            "occurrence": 0.1,
+            "avg_length": 4.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H83",
+            "occurrence": 0.2,
+            "avg_length": 22.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.358,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    22,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H84",
+            "occurrence": 0.2,
+            "avg_length": 7.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 2.52,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X85",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E86",
+            "occurrence": 0.2,
+            "avg_length": 9.0,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 5.224,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    8,
+                    0.9
+                ],
+                [
+                    10,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E87",
+            "occurrence": 0.2,
+            "avg_length": 20.0,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 1.384,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    20,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E88",
+            "occurrence": 0.2,
+            "avg_length": 2.5,
+            "type": "e",
+            "sheet_id": 11,
+            "stdev3d": 3.109,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    2,
+                    0.9
+                ],
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E89",
+            "occurrence": 0.2,
+            "avg_length": 5.0,
+            "type": "e",
+            "sheet_id": 11,
+            "stdev3d": 1.886,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E90",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 1.099,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E91",
+            "occurrence": 0.2,
+            "avg_length": 4.0,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 1.033,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "X92",
+            "occurrence": 0.0,
+            "avg_length": 0.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E93",
+            "occurrence": 0.2,
+            "avg_length": 1.5,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 6.987,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    1,
+                    0.9
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E94",
+            "occurrence": 0.2,
+            "avg_length": 6.0,
+            "type": "e",
+            "sheet_id": 11,
+            "stdev3d": 1.715,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E95",
+            "occurrence": 0.2,
+            "avg_length": 2.0,
+            "type": "e",
+            "sheet_id": 11,
+            "stdev3d": 2.446,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    2,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E96",
+            "occurrence": 0.1,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 4,
+            "stdev3d": 0.0,
+            "cdf": [
+                [
+                    0,
+                    0.9
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H97",
+            "occurrence": 0.2,
+            "avg_length": 6.5,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 1.573,
+            "cdf": [
+                [
+                    0,
+                    0.8
+                ],
+                [
+                    6,
+                    0.9
+                ],
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        }
+    ],
+    "precedence": [
+        [
+            0,
+            1
+        ],
+        [
+            1,
+            2
+        ],
+        [
+            2,
+            3
+        ],
+        [
+            3,
+            4
+        ],
+        [
+            4,
+            5
+        ],
+        [
+            5,
+            6
+        ],
+        [
+            6,
+            7
+        ],
+        [
+            7,
+            8
+        ],
+        [
+            8,
+            9
+        ],
+        [
+            9,
+            10
+        ],
+        [
+            10,
+            11
+        ],
+        [
+            11,
+            12
+        ],
+        [
+            12,
+            13
+        ],
+        [
+            13,
+            14
+        ],
+        [
+            14,
+            15
+        ],
+        [
+            15,
+            16
+        ],
+        [
+            16,
+            17
+        ],
+        [
+            17,
+            18
+        ],
+        [
+            18,
+            19
+        ],
+        [
+            19,
+            20
+        ],
+        [
+            20,
+            21
+        ],
+        [
+            21,
+            22
+        ],
+        [
+            22,
+            23
+        ],
+        [
+            23,
+            24
+        ],
+        [
+            24,
+            25
+        ],
+        [
+            25,
+            26
+        ],
+        [
+            26,
+            27
+        ],
+        [
+            27,
+            28
+        ],
+        [
+            28,
+            29
+        ],
+        [
+            29,
+            30
+        ],
+        [
+            30,
+            31
+        ],
+        [
+            31,
+            32
+        ],
+        [
+            32,
+            33
+        ],
+        [
+            33,
+            34
+        ],
+        [
+            34,
+            35
+        ],
+        [
+            35,
+            36
+        ],
+        [
+            36,
+            37
+        ],
+        [
+            37,
+            38
+        ],
+        [
+            38,
+            39
+        ],
+        [
+            39,
+            40
+        ],
+        [
+            40,
+            41
+        ],
+        [
+            41,
+            42
+        ],
+        [
+            42,
+            43
+        ],
+        [
+            43,
+            44
+        ],
+        [
+            44,
+            45
+        ],
+        [
+            45,
+            46
+        ],
+        [
+            46,
+            47
+        ],
+        [
+            47,
+            48
+        ],
+        [
+            48,
+            49
+        ],
+        [
+            49,
+            50
+        ],
+        [
+            50,
+            51
+        ],
+        [
+            51,
+            52
+        ],
+        [
+            52,
+            53
+        ],
+        [
+            53,
+            54
+        ],
+        [
+            54,
+            55
+        ],
+        [
+            55,
+            56
+        ],
+        [
+            56,
+            57
+        ],
+        [
+            57,
+            58
+        ],
+        [
+            58,
+            59
+        ],
+        [
+            59,
+            60
+        ],
+        [
+            60,
+            61
+        ],
+        [
+            61,
+            62
+        ],
+        [
+            62,
+            63
+        ],
+        [
+            63,
+            64
+        ],
+        [
+            64,
+            65
+        ],
+        [
+            65,
+            66
+        ],
+        [
+            66,
+            67
+        ],
+        [
+            67,
+            68
+        ],
+        [
+            68,
+            69
+        ],
+        [
+            69,
+            70
+        ],
+        [
+            70,
+            71
+        ],
+        [
+            71,
+            72
+        ],
+        [
+            72,
+            73
+        ],
+        [
+            73,
+            74
+        ],
+        [
+            74,
+            75
+        ],
+        [
+            75,
+            76
+        ],
+        [
+            76,
+            77
+        ],
+        [
+            77,
+            78
+        ],
+        [
+            78,
+            79
+        ],
+        [
+            79,
+            80
+        ],
+        [
+            80,
+            81
+        ],
+        [
+            81,
+            82
+        ],
+        [
+            82,
+            83
+        ],
+        [
+            83,
+            84
+        ],
+        [
+            84,
+            85
+        ],
+        [
+            85,
+            86
+        ],
+        [
+            86,
+            87
+        ],
+        [
+            87,
+            88
+        ],
+        [
+            88,
+            89
+        ],
+        [
+            89,
+            90
+        ],
+        [
+            90,
+            91
+        ],
+        [
+            91,
+            92
+        ],
+        [
+            92,
+            93
+        ],
+        [
+            93,
+            94
+        ],
+        [
+            94,
+            95
+        ],
+        [
+            95,
+            96
+        ],
+        [
+            96,
+            97
+        ]
+    ],
+    "beta_connectivity": [
+        [
+            0,
+            3,
+            -1
+        ],
+        [
+            1,
+            14,
+            1
+        ],
+        [
+            2,
+            19,
+            -1
+        ],
+        [
+            3,
+            18,
+            -1
+        ],
+        [
+            4,
+            18,
+            -1
+        ],
+        [
+            5,
+            17,
+            -1
+        ],
+        [
+            6,
+            12,
+            -1
+        ],
+        [
+            6,
+            18,
+            -1
+        ],
+        [
+            7,
+            8,
+            -1
+        ],
+        [
+            7,
+            17,
+            -1
+        ],
+        [
+            8,
+            9,
+            -1
+        ],
+        [
+            9,
+            11,
+            -1
+        ],
+        [
+            10,
+            17,
+            1
+        ],
+        [
+            12,
+            13,
+            -1
+        ],
+        [
+            13,
+            15,
+            -1
+        ],
+        [
+            13,
+            16,
+            -1
+        ],
+        [
+            19,
+            20,
+            -1
+        ],
+        [
+            22,
+            57,
+            -1
+        ],
+        [
+            23,
+            51,
+            1
+        ],
+        [
+            24,
+            29,
+            1
+        ],
+        [
+            24,
+            30,
+            1
+        ],
+        [
+            26,
+            36,
+            1
+        ],
+        [
+            28,
+            36,
+            -1
+        ],
+        [
+            29,
+            50,
+            1
+        ],
+        [
+            32,
+            39,
+            -1
+        ],
+        [
+            35,
+            50,
+            -1
+        ],
+        [
+            36,
+            49,
+            -1
+        ],
+        [
+            39,
+            49,
+            -1
+        ],
+        [
+            41,
+            47,
+            -1
+        ],
+        [
+            42,
+            46,
+            -1
+        ],
+        [
+            43,
+            45,
+            -1
+        ],
+        [
+            44,
+            45,
+            -1
+        ],
+        [
+            51,
+            52,
+            -1
+        ],
+        [
+            52,
+            56,
+            -1
+        ],
+        [
+            53,
+            54,
+            -1
+        ],
+        [
+            53,
+            55,
+            -1
+        ],
+        [
+            55,
+            56,
+            -1
+        ],
+        [
+            57,
+            58,
+            -1
+        ],
+        [
+            58,
+            60,
+            -1
+        ],
+        [
+            59,
+            60,
+            -1
+        ],
+        [
+            61,
+            65,
+            1
+        ],
+        [
+            63,
+            64,
+            -1
+        ],
+        [
+            64,
+            65,
+            -1
+        ],
+        [
+            64,
+            67,
+            -1
+        ],
+        [
+            69,
+            76,
+            -1
+        ],
+        [
+            86,
+            87,
+            -1
+        ],
+        [
+            87,
+            90,
+            -1
+        ],
+        [
+            88,
+            89,
+            -1
+        ],
+        [
+            88,
+            95,
+            1
+        ],
+        [
+            89,
+            94,
+            -1
+        ],
+        [
+            90,
+            91,
+            -1
+        ],
+        [
+            91,
+            93,
+            -1
+        ],
+        [
+            93,
+            96,
+            1
+        ]
+    ]
+}

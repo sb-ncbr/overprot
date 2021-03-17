@@ -1,0 +1,84 @@
+<html>
+    <head>	
+        <meta charset='UTF-8'>
+        <base href='..'>
+        <link rel='stylesheet' type='text/css' href='web/overprot_site.css'>
+        <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+        <link rel='stylesheet' type='text/css' href='web/autocomplete.css'>
+        <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+        <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+        <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+        <script type='text/javascript' src='web/autocomplete.js'></script>
+    </head>
+    <body>
+        <div class='menu'>
+            <span class='menu-head'>OverProt</span> 
+            <a class='menu-item' href='web/home.html'>Home</a> 
+            <a class='menu-item active' href='web/view.html'>Search</a> 
+            <a class='menu-item' href='web/examples.html'>Examples</a> 
+            <hr>
+        </div>
+
+
+        <div class='main-body'>
+            <p>
+                On this page you can view the precomputed OverProt results for all structural families in the CATH database. 
+                The data were updated on 19 October 2020.
+                For each family (i.e. CATH superfamily), the list of protein domains and PDB entries was downloaded from PDBe API. 
+                When a single PDB entry contained multiple domains from the same family, only one (randomly selected) domain was included in the algorithm's input.
+            </p>
+            <hr>
+
+            <form action="web/view.html">
+                <label for="family">Family CATH ID:</label>
+                <div class="autocomplete">
+                    <input type="text" id="family-input" name="family" placeholder="e.g. 3.40.50.2300" class='family-id'>
+                    <input type="submit" value="Go">
+                </div>
+            </form> 
+            <hr>
+            
+            <h3>
+                Family: &nbsp; <span class='family-id'>No selected family</span> &nbsp; 
+                <span class='family-name' style='font-style: italic;'>&nbsp;</span>
+            </h3>
+            <overprot-viewer id='main-viewer' file=''></overprot-viewer>
+        </div>
+
+        <script type='text/javascript'>
+            let EXAMPLE_FAMILY = '3.40.50.2300';
+            let searchString = window.location.search;
+            let params = new URLSearchParams(searchString)
+            let familyId = params.get('family');
+            let thisIsExample = params.get('this_is_example') == '1';
+            if (familyId === null){
+                window.location.search = `?this_is_example=1&family=${EXAMPLE_FAMILY}`;
+            }
+            let familyIdElems = document.getElementsByClassName('family-id');
+            for (let i = 0; i < familyIdElems.length; i++){
+                elem = familyIdElems[i];
+                familyIdElems[i].innerHTML = familyId;
+                if (elem.tagName == 'INPUT' && elem.type == 'text' && !thisIsExample){
+                    elem.value = familyId;
+                }
+            }
+            let viewer = document.getElementById('main-viewer');
+            viewer.setAttribute('file', `db/diagrams/diagram-${familyId}.json`);
+            let res = viewer.initialize();
+
+            fetch('db/cath_b_names_options.json')
+                .then(response => response.text())
+                .then(text => {
+                    let opts = JSON.parse(text);
+                    let familyNameElems = document.getElementsByClassName('family-name');
+                    let familyName = getFamilyName(opts, familyId);
+                    for (let i = 0; i < familyNameElems.length; i++){
+                        elem = familyNameElems[i];
+                        familyNameElems[i].innerHTML = familyName;
+                    }
+                    autocomplete(document.getElementById('family-input'), opts, maxItems=10, openIfEmpty=true, selectAllOnFocus=true);
+                });
+        </script>
+
+    </body>
+</html>

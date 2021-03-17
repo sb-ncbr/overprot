@@ -1,0 +1,45 @@
+<html>
+    <head>	
+        <meta charset='UTF-8'>
+        <base href='../..'>
+        <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+        <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+        <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+        <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+        <style type="text/css">
+            table.tableizer-table {
+                font-size: 12px;
+                border: 1px solid #CCC; 
+                font-family: Arial, Helvetica, sans-serif;
+            } 
+            .tableizer-table td {
+                padding: 4px;
+                margin: 3px;
+                border: 1px solid #CCC;
+            }
+            .tableizer-table th {
+                background-color: #104E8B; 
+                color: #FFF;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>OverProt Page for GLVI (Q7NDN8) </h1>
+        <hr>
+
+        <p>
+            Dataset: 109 protein domains, namely chain A from each of these PDB entries: 2xq3, 2xq4, 2xq5, 2xq6, 2xq7, 2xq8, 2xq9, 2xqa, 3eam, 3ehz, 3ei0, 3igq, 3lsv, 3p4w, 3p50, 3tls, 3tlt, 3tlu, 3tlv, 3tlw, 3uu3, 3uu4, 3uu5, 3uu6, 3uu8, 3uub, 4f8h, 4hfb, 4hfc, 4hfd, 4hfe, 4hfh, 4hfi, 4il4, 4il9, 4ila, 4ilb, 4ilc, 4ire, 4lmj, 4lmk, 4lml, 4npp, 4npq, 4qh1, 4qh4, 4qh5, 4x5t, 4yeu, 4zzb, 4zzc, 5hcj, 5hcm, 5heg, 5heh, 5iux, 5j0z, 5l47, 5l4e, 5l4h, 5muo, 5mur, 5mvm, 5mvn, 5mzq, 5mzr, 5mzt, 5njy, 5nkj, 5osa, 5osb, 5osc, 5v6n, 5v6o, 6emx, 6f0i, 6f0j, 6f0m, 6f0n, 6f0r, 6f0u, 6f0v, 6f0z, 6f10, 6f11, 6f12, 6f13, 6f15, 6f16, 6f7a, 6hj3, 6hja, 6hjb, 6hji, 6hjz, 6hpp, 6hy5, 6hy9, 6hya, 6hyr, 6hyv, 6hyw, 6hyx, 6hyz, 6hz0, 6hz1, 6hz3, 6hzw, 6i08.
+        </p>
+        
+        <overprot-viewer id='glvi' file='sample_data/glvi/diagram.json' 
+            width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on'></overprot-viewer>
+        <p>
+            Download: <a href='sample_data/glvi/glvi-overprot.zip'>All results</a>
+        </p>
+
+        <hr>
+        
+    </body>
+</html>
+ 

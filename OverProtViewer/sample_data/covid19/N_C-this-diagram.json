@@ -1,0 +1,283 @@
+{
+    "nodes": [
+        {
+            "label": "H0",
+            "occurrence": 1.0,
+            "avg_length": 3.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.306,
+            "cdf": [
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E1",
+            "occurrence": 0.5,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 0.259,
+            "cdf": [
+                [
+                    0,
+                    0.5
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E2",
+            "occurrence": 0.5,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 3,
+            "stdev3d": 0.211,
+            "cdf": [
+                [
+                    0,
+                    0.5
+                ],
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H3",
+            "occurrence": 1.0,
+            "avg_length": 5.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.325,
+            "cdf": [
+                [
+                    5,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E4",
+            "occurrence": 1.0,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 0.164,
+            "cdf": [
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H5",
+            "occurrence": 1.0,
+            "avg_length": 6.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.267,
+            "cdf": [
+                [
+                    6,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H6",
+            "occurrence": 1.0,
+            "avg_length": 3.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.259,
+            "cdf": [
+                [
+                    3,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H7",
+            "occurrence": 1.0,
+            "avg_length": 7.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.3,
+            "cdf": [
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H8",
+            "occurrence": 1.0,
+            "avg_length": 7.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.224,
+            "cdf": [
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E9",
+            "occurrence": 1.0,
+            "avg_length": 7.0,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 0.985,
+            "cdf": [
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E10",
+            "occurrence": 1.0,
+            "avg_length": 7.0,
+            "type": "e",
+            "sheet_id": 1,
+            "stdev3d": 0.769,
+            "cdf": [
+                [
+                    7,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H11",
+            "occurrence": 1.0,
+            "avg_length": 11.6667,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 2.466,
+            "cdf": [
+                [
+                    11,
+                    0.6666666666666666
+                ],
+                [
+                    13,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "E12",
+            "occurrence": 1.0,
+            "avg_length": 1.0,
+            "type": "e",
+            "sheet_id": 2,
+            "stdev3d": 0.2,
+            "cdf": [
+                [
+                    1,
+                    1.0
+                ]
+            ]
+        },
+        {
+            "label": "H13",
+            "occurrence": 1.0,
+            "avg_length": 4.0,
+            "type": "h",
+            "sheet_id": 0,
+            "stdev3d": 0.333,
+            "cdf": [
+                [
+                    4,
+                    1.0
+                ]
+            ]
+        }
+    ],
+    "precedence": [
+        [
+            0,
+            1
+        ],
+        [
+            1,
+            2
+        ],
+        [
+            2,
+            3
+        ],
+        [
+            3,
+            4
+        ],
+        [
+            4,
+            5
+        ],
+        [
+            5,
+            6
+        ],
+        [
+            6,
+            7
+        ],
+        [
+            7,
+            8
+        ],
+        [
+            8,
+            9
+        ],
+        [
+            9,
+            10
+        ],
+        [
+            10,
+            11
+        ],
+        [
+            11,
+            12
+        ],
+        [
+            12,
+            13
+        ]
+    ],
+    "beta_connectivity": [
+        [
+            1,
+            2,
+            -1
+        ],
+        [
+            4,
+            12,
+            -1
+        ],
+        [
+            9,
+            10,
+            -1
+        ]
+    ]
+}
