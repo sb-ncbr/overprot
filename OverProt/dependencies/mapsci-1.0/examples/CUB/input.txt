@@ -1,0 +1,12 @@
+
+#
+# MAPSCI input file for aligning the HOMSTRAD family CUB
+#
+# To align:
+#
+# <mapsci-exe>  input.txt  center  -n CUB  -p data
+#
+
+1sfp.pdb  
+1spp.pdb  A  
+1spp.pdb  B:1:B:112  

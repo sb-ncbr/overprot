@@ -1,0 +1,7 @@
+lipo1: 
+http://127.0.0.1:5000/submission/26d6d25c-5c30-4f84-b0c5-99a3f8acdaba
+http://overprot.ncbr.muni.cz/submission/3f98367a-6e73-4f72-bffa-de7c3e33a71a
+
+lipo2: 
+http://127.0.0.1:5000/submission/dc60d71a-ef45-44b4-8e58-1435ba71e43f
+http://overprot.ncbr.muni.cz/submission/b16e71ec-707e-46fb-a30f-3c7e566f994d

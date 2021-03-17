@@ -1,0 +1,182 @@
+
+MAPSCI: Multiple Alignment of Protein Structures 
+           and Consensus Identification
+
+
+Contents
+========
+1. Installation
+2. Command-line usage
+3. Command-line options
+4. Data set description
+5. Using the library
+
+
+Installation
+============
+On Unix/Linux systems:
+
+    cd build
+    make
+    make install
+
+  The executable will be saved in the  bin/  directory 
+  under the name mapsci.
+
+On Windows systems:
+
+  The  source has  been compiled and run  successfully 
+  on Windows XP under Visual C++ 2008 Express Edition.
+
+
+Command-line usage
+==================
+The  examples/  directory contains a sample data set 
+and a data set description file. To try the example:
+
+    cd examples/CUB
+    ../../bin/mapsci  input.txt  center  -p data
+
+This will generate the following files:
+
+    alignment.log -- the final alignment results
+    alignment.pir -- the final alignment in NBRF/PIR format
+    alignment.mat -- the transformation matrices
+
+In addition, the transformation coordinates for each structure
+will  be saved along  with the  computed  consensus structure:
+
+    1sfp.pdb.rot
+    1spp.pdb.A.rot
+    1spp.pdb.B.1.B.112.rot
+    consensus.pdb
+
+
+Command-line options
+====================
+
+The algorithm expects two mandatory parameters in the given order:
+
+    ../../bin/mapsci  <data set>   <consensus>
+
+Optionally, the algorithm can be run with two additional parameters:
+
+    ../../bin/mapsci  <data set>   <consensus>  -n <prefix>  -p <path> 
+
+* For the <data set> description file see next section.
+
+* The <consensus> option indicates which protein from the data set
+  should be chosen as the initial consensus. Currently, it can be:
+
+  center    the protein with the smallest sum of pairwise alignment 
+            scores with the  rest of the  proteins in the  data set
+
+  minmax    the protein with smallest maximal pairwise alignment 
+            score with  the rest of the proteins in the data set
+
+  median    the protein of median length
+
+* The  -n <prefix>  option can be used to specify a different name
+  for the files saved by the algorithm with the alignment results.
+
+  The default is to save the results under the names:
+ 
+      alignment.log
+      alignment.pir
+      alignment.mat
+
+  Running the algorithm with "-n CUB" will save the results under:
+
+      CUB.log
+      CUB.pir
+      CUB.mat
+
+* The -p <path> option can be used to specify the path to a folder with the
+  PDB files for the protein structures:
+
+      ../../bin/mapsci  <data set>   <consensus>   -p /projects/bioinfo/pdbs
+
+  will look for PDB files in the directory /projects/bioinfo/pdbs
+
+
+Data set description
+====================
+The structures that participate in the alignment are listed in a data set
+description file.  Each structure is described  by the name of the source
+PDB file with an optional range specification in the following format:
+
+1hip.pdb                selects all residues (from first model)
+1hip.pdb  A   	        selects all residues from chain A
+1hip.pdb  A:10   	selects residues 10 and higher from chain A
+1hip.pdb  A:10:A:50     selects residues 10 to 50 (inclusive) from chain A
+2hip.pdb  A:10:B:50     selects residues from chain A,10 to chain B,50 inclusive
+
+The -p <path> command-line option can be used to specify the path to the 
+directory that contains the listed PDB files.
+
+Empty lines or lines that begin with # are ignored.
+
+
+Using the library
+=================
+The source code is organized into a collection of algorithms and simple data 
+structures that can be used in other C++ programs.
+
+The main data structures are:
+
+Protein -- (in src/geom/protein.*) coordinate representation of protein structures; proteins 
+           can be loaded via the static method "read" by specifying the path to a PDB file 
+           and an optional range selection formatted as described in "Data set description"
+
+               Protein* prot = Protein::read("/project/bioninfo/2hip.pdb", "A:10:B:50");
+
+           A complete data set can be loaded from a data set description file:
+
+               vector<Protein*> proteins = Protein::read_set("/project/bioninfo/input.txt");
+
+Alignment -- (in src/align/alignment.*) representation of pairwise alignment; essentially two 
+             parallel arrays that contain the indices of the matched residues
+
+MultiAlign -- (in src/align/multiple.*) the multiple structure alignment algorithm; returns 
+              std::pair whose  first component is a vector of  Alignments  and whose second 
+              component is the computed consensus structure. 
+
+              To use:
+
+                  vector<Protein*> proteins = ... // load proteins (e.g. via "read_set")
+              
+                  MultiAlign mapsci;    // instantiate only once
+          
+                  MultiAlign::RT result = mapsci.align(proteins, "center");
+
+                  vector<Alignment*> alignments = result.first;
+                  Protein* consensus = result.second;
+
+              For each alignment _i_  in the vector of Alignments, the first array of indices
+              refers to the i-th protein in the data set, and the second set of indices refers
+              to the computed consensus structure.
+
+              src/utils/summary.* and src/utils/zscore.* contain a collection of function for
+              saving information about the alignment and computing the resulting Z-score and RMSD.
+
+Params -- (in src/align/params.*) the default parameters that control the algorithm can be changed
+          by modifying the appropriate static member of the Params class, or can be loaded from
+          a file (see src/align/params.*) for file format details. 
+
+          In the example above could add:
+
+              Params::load("my-params.txt");    
+              MultiAlign::RT result = mapsci.align(proteins, "center");
+
+PairAlign -- (in src/align/pairwise.*) the pairwise structure alignment algorithm (Ye et al. JBCB 04)
+             that could be of independent interest.
+
+             To use:
+             
+                 Protein* prot1 = Protein::read("1sfp.pdb", "A");
+                 Protein* prot2 = Protein::read("1spp.pdb", "B");
+
+                 PairAlign pair;    // instantiate only once
+          
+                 Alignment* alignment = new Alignment();
+                 pair.align(prot1, prot2, alignment);
