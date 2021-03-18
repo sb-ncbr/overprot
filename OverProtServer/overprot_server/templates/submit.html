@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col">
+        <h2 class="mb-4">
+            User-defined query
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <form action="/submission" method="POST" enctype="multipart/form-data">
+            <div class="row mb-2">
+                <div class="col-12 col-lg-6">
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <label for="input_job_name" class="my-auto">Job name:</label>
+                        <input type="text" id="input_job_name" name="job_name" value="{{job_name}}" style="flex: 1;">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label for="input_list">Protein domain list:</label>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-12 col-sm-6">
+                    <textarea id="input_list" name="list" style="width: 100%; height: 100%; font-family: monospace;" rows="6">{{domain_list}}</textarea>
+                    <div style="min-width: 250px;"></div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    List domains one-per-line,
+                    <br><code>PDB</code> (whole chain A) or
+                    <br><code>PDB,CHAIN</code> (whole chain) or
+                    <br><code>PDB,CHAIN,RANGES</code>
+                    <br>(maximum 500 domains)
+                    <br><br>
+                    Example:
+                    <pre style="color: gray; font-size: 80%;" id="example_1">
+1tqn
+1og2,A 
+1og2,B 
+1bu7,A,100:450 
+1bu7,B,100:178,185:370,390:</pre>
+                    <input type="button" value="Load example" onclick="
+                                        document.getElementById('input_list').value = document.getElementById('example_1').innerHTML;
+                                        document.getElementById('input_job_name').value = 'Example job - Cytochromes P450';
+                                    ">
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    or load domain list from file &nbsp;
+                    <input type="file" id="input_list_file" name="list_file">
+                </div>
+            </div>
+            <!-- <div class="row mb-2">
+                                <div class="col">
+                                    Chain and residue numbering scheme:
+                                    <br>
+                                    <input type="radio" id="input_numbering_auth" name="numbering" value="auth">
+                                    <label for="input_numbering_auth">auth_*</label>
+                                    <br>
+                                    <input type="radio" id="input_numbering_label" name="numbering" value="label" checked>
+                                    <label for="input_numbering_label">label_*</label>
+                                </div>
+                            </div> -->
+            <div class="row mb-2">
+                <div class="col">
+                    <input type="submit" value="Submit">
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

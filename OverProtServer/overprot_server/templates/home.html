@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col text-justify">
+        <p>
+            <strong>OverProt</strong> is a web application generating an overview (i.e. a consensus sequence) of protein family secondary structure elements.
+            It can be used for a whole protein family or for its user-defined subset.
+        </p>
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    <div class="col">
+        <h2>Search</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <form action="/view">
+            <label for="family">Family CATH ID:</label>
+            <div class="autocomplete">
+                <input type="text" id="family-input" name="family" placeholder="e.g. 1.10.630.10" class='family-id'>
+                <input type="submit" value="Go">
+            </div>
+        </form>
+        <p>
+            Search the precomputed OverProt results for the structural families in the CATH database.
+        </p>
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    <div class="col">
+        <h2>User-defined queries</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <p>
+            Run OverProt on your own list of protein structures <a href='/submit' style="font-weight: bolder; font-size: 120%;">&nbsp;&DoubleRightArrow;&nbsp;</a>
+        </p>
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    <div class="col">
+        <h2 class="mb-3">Examples</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12 col-sm-6 col-lg-3">
+        <h3 class="text-center">Cytochrome P450</h3>
+        <a href="/view?family=1.10.630.10">
+            <img src='/data/db/consensus_3d/1.10.630.10.png' alt='Cytochromes P450' class="img-fluid d-block mx-auto" style="max-height: 200px;">
+        </a>
+        <p class="text-justify mt-1">
+            <strong>Cytochromes P450 (CYPs)</strong> are a family of enzymes (CATH ID 1.10.630.10) containing heme as a cofactor that function as monooxygenases.
+            In mammals, these proteins oxidize steroids, fatty acids, and xenobiotics, and are important 
+            e.g. for the clearance of various compounds.
+            In plants, they are involved in the biosynthesis of defensive compounds, fatty acids, and hormones.
+        </p>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <h3 class="text-center">Dipeptidyl&nbsp;peptidase&nbsp;IV</h3>
+        <a href="/view?family=2.140.10.30">
+            <img src='/data/db/consensus_3d/2.140.10.30.png' alt='Dipeptidylpeptidase IV, N-terminal domain' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
+        </a>
+        <p class="text-justify mt-1">
+            <strong>Dipeptidyl peptidase IV</strong> is a serine protease, it contributes to the regulation of various physiological processes
+            and serves as a marker of autoimmune diseases, adenosine deaminase-deficiency and HIV.
+            This example shows its eight-bladed β-propeller domain (CATH ID 2.140.10.30), important for a function of the enzyme.
+        </p>
+    </div>
+
+
+    <div class="col-12 col-lg-6">
+        <div class="row">
+            <div class="col">
+                <h3 class="text-center">Lipocalin</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <a href="/submission/arch-lipocalin-8" title="Lipocalin sample (8-stranded)">
+                    <img src='/static/images/consensus_3D_2.40.128.20_funfam2_sample20.png' alt='Lipocalin FunFam2 sample' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
+                </a>
+            </div>
+            <div class="col">
+                <a href="/submission/arch-lipocalin-10" title="Lipocalin sample (10-stranded)">
+                    <img src='/static/images/consensus_3D_2.40.128.20_funfam1_sample20.png' alt='Lipocalin FunFam1 sample' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <p class="text-justify mt-1">
+                    <strong>Lipocalins</strong> are extracellular proteins which function include transport of nutrient or pheromones,
+                    control of cell regulation, etc. The most common structure of the lipocalin protein fold is
+                    a single eight-stranded antiparallel beta-sheet, forming a continuously hydrogen-bonded beta-barrel (see left figure).
+                    But also a ten-stranded fold occurs frequently (see right figure).
+                    OverProt user-defined queries enable to analyse representatives (from CATH Superfamily 2.40.128.20)
+                    of both these types separately and compute a consensus sequence for them. Here we provide input queries for
+                    <a href="/submit?job_name=Lipocalin sample (8-stranded)&domain_list=3mbt,A;1qwd,A;2aco,A;6ubo,A;6ukk,A;6ukl,A;2hzq,A;5f6z,A;5ez2,A;1gka,B;4iaw,A;5n48,A;5n47,A;4iax,A;4gh7,A;5mhh,A;4mvl,A;1kxo,A;1n0s,A;1t0v,A">
+                        eight-stranded
+                    </a>
+                    and
+                    <a href="/submit?job_name=Lipocalin sample (10-stranded)&domain_list=4azm,A;4azr,A;4lkp,A;1b56,A;5hz5,A;4azo,A;4azn,A;4azp,A;5bvt,A;3nr3,A;6xw9,A;6xvy,B;4a1h,A;4a1y,A;6xu9,A;2wut,A;1pmp,A;6xu5,A;6ew2,A;6xvq,A">
+                        ten-stranded
+                    </a> lipocalins.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+<hr>
+
+<div class="row">
+    <div class="col">
+        <h2>Contact</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <p>
+            If you have any feedback to the algorithm, visualization, or the results for a specific family, please contact us:
+        </p>
+        <p>
+            <a href="mailto:midlik@mail.muni.cz" target="_blank">midlik@mail.muni.cz</a>, Laboratory of Computational Chemistry, Masaryk University
+        </p>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript'>
+    initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
+</script>
+
+{% endblock %}

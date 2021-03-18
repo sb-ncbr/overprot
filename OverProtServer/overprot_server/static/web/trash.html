@@ -1,0 +1,115 @@
+<html>
+    <head>	
+        <meta charset='UTF-8'>
+        <link rel='stylesheet' type='text/css' href='/static/web/bootstrap/bootstrap.min.css'>
+        <link rel='stylesheet' type='text/css' href='/static/web/web.css'>
+    </head>
+    <body>
+        <div class="d-flex flex-column" style="min-height: 100vh;">
+
+            <nav class="container navbar navbar-expand navbar-light bg-light mb-3">
+                <a class="navbar-brand" href="/">
+                    <!-- <img src="/static/images/logo.png" width="30" height="30" class="d-inline-block align-top" alt=""> -->
+                    OverProt
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" 
+                    data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/static/web/home.html">Home <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/view">Search</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/static/web/submission.html">Submission</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/static/misc/OverProt-Manual.pdf" target="_blank">Manual</a>
+                        </li>
+                        <li class="nav-item">
+                            <del><a class="nav-link" href="/static/web/examples.html">Examples</a></del>
+                        </li>
+                        <li class="nav-item active">
+                            <del><a class="nav-link" href="/static/web/trash.html">Trash</a></del>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+
+            <div class='container'>
+                <div class="row">
+                    <div class="col">   
+                        <h4 class="mb-3">
+                            Zmazany text, ktory mozno este budeme potrebovat
+                        </h4>
+                           
+                        <p>
+                            <strong>OverProt</strong> is a tool that produces a secondary structure consensus for a given protein structural family. 
+                            Such consensus consists of several <em>consensus SSEs</em> (secondary structure elements, i.e. helices and &beta;-strands). 
+                            Each consensus SSE represents a group of SSEs from the proteins in the family (0 or 1 SSE from each protein).
+                        </p>
+                        <p>
+                            <strong>OverProt Viewer</strong> allows interactive visualization of the consensus produced by OverProt. 
+                            Each consensus SSE is shown as a rectangle – &beta;-strands from the same &beta;-sheet have the same color, while all helices are gray. 
+                            The height of the rectangle indicates the <em>occurrence</em> (what percentage of protein structures contain this SSE), 
+                            while the width indicates the <em>average length</em> (measured as the number of amino acid residues).
+                            Only consensus SSEs with occurrence above the <em>occurrence threshold</em> are shown (default: 20%). 
+                            Alternative visualization modes include different coloring methods, showing length distribution instead of the average length, 
+                            and visualization of beta-connectivity.
+                        </p>  
+
+                        <p>
+                            OverProt is closely related to our other software <a href='https://webchem.ncbr.muni.cz/Wiki/SecStrAnnotator' target='_blank'>SecStrAnnotator</a>. 
+                        </p>
+                        <p>
+                            OverProt is still under development and hasn't been published yet. Some information was presented on conferences:
+                            <ul>
+                                <li><a href='/static/misc/Elixir2020-Midlik.pdf' target='_blank'>ELIXIR CZ Annual Conference 2020</a></li>
+                                <br>
+                                <li><a href='/static/misc/Elixir2019-Midlik.pdf' target='_blank'>ELIXIR CZ Annual Conference 2019</a> (older algorithm)</li>
+                            </ul>
+                        </p>  
+                        <p>
+                            If you have any feedback to the algorithm, visualization, or the results for a specific family, please contact us:
+                        </p>
+                        <p>
+                            <a href="mailto:midlik@mail.muni.cz" target="_blank">midlik@mail.muni.cz</a>, Laboratory of Computational Chemistry, Masaryk University
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            
+            <footer class="container mt-auto mb-3">
+                <hr>
+                <div class="row align-items-center">
+                    <div class="col-3">
+                        <img src='/static/images/Elixirlogo.png' class="img-fluid d-block mx-auto">
+                    </div>
+                    <div class="col-9">
+                        OverProt is a part of services provided by ELIXIR – European research infrastructure for biological information. 
+                        For other services provided by ELIXIR's Czech Republic Node visit 
+                        <a href='http://www.elixir-czech.cz' target="_blank">www.elixir-czech.cz</a>.
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+
+        <script type='text/javascript'>
+            initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json','{{family}}', 'family-input', 'family-name');
+        </script>
+    
+        <script src="/static/web/bootstrap/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="/static/web/bootstrap/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="/static/web/bootstrap/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    
+    </body>
+</html>

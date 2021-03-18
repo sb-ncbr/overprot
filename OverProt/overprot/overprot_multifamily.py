@@ -28,7 +28,7 @@ from . import overprot
 HLINE = '-' * 60
 
 def process_family(family: str, sample_size: Union[int, str, None], directory: FilePath) -> Optional[str]:
-    '''Try running SecStrConsensus on a family. Return the error traceback if fails, None if succeeds.'''
+    '''Try running OverProt on a family. Return the error traceback if fails, None if succeeds.'''
     print(HLINE, family, sep='\n')
     print(HLINE, family, sep='\n', file=sys.stderr)
     try:

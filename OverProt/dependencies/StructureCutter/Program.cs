@@ -14,7 +14,6 @@ namespace StructureCutter
     public class Program
     {   
         const string DEFAULT_URL_SOURCE = "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif";
-        // const string DEFAULT_URL_SOURCE = "file:///home/adam/Workspace/Python/Ubertemplate/data/GuidedAcyclicClustering/cif_cache/{pdb}.cif";
         static readonly string[] DEFAULT_URL_SOURCES = { "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif" };
         const string OUTPUT_EXTENSION = ".cif";
         const string PDB_OUTPUT_EXTENSION = ".pdb";

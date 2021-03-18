@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col border m-3 p-3">
+        <table>
+            <tr>
+                <td class='label'>Job name:</td>
+                <td>{{job_name}}</td>
+            </tr>
+            <tr>
+                <td class='label'>Job ID:</td>
+                <td>{{job_id}}</td>
+            </tr>
+            <tr>
+                <td class='label'>Status:</td>
+                <td>{{job_status}}</td>
+            </tr>
+            <tr>
+                <td class='label'>Submission time:</td>
+                <td>{{submission_time}}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!-- <hr> -->
+<div class="row"></div>
+<div class="row">
+    <div class="col">
+        <h3>
+            Job: &nbsp; {{job_name}}
+        </h3>
+        <overprot-viewer id='main-viewer' file='{{file}}' shape-method='symcdf' color-method='sheet'></overprot-viewer>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12 col-md-6 mb-3">
+        <h3 class="text-center">3D view (MAPSCI + OverProt)</h3>
+        <img class="img-fluid d-block mx-auto" src="/results/{{job_id}}/results/consensus.png">
+        <!-- <img class="img-fluid d-block mx-auto" src="/results/{{job_id}}/consensus.png"> -->
+    </div>
+    <div class="col-12 col-md-6 mb-3">
+        <h3>Download</h3>
+        <p>Results: <a href='/results/{{job_id}}/results.zip'>results.zip</a></p>
+        <p>All data: <a href='/results/{{job_id}}/data.zip'>data.zip</a></p>
+    </div>
+</div>
+
+{% endblock %}

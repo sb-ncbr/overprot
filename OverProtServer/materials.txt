@@ -1,0 +1,5 @@
+## Flask - minimal application
+https://flask.palletsprojects.com/en/1.1.x/quickstart/#a-minimal-application
+
+## Background jobs
+https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-xxii-background-jobs

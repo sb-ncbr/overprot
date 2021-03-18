@@ -55,7 +55,7 @@ class OverProtConfig(Config):
         mapsci_path: str
         init: Literal['median', 'center']
         n_max: int
-    class SecStrConsensusCS(ConfigSection):
+    class OverProtCS(ConfigSection):
         force_ssa: bool
         secstrannotator_rematching: bool
         secstrannotator_path: str
@@ -69,7 +69,7 @@ class OverProtConfig(Config):
     download: DownloadCS
     sample_selection: SampleSelectionCS
     mapsci: MapsciCS
-    sec_str_consensus: SecStrConsensusCS
+    sec_str_consensus: OverProtCS
     files: FilesCS
     visualization: VisualizationCS
 

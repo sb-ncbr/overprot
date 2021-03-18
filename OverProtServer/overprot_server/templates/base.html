@@ -1,0 +1,89 @@
+<html>
+
+<head>
+    <meta charset='UTF-8'>
+    <link rel='stylesheet' type='text/css' href='/static/web/bootstrap/bootstrap.min.css'>
+    <link rel='stylesheet' type='text/css' href='/static/web/web.css'>
+    <link rel='stylesheet' type='text/css' href='/static/web/autocomplete.css'>
+    <link rel='stylesheet' type='text/css' href='/static/overprot-viewer/overprot-viewer.min.css'>
+
+    <script src="/static/web/bootstrap/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="/static/web/bootstrap/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="/static/web/bootstrap/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type='text/javascript' src='/static/overprot-viewer/d3.v5.min.js'></script>
+    <script type='text/javascript' src='/static/overprot-viewer/d3-selection-multi.v1.min.js'></script>
+    <script type='text/javascript' src='/static/overprot-viewer/overprot-viewer.min.js'></script>
+    <script type='text/javascript' src='/static/web/autocomplete.js'></script>
+
+
+    <title>{% block title %}OverProt Server{% endblock %}</title>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="d-flex flex-column" style="min-height: 100vh;">
+
+        <!-- <nav class="container navbar navbar-expand-lg navbar-light bg-light mb-3"> -->
+        <nav class="container navbar navbar-expand navbar-light bg-light mb-3">
+            <a class="navbar-brand" href="/">
+                <!-- <img src="/static/images/logo-sigma2.png" width="26" height="26" class="d-inline-block align-top" alt="" style="margin: 5px;"> -->
+                OverProt
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <!-- <li class="nav-item active">
+                            <a class="nav-link" href="/static/web/home.html">Home <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/view">Search</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/submit">Submit</a>
+                        </li> -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/static/misc/OverProt-Manual.pdf" target="_blank">Manual</a>
+                        <!-- </li>
+                        <li class="nav-item">
+                            <del><a class="nav-link" href="/static/web/examples.html">Examples</a></del>
+                        </li>
+                        <li class="nav-item">
+                            <del><a class="nav-link" href="/static/web/trash.html">Trash</a></del>
+                        </li> -->
+                </ul>
+                <!-- <form class="form-inline my-2 my-lg-0">
+                        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                    </form> -->
+            </div>
+        </nav>
+
+
+        <div class='container'>
+            {% block content %}{% endblock %}
+        </div>
+
+        <footer class="container mt-auto mb-3">
+            <hr>
+            <div class="row align-items-center">
+                <div class="col-3">
+                    <img src='/static/images/Elixirlogo.png' class="img-fluid d-block mx-auto">
+                </div>
+                <div class="col-9">
+                    OverProt is a part of services provided by ELIXIR – European research infrastructure for biological information.
+                    For other services provided by ELIXIR's Czech Republic Node visit
+                    <a href='http://www.elixir-czech.cz' target="_blank">www.elixir-czech.cz</a>.
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+
+</html>

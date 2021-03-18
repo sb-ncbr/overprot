@@ -104,7 +104,7 @@ def test_nnt():
     # distance_function = dist_nd
 
     fam = 'cyp_250a'
-    dist, keys, _ = lib.read_matrix(f'/home/adam/Workspace/Python/Ubertemplate/data/GuidedAcyclicClustering/{fam}/distance_matrix.tsv')
+    dist, keys, _ = lib.read_matrix(f'/home/adam/Workspace/Python/OverProt/data/GuidedAcyclicClustering/{fam}/distance_matrix.tsv')
     samples = keys
     n = len(keys)
     key_index = {key: i for i, key in enumerate(keys)}

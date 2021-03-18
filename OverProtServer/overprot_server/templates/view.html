@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col">
+        <h3>
+            Family: &nbsp; <span class='family-id'>{{family}}</span> &nbsp;
+            <span class='family-name' style='font-style: italic;'>&nbsp;</span>
+        </h3>
+        <overprot-viewer id='main-viewer' file='/data/db/diagrams/diagram-{{family}}.json' shape-method='symcdf' color-method='sheet'></overprot-viewer>
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    <div class="col-12 col-md-6 mb-3">
+        <h3 class="text-center">3D view (MAPSCI + OverProt)</h3>
+        <img class="img-fluid d-block mx-auto" src="/data/db/consensus_3d/consensus-{{family}}.png">
+    </div>
+    <div class="col-12 col-md-6 mb-3">
+        <h3 class="text-center">2D view (2DProts)</h3>
+        <!-- <img class="img-fluid d-block mx-auto" src="http://78.128.250.85:5000/static/web/generated-{{family}}/imageCircle-multiple2.png" alt="2DProts for {{family}} not available"> -->
+        <img class="img-fluid d-block mx-auto" src="https://2dprots.ncbr.muni.cz/static/web/generated-{{family}}/imageCircle-multiple2.png" alt="2DProts for {{family}} not available">
+    </div>
+</div>
+<div class="row mb-3">
+    <div class="col">
+        <b>External links:</b>
+        &emsp; &emsp;
+        <a href="https://cathdb.info/version/latest/superfamily/{{family}}" target="_blank">
+            <img src="/static/images/cath-logo.png" style="height: 1em;">
+            CATH &UpperRightArrow;
+        </a>
+        &emsp; &emsp;
+        <!-- <br><br> -->
+        <!-- <a href="http://78.128.250.85:5000/family/{{family}}" target="_blank">https://2dprots.ncbr.muni.cz/family/1.10.630.10 -->
+        <a href="https://2dprots.ncbr.muni.cz/family/{{family}}" target="_blank">
+            2DProts &UpperRightArrow;
+        </a>
+        &emsp; &emsp;
+        <!-- <input type="button" value="Save SVG" onclick="saveViewerSvg('main-viewer', 'overprot-{{family}}.svg')"> -->
+    </div>
+</div>
+<div class="row mb-3">
+    <div class="col">
+        <b>Download:</b>
+        &emsp; &emsp;
+        <a href="/data/db/zip_results/results-{{family}}.zip" target="_blank">
+            results.zip
+        </a>
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    <div class="col text-justify">
+        <p>
+            On this page you can view the precomputed OverProt results for all structural families in the CATH database.
+            The data were updated on {{last_update}}.
+            For each family (i.e. CATH superfamily), the list of protein domains and PDB entries was downloaded from PDBe API.
+            When a single PDB entry contained multiple domains from the same family, only one (randomly selected) domain was included in the algorithm's input.
+        </p>
+    </div>
+</div>
+
+{% endblock %}

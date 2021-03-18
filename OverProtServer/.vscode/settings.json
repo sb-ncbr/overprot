@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.shellArgs.linux": [
+        "--rcfile",
+        "./.bashrc"
+    ],
+}
