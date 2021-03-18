@@ -10,6 +10,9 @@ UPDATE=$1
 
 UPDATE_DIR=$DATA_DIR/$UPDATE
 
-mkdir $UPDATE_DIR
-$PYTHON $OVERPROT_MULTI --download_family_list_by_size --collect  xxx all $UPDATE_DIR/  > $UPDATE_DIR/stdout.txt  2> $UPDATE_DIR/stderr.txt
+CONFIG=$(dirname $0)/overprot-config-unique_pdb.ini
+
+mkdir -p $UPDATE_DIR
+echo "Data will be in $UPDATE_DIR"
+$PYTHON $OVERPROT_MULTI --download_family_list_by_size  --config $CONFIG --collect  xxx all $UPDATE_DIR/  > $UPDATE_DIR/stdout.txt  2> $UPDATE_DIR/stderr.txt
 

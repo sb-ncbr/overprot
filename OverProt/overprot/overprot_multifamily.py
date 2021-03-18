@@ -27,12 +27,12 @@ from . import overprot
 
 HLINE = '-' * 60
 
-def process_family(family: str, sample_size: Union[int, str, None], directory: FilePath) -> Optional[str]:
+def process_family(family: str, sample_size: Union[int, str, None], directory: FilePath, config: Optional[FilePath] = None) -> Optional[str]:
     '''Try running OverProt on a family. Return the error traceback if fails, None if succeeds.'''
     print(HLINE, family, sep='\n')
     print(HLINE, family, sep='\n', file=sys.stderr)
     try:
-        overprot.main(family, sample_size, directory)
+        overprot.main(family, sample_size, directory, config=config)
         return None
     except Exception as ex:
         error = traceback.format_exc()
@@ -58,10 +58,12 @@ def family_callback(result: lib.JobResult, directory: FilePath):
 
 
 
-def collect_results(families: List[str], input_dir: FilePath, filepath: List[str], output_dir: FilePath, zip: bool = False, hide_missing: bool = False):
+def collect_results(families: List[str], input_dir: FilePath, filepath: List[str], output_dir: FilePath, zip: bool = False, hide_missing: bool = False) -> List[str]:
+    '''Collect results of the same type. Return the list of families with missing results.'''
     if output_dir.isdir():
         output_dir.rm(recursive=True)
     output_dir.mkdir()
+    missing = []
     for family in families:
         inp = input_dir.sub('families', family, *filepath)
         filename = FilePath(filepath[-1])
@@ -72,27 +74,14 @@ def collect_results(families: List[str], input_dir: FilePath, filepath: List[str
             else:
                 inp.cp(out)
         elif hide_missing:
+            missing.append(family)
             with out.open('w') as w:
                 js_error = {'error': f"Failed to generate consensus for '{family}'"}
                 json.dump(js_error, w)
         else:
+            missing.append(family)
             print('Missing results/ directory:', family, file=sys.stderr)
-
-    # Path(output_dir).mkdir(parents=True, exist_ok=True)
-    # if png_dir is not None:
-    #     Path(png_dir).mkdir(parents=True, exist_ok=True)
-
-    # fam_dirs = sorted(fam for fam in Path(input_dir, 'families').iterdir() if fam.is_dir)
-    # # print(fam_dirs)
-    # for fd in fam_dirs:
-    #     family = fd.name
-    #     try:
-    #         make_archive(Path(fd, 'results'), Path(output_dir, f'results-{family}.zip'))
-    #         shutil.copy(Path(fd, 'results', 'consensus.png'), Path(png_dir, f'{family}.png'))
-    #     except FileNotFoundError:
-    #         print('Missing results/ directory:', family, file=sys.stderr)
-    
-
+    return missing
 
 
 #  MAIN  #####################################################################################
@@ -105,13 +94,14 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('directory', help='Directory to save everything in', type=str)
     parser.add_argument('-d', '--download_family_list', help='Download the current list of all CATH families (ignore family_list_file)', action='store_true')
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
-    parser.add_argument('-c', '--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
+    parser.add_argument('--config', help=f'Configuration file for OverProt', type=str, default=None)
+    parser.add_argument('--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
     args = parser.parse_args()
     return vars(args)
 
 
 def main(family_list_file: Union[FilePath, str], sample_size: Union[int, str, None], directory: Union[FilePath, str], 
-         download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False) -> Optional[int]:
+         download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Union[FilePath, str, None] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     directory = FilePath(directory)
@@ -142,7 +132,7 @@ def main(family_list_file: Union[FilePath, str], sample_size: Union[int, str, No
             name=family, 
             func=process_family, 
             args=(family, sample_size, directory.sub('families', family)), 
-            kwargs={}, 
+            kwargs={'config': config}, 
             stdout=current_dir.sub(f'{family}-out.txt'),
             stderr=current_dir.sub(f'{family}-err.txt')
         ) for family in families]
@@ -150,10 +140,12 @@ def main(family_list_file: Union[FilePath, str], sample_size: Union[int, str, No
         callback = lambda res: family_callback(res, FilePath(directory)))
     current_dir.rm(recursive=True, ignore_errors=True)
     if collect:
-        collect_results(families, directory, ['results', 'diagram.json'], directory.sub('collected_results', 'diagrams'), hide_missing=True)
-        collect_results(families, directory, ['results', 'consensus.png'], directory.sub('collected_results', 'consensus_3d'))
         collect_results(families, directory, ['results'], directory.sub('collected_results', 'zip_results'), zip=True)
-        # collect_diagrams.main(directory, directory.sub('diagrams'))
+        collect_results(families, directory, ['results', 'diagram.json'], directory.sub('collected_results', 'diagrams'), hide_missing=True)
+        missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory.sub('collected_results', 'consensus_3d'))
+        with directory.sub('missing_results.txt').open('w') as w:
+            for family in missing_families:
+                print(family, file=w)
     succeeded = sum(1 for res in results if res.result is None)
     failed = sum(1 for res in results if res.result is not None)
     print('Succeeded:', succeeded, 'Failed:', failed)

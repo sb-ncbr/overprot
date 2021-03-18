@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "WnWBkfzNfapV1inZhZDuMB/i0f1vJ1VYyE903LgJMhTJfWuzmGi881e6AOrPA3/t8tB41Z+j5HVdqy9OGG7jQQ==",
+  "success": true,
+  "projectFilePath": "/home/adam/Workspace/Python/OverProt/overprot/OverProt/dependencies/StructureCutter/StructureCutter.csproj",
+  "expectedPackageFiles": [
+    "/home/adam/.nuget/packages/system.json/4.5.0/system.json.4.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}

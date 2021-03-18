@@ -87,9 +87,12 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(family: str, sample_size: Union[int, str, None], directory: Union[FilePath, str], config: str = DEFAULT_CONFIG_FILE, domains: Union[FilePath, str, None] = None) -> Optional[int]:
+def main(family: str, sample_size: Union[int, str, None], directory: Union[FilePath, str], config: Optional[str] = DEFAULT_CONFIG_FILE, domains: Union[FilePath, str, None] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
+    
+    if config is None:
+        config = DEFAULT_CONFIG_FILE
     
     datadir = FilePath(directory)
     

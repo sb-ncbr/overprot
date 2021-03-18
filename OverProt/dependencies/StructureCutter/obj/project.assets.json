@@ -1,0 +1,111 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "System.Json/4.5.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/System.Json.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/System.Json.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "System.Json/4.5.0": {
+      "sha512": "qa/n31qUQ1qEACgCCHVU20BEvkGQtIlOANSjn9TjmRnxDl/KSYrRzTS83iOuCSr/37BfueFSXHobhZhNUksqVQ==",
+      "type": "package",
+      "path": "system.json/4.5.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/Xamarinmac20/_._",
+        "lib/monoandroid10/_._",
+        "lib/monotouch10/_._",
+        "lib/netstandard1.0/System.Json.dll",
+        "lib/netstandard2.0/System.Json.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/Xamarinmac20/_._",
+        "ref/monoandroid10/_._",
+        "ref/monotouch10/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.json.4.5.0.nupkg.sha512",
+        "system.json.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETCoreApp,Version=v3.1": [
+      "System.Json >= 4.5.0"
+    ]
+  },
+  "packageFolders": {
+    "/home/adam/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/home/adam/Workspace/Python/OverProt/overprot/OverProt/dependencies/StructureCutter/StructureCutter.csproj",
+      "projectName": "StructureCutter",
+      "projectPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProt/dependencies/StructureCutter/StructureCutter.csproj",
+      "packagesPath": "/home/adam/.nuget/packages/",
+      "outputPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProt/dependencies/StructureCutter/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/home/adam/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "netcoreapp3.1"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "netcoreapp3.1": {
+        "dependencies": {
+          "System.Json": {
+            "target": "Package",
+            "version": "[4.5.0, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/3.1.404/RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}
