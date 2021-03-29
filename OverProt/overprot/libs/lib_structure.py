@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Any, Union
 
@@ -110,9 +111,14 @@ class Structure(dict):
             return False
         return True
 
-    def get_alpha_trace(self) -> 'Structure':
+    def get_alpha_trace(self, remove_repeating_resi=False) -> 'Structure':
         mask = np.logical_and.reduce((self.symbol == 'C', self.name == 'CA', self.resi != None))  # type: ignore
-        return self.filter(mask)
+        result = self.filter(mask)
+        if remove_repeating_resi:
+            nonrep_mask = np.ones(result.count, dtype=bool)
+            nonrep_mask[1:] = result.resi[1:] != result.resi[:-1]
+            result = result.filter(nonrep_mask)
+        return result
 
     def get_sequence(self, assume_alpha_trace=False) -> str:
         if assume_alpha_trace:
@@ -143,3 +149,5 @@ class Structure(dict):
             lines.append(' '.join(str(col[i]) for col in columns))
         return '\n'.join(lines)
 
+    def save_cif(self, filename: Path) -> None:
+        filename.write_text(self.to_cif())

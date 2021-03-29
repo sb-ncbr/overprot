@@ -3,4 +3,5 @@
         "--rcfile",
         "./.bashrc"
     ],
+    "git.ignoreLimitWarning": true,
 }

@@ -63,7 +63,7 @@ http {
 	server {
 		# SECSTRANNOTATOR
 		listen      80;
-		server_name entangl.ncbr.muni.cz annotator.*;
+		server_name sestra.ncbr.muni.cz sestra.*;
 
 		root        /server_data/annotator_data;
 		location / {

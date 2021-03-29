@@ -299,7 +299,7 @@ def include_protein_distance(sse_distance, protein_distance, offsets, overwrite=
 def dynprog_matrices(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.'''
     m, n = scores.shape
-    cumulative = np.zeros((m+1, n+1))
+    cumulative = np.zeros((m+1, n+1), dtype=scores.dtype)
     direction = np.zeros((m, n), dtype=np.int32)
     for i in range(1, m+1):
         for j in range(1, n+1):
@@ -314,16 +314,18 @@ def dynprog_matrices(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 def dynprog_matrices_diagonal_method(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.
     Equivalent to dynprog_matrices(), but faster.'''
-    INT_TYPE = np.int32
+    score_type = scores.dtype
+    direction_type = np.int8
+    # INT_TYPE = np.int32
     m, n = scores.shape
     M, N = m+1, n+1  # size for cumulative matrices
     if m == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N))
-        direction = np.full((m, n), FROM_LEFT, dtype=np.int32)
+        cumulative = np.zeros((M, N), dtype=score_type)
+        direction = np.full((m, n), FROM_LEFT, dtype=direction_type)
         return cumulative, direction
     if n == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N))
-        direction = np.full((m, n), FROM_TOP, dtype=np.int32)
+        cumulative = np.zeros((M, N), dtype=score_type)
+        direction = np.full((m, n), FROM_TOP, dtype=direction_type)
         return cumulative, direction
     N1 = N - 1
     MN = M*N
@@ -333,8 +335,8 @@ def dynprog_matrices_diagonal_method(scores: np.ndarray) -> Tuple[np.ndarray, np
     n1n1 = n1*n1
     if n1 == 0:  # Special case when scores.shape == (m, 1); the line assigning to on_diag would raise ValueError('slice step cannot be zero') without these 2 lines
         n1 = 1
-    cumulative = np.empty((M, N))
-    direction = np.empty((m, n), dtype=INT_TYPE)
+    cumulative = np.empty((M, N), dtype=score_type)
+    direction = np.empty((m, n), dtype=direction_type)
     cumulative[0, :] = cumulative[:, 0] = 0
     # first row and column in direction will never be read (hopefully), but I filled them just to be sure
     cumulative_ = cumulative.ravel()
@@ -403,11 +405,11 @@ def dynprog_matrices_diagonal_method2(scores: np.ndarray) -> Tuple[float, np.nda
     m, n = scores.shape
     M, N = m+1, n+1  # size for cumulative matrices
     if m == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N))
+        cumulative = np.zeros((M, N), dtype=scores.dtype)
         direction = np.full((M, N), FROM_LEFT, dtype=np.int32)
         return 0, direction
     if n == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N))
+        cumulative = np.zeros((M, N), dtype=scores.dtype)
         direction = np.full((M, N), FROM_TOP, dtype=np.int32)
         return 0, direction
     anti_cum = Antidiagonals((M, N))
@@ -585,13 +587,13 @@ def n_antidiagonals(X: np.ndarray) -> int:
     m, n = X.shape
     return m + n - 1
 
-def dynprog_align2(scores: np.ndarray, include_nonmatched=False) -> Tuple[Matching, float]:
-    m, n = scores.shape
-    with lib.Timing('new'):
-        total_score, direction = dynprog_matrices_diagonal_method2(scores)
-    matching = trace_direction_matrix(direction, include_nonmatched)
-    # total_score = cumulative[m, n]
-    return matching, total_score
+# def dynprog_align2(scores: np.ndarray, include_nonmatched=False) -> Tuple[Matching, float]:
+#     m, n = scores.shape
+#     with lib.Timing('new'):
+#         total_score, direction = dynprog_matrices_diagonal_method2(scores)
+#     matching = trace_direction_matrix(direction, include_nonmatched)
+#     # total_score = cumulative[m, n]
+#     return matching, total_score
 
 def dynprog_total_scores_each_to_each(scores, offsets):
     n = len(offsets) - 1

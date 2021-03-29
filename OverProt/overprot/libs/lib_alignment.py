@@ -256,7 +256,7 @@ def dist(structfileA: FilePath, structfileB: FilePath, with_cealign=True, with_i
     Prototype!
     '''
     if with_cealign:
-        cealign_result = lib_pymol.cealign(structfileA, structfileB)
+        cealign_result = lib_pymol.cealign(structfileA, structfileB, fallback_to_dumb_align=True)
         R = cealign_result.rotation
         t = cealign_result.translation
     else:
@@ -332,7 +332,10 @@ def edit_distance_weighted_and_matching(A: WeightedCoordinates, B: WeightedCoord
     '''Calculate edit-distance of two weighted structures. Adding/removing a point costs 1/2, moving point cost depends on the distance.
     (Don't perform cealign nor iterative refinement)'''
     score_matrix = bound_dist_dynprog_score_matrix(A, B, R0=10)
+    # MAX_SCORE, MAX_ELEMENTS, SCORE_TYPE = 2**16, 2**16 - 1, np.uint32
+    # score_matrix = (score_matrix * MAX_SCORE).astype(SCORE_TYPE)
     matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score_matrix, include_nonmatched=True)
+    # total_score = total_score / MAX_SCORE
     distance = 0.5 * (A.relative_weights.sum() + B.relative_weights.sum()) - total_score
     return distance, matching
 

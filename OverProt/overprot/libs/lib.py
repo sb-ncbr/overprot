@@ -709,17 +709,21 @@ class Timing:
         self.name = name
         self.file = sys.stdout if file == 'stdout' else sys.stderr if file == 'stderr' else file
         self.mute = mute
+        self.time = None
     def __enter__(self):
         if not self.mute:
             self.t0 = datetime.now()
+        return self
     def __exit__(self, *args):
         if not self.mute:
             dt = datetime.now() - self.t0
+            self.time = dt
             if self.name is not None:
                 message = f'Timing: {self.name}: {dt}'
             else:
                 message = f'Timing: {dt}'
             print(message, file=self.file)
+
 
 
 class Tee:

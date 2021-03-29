@@ -66,3 +66,12 @@
 </div>
 
 {% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript'>
+    initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
+</script>
+
+{% endblock %}

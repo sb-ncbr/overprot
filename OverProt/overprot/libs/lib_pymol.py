@@ -32,24 +32,53 @@ def extract_alpha_trace(input_structfile: FilePath, output_structfile: FilePath)
     cmd.save(output_structfile, obj)
     cmd.delete(obj)
 
-def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath] = None) -> CealignResult:
+def cealign_old(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath] = None) -> CealignResult:
     '''Perform structure superimposition with cealign command and return details.
     If result_file is not None, save transformed mobile structure.'''
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
-    # with lib.Timing('load+cealign'):
     cmd.load(target_file, obj_target)
     cmd.load(mobile_file, obj_mobile)
-    if result_file is not None:
-        # with lib.Timing('cealign'):
-        result = cmd.cealign(obj_target, obj_mobile, transform=1)
-        cmd.save(result_file, obj_mobile)
-    else:
-        # with lib.Timing('cealign'):
-        result = cmd.cealign(obj_target, obj_mobile, transform=0)
-    cmd.delete(obj_target)
-    cmd.delete(obj_mobile)
+    try:
+        if result_file is not None:
+            result = cmd.cealign(obj_target, obj_mobile, transform=1)
+            cmd.save(result_file, obj_mobile)
+        else:
+            result = cmd.cealign(obj_target, obj_mobile, transform=0)
+    finally:
+        cmd.delete(obj_target)
+        cmd.delete(obj_mobile)
     result['rotation'], result['translation'] = ttt_matrix_to_rotation_translation(result['rotation_matrix'])
     return CealignResult(**result)
+    # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
+    # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
+
+def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath] = None, fallback_to_dumb_align: bool = False) -> CealignResult:
+    '''Perform structure superimposition with cealign command and return details.
+    If result_file is not None, save transformed mobile structure.'''
+    obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
+    cmd.load(target_file, obj_target)
+    cmd.load(mobile_file, obj_mobile)
+    try:
+        if result_file is not None:
+            raw_result = cmd.cealign(obj_target, obj_mobile, transform=1)
+            cmd.save(result_file, obj_mobile)
+        else:
+            raw_result = cmd.cealign(obj_target, obj_mobile, transform=0)
+
+        raw_result['rotation'], raw_result['translation'] = ttt_matrix_to_rotation_translation(raw_result['rotation_matrix'])
+        return CealignResult(**raw_result)
+    except CmdException:
+        target_name = target_file.name
+        mobile_name = mobile_file.name
+        if fallback_to_dumb_align:
+            print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
+            return dumb_align(target_file, mobile_file, result_file)
+        else:
+            print(f'Warning: cealign({target_name}, {mobile_name}) failed', file=sys.stderr)
+            raise
+    finally:
+        cmd.delete(obj_target)
+        cmd.delete(obj_mobile)
     # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
     # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
 
@@ -81,15 +110,17 @@ def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result
             bar.step()
         cmd.delete(obj_target)
 
-def dumb_align(target_file: FilePath, mobile_file: FilePath, result_file: FilePath) -> None:
+def dumb_align(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath]) -> CealignResult:
     target = read_cif(target_file, only_polymer=True)
     mobile = read_cif(mobile_file, only_polymer=True)
     T = target.coords[:, target.name=='CA']
     M = mobile.coords[:, mobile.name=='CA']
     R, t, rmsd = superimpose3d.dumb_align(M, T)
-    mobile.coords = superimpose3d.rotate_and_translate(mobile.coords, R, t)
-    with open(result_file, 'w') as w:
-        w.write(mobile.to_cif())
+    if result_file is not None:
+        mobile.coords = superimpose3d.rotate_and_translate(mobile.coords, R, t)
+        with open(result_file, 'w') as w:
+            w.write(mobile.to_cif())
+    return CealignResult(None, rmsd, None, R, t)
 
 def ttt_matrix_to_rotation_translation(ttt_matrix: np.ndarray) -> RotationTranslation:
     '''Convert PyMOL pseudo-rotation matrix (ttt_matrix) to rotation and translation matrices (A' = rotation @ A + translation)'''
