@@ -7,6 +7,8 @@
     <link rel='stylesheet' type='text/css' href='/static/web/autocomplete.css'>
     <link rel='stylesheet' type='text/css' href='/static/overprot-viewer/overprot-viewer.min.css'>
 
+    <title>{% block title %} OverProt {% endblock %}</title>
+
     <script src="/static/web/bootstrap/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="/static/web/bootstrap/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="/static/web/bootstrap/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
@@ -15,8 +17,16 @@
     <script type='text/javascript' src='/static/overprot-viewer/overprot-viewer.min.js'></script>
     <script type='text/javascript' src='/static/web/autocomplete.js'></script>
 
-
-    <title>{% block title %}OverProt Server{% endblock %}</title>
+    {% block google_analytics %}
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RQTF6J9NSX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-RQTF6J9NSX');
+    </script>
+    {% endblock %}
 
     {% block head %}{% endblock %}
 </head>

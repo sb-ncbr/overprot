@@ -50,7 +50,6 @@ def process_job(job_id: str):
         proc_stdout = proc.stdout
         proc_stderr = proc.stderr
         successfull = proc.returncode==0
-        Path(DB_DIR_RUNNING, job_id, 'pica.txt').write_text(f'code: {proc_returncode}')
     except subprocess.TimeoutExpired as ex:
         proc_returncode = None
         proc_stdout = anystr_to_str(ex.stdout)

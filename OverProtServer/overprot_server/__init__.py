@@ -76,11 +76,16 @@ def submission_post() -> Any:
     job_status, qid = queuing.enqueue_job(job_name, domain_list, job_info)
     job_id = job_status.id
 
-    return flask.redirect(flask.url_for('submission_get', job_id=job_id))
+    return flask.redirect(flask.url_for('submitted', job_id=job_id))
+    # return flask.redirect(flask.url_for('job', job_id=job_id))
 
+@app.route('/submitted/<string:job_id>')
+def submitted(job_id: str) -> Any:
+    '''Show Submitted page (meaning that the job has been submitted successfully), which just sends GoogleAnalytics and redirects to /job/<job_id>.'''
+    return flask.render_template('submitted.html', job_id=job_id)
 
-@app.route('/submission/<string:job_id>', methods=['GET'])
-def submission_get(job_id: str) -> Any:
+@app.route('/job/<string:job_id>', methods=['GET'])
+def job(job_id: str) -> Any:
     job_status = queuing.JobStatusInfo.load_for_job(job_id)
     if job_status.status == queuing.JobStatus.NONEXISTENT:
         return ResponseTuple.plain(f'Job {job_id} does not exist.', status=HTTPStatus.NOT_FOUND)

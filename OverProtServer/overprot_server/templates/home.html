@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 
+{% block title %} OverProt - Home {% endblock %}
+
+
 {% block content %}
 
 <div class="row">
@@ -57,7 +60,7 @@
     <div class="col-12 col-sm-6 col-lg-3">
         <h3 class="text-center">Cytochrome P450</h3>
         <a href="/view?family=1.10.630.10">
-            <img src='/data/db/consensus_3d/consensus-1.10.630.10.png' alt='Cytochromes P450' class="img-fluid d-block mx-auto" style="max-height: 200px;">
+            <img src='/data/db/consensus_3d/consensus-1.10.630.10.png' alt='Cytochromes P450' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
         </a>
         <p class="text-justify mt-1">
             <strong>Cytochromes P450 (CYPs)</strong> are a family of enzymes (CATH ID 1.10.630.10) containing heme as a cofactor that function as monooxygenases.
@@ -87,12 +90,12 @@
         </div>
         <div class="row">
             <div class="col">
-                <a href="/submission/arch-lipocalin-8" title="Lipocalin sample (8-stranded)">
+                <a href="/job/arch-lipocalin-8" title="Lipocalin sample (8-stranded)">
                     <img src='/static/images/consensus_3D_2.40.128.20_funfam2_sample20.png' alt='Lipocalin FunFam2 sample' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
                 </a>
             </div>
             <div class="col">
-                <a href="/submission/arch-lipocalin-10" title="Lipocalin sample (10-stranded)">
+                <a href="/job/arch-lipocalin-10" title="Lipocalin sample (10-stranded)">
                     <img src='/static/images/consensus_3D_2.40.128.20_funfam1_sample20.png' alt='Lipocalin FunFam1 sample' onerror="this.onerror=null; this.src='/static/images/lorem-picture.png';" class="img-fluid d-block mx-auto" style="max-height: 200px;">
                 </a>
             </div>
