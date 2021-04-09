@@ -1051,8 +1051,8 @@ class FilePath(os.PathLike, object):
         return [FilePath(match) for match in matches]
 
     def archive_to(self, dest: 'FilePath') -> 'FilePath':
-        fmt = dest.suffix.lstrip('.')
-        archive = shutil.make_archive(str(dest.with_suffix('')), fmt, str(self))
+        fmt = dest.ext.lstrip('.')
+        archive = shutil.make_archive(str(dest.parent().sub(dest.name)), fmt, str(self))
         return FilePath(archive)
 
 

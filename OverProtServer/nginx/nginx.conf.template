@@ -79,6 +79,26 @@ http {
 	}
 
 	server {
+		# SECSTRANNOTATOR - HTTPS
+		listen              443 ssl;
+		server_name         sestra.ncbr.muni.cz sestra.*;
+		ssl_certificate     /server_data/annotator_ssl/1616580846.pem;
+		ssl_certificate_key /server_data/annotator_ssl/key.pem;
+
+		root        /server_data/annotator_data;
+		location / {
+			proxy_pass http://localhost:5000;  # Gunicorn should run on 5000
+			proxy_set_header Host              $http_host;
+			proxy_set_header X-Real-IP         $remote_addr;
+			proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+			proxy_set_header X-Forwarded-Proto $scheme;
+			client_max_body_size 70M;
+		}
+		location /data/ {
+		}
+	}
+
+	server {
 		# OVERPROT
 		listen 80 default_server;
 

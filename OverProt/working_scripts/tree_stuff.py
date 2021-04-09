@@ -3,22 +3,72 @@ import numpy as np
 from numba import jit
 from pathlib import Path
 from matplotlib import pyplot as plt
-from typing import List, Optional, Union, Tuple
+from dataclasses import dataclass
+from typing import List, Optional, Union, Tuple, Literal
+from numpy import ndarray as Array
+np.seterr(all='raise')
 
+from overprot.libs import lib
 from overprot.libs import lib_alignment
 from overprot.libs import lib_pymol
 from overprot.libs import lib_acyclic_clustering_simple
 from overprot.libs.lib_structure import Structure
 from overprot.libs.lib import Timing, ProgressBar
 from overprot.libs.lib_similarity_trees.nntree import NNTree
+from overprot.libs.lib_similarity_trees.ghtree import GHTree
+from overprot.libs.lib_similarity_trees.mtree import MTree
+
+Array1D = Array2D = Array3D = Array4D = Array
 
 DATA = Path('/home/adam/Workspace/Python/OverProt/data-ssd/tree/sample885')
+# DATA = Path('/home/adam/Workspace/Python/OverProt/data-ssd/tree/sample40')
 SAMPLE_JSON = DATA / 'sample.json'
 STRUCTURES = DATA / 'structures_cif'
 ALPHAS_CIF = DATA / 'alphas_cif'
 ALPHAS_CSV = DATA / 'alphas_csv'
 ALPHAS_NPY = DATA / 'alphas_npy'
+RESULTS = DATA / 'results'
 EPSILON = 1e-4
+
+# SHAPE_LEN = 4
+SHAPE_LEN = 5
+
+
+@dataclass
+class StructInfo(object):
+    name: str
+    _coords: Optional[Array2D] = None
+    _shapes: Optional[Array3D] = None
+    @property
+    def coords(self) -> Array2D:
+        if self._coords is None:
+            self._coords = np.load(ALPHAS_NPY/f'{self.name}.npy')
+        return self._coords
+    @property
+    def shapes(self) -> Array3D:
+        if self._shapes is None:
+            self._shapes = get_shapes(self.coords)
+            _n, _s, _3 = self._shapes.shape
+            assert _n == self.n
+            assert _s == SHAPE_LEN
+            assert _3 == 3
+        return self._shapes
+    @property
+    def n(self) -> int:
+        return self.coords.shape[0]
+    def __len__(self) -> int:
+        return self.n
+    def __str__(self) -> str:
+        return f'[Structure {self.name} ({len(self)})]'
+    @property
+    def alphas_cif(self) -> Path:
+        return ALPHAS_CIF / f'{self.name}.cif'
+    @property
+    def alphas_csv(self) -> Path:
+        return ALPHAS_CSV / f'{self.name}.csv'
+    @property
+    def alphas_npy(self) -> Path:
+        return ALPHAS_NPY / f'{self.name}.npy'
 
 def get_domains(n: int, create_choice: Optional[bool] = None) -> List[str]:
     if create_choice is None:
@@ -44,10 +94,17 @@ def get_domains(n: int, create_choice: Optional[bool] = None) -> List[str]:
     domains = [domfam.split('/')[0] for domfam in domains_with_families]
     return domains
 
+def download_structures() -> None:
+    sample = json.loads(SAMPLE_JSON.read_text())
+    sample_simple = []
+    for family, domains in sample.items():
+        for domain in domains:
+            sample_simple.append((domain['pdb'], domain['domain'], domain['chain_id'], domain['ranges']))
+    (DATA/'sample.simple.json').write_text(json.dumps(sample_simple))
+    STRUCTURE_CUTTER = '/home/adam/Workspace/Python/OverProt/overprot/OverProt/dependencies/StructureCutter/bin/Release/netcoreapp3.1/StructureCutter.dll'
+    lib.run_dotnet(STRUCTURE_CUTTER, DATA/'sample.simple.json', '--sources', 'http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif', '--cif_outdir', STRUCTURES) 
 
 def create_alphas() -> None:
-    # representants = json.loads(REPRS_JSON.read_text())
-    # domains = [rep['domain'] for rep in representants]
     domains = [file.stem for file in STRUCTURES.glob('*.cif')]
     ALPHAS_CIF.mkdir(parents=True, exist_ok=True)
     ALPHAS_CSV.mkdir(parents=True, exist_ok=True)
@@ -63,84 +120,36 @@ def create_alphas() -> None:
             np.save(ALPHAS_NPY / f'{domain}.npy', coords)
             bar.step()
 
-def cealign_try(n=10, create_choice=False):
-    domains = get_domains(n, create_choice=create_choice)
-    dist = np.zeros((n,n))
-    with Timing(f'Cealign each-to-each ({n} structures)') as timing:
-        with ProgressBar(n, title=f'Cealign each-to-each ({n} structures)') as bar:
-            for i in range(n):
-                for j in range(n):
-                    A = domains[i]
-                    B = domains[j]
-                    # c = lib_pymol.cealign(ALPHAS/f'{A}.cif', ALPHAS/f'{B}.cif')
-                    try:
-                        d = lib_alignment.dist(ALPHAS_CIF/f'{A}.cif', ALPHAS_CIF/f'{B}.cif')
-                    except lib_pymol.CmdException:
-                        d = -1.0
-                    dist[i,j] = d
-                    # print(d)
-                bar.step()
-
-    print('Per one:', timing.time / n**2)
-    np.savetxt(DATA / f'dist_{n}x{n}.csv', dist)
-    np.save(DATA / f'dist_{n}x{n}.npy', dist)
-
-def cealign_try2(n=10):
-    representants = json.loads(SAMPLE_JSON.read_text())
-    domains = Path.read_text(DATA/f'choice_{n}.txt').split()
-    i = 156
-    dist = np.zeros((n,))
-    n_aln = np.zeros((n,), dtype=int)
-    rmsd = np.zeros((n,))
-    
-    with Timing(f'Cealign 1-to-each ({n} structures)') as timing:
-        with ProgressBar(n, title=f'Cealign 1-to-each ({n} structures)') as bar:
-            for j in range(n):
-                A = domains[i]
-                B = domains[j]
-                # c = lib_pymol.cealign(ALPHAS/f'{A}.cif', ALPHAS/f'{B}.cif')
-                try:
-                    d = lib_alignment.dist(ALPHAS_CIF/f'{A}.cif', ALPHAS_CIF/f'{B}.cif')
-                    # d = lib_pymol.cealign(ALPHAS/f'{A}.cif', ALPHAS/f'{B}.cif')
-                except lib_pymol.CmdException:
-                    d = -1.0
-                dist[j] = d
-                bar.step()
-
-    print('Per one:', timing.time / n)
-    np.savetxt(DATA / f'dist_1x{n}.csv', dist)
-    print(dist.min(), dist.max())
-
 def visualize_matrix(n=10):
-    mat = np.loadtxt(DATA / f'dist_{n}x{n}.csv')
+    mat = np.loadtxt(RESULTS / f'dist_{n}x{n}.csv')
     plt.imshow(mat)
-    plt.savefig(DATA/f'dist_{n}x{n}.png')
+    plt.savefig(RESULTS/f'dist_{n}x{n}.png')
     print(mat.min(), mat.max())
 
 @jit(nopython=True)
-def normalize(x: np.ndarray, axis: int) -> None:
+def normalize(x: Array, axis: int) -> Array:
     norm = np.sqrt(np.sum(x**2, axis=axis))
     norm = np.expand_dims(norm, axis=axis)
     return x / norm
 
 @jit(nopython=True)
-def normalize_inplace(x: np.ndarray, axis: int) -> None:
+def normalize_inplace(x: Array, axis: int) -> None:
     norm = np.sqrt(np.sum(x**2, axis=axis))
     norm = np.expand_dims(norm, axis=axis)
     x /= norm
 
 @jit(nopython=True)
-def fake_matmul(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+def fake_matmul(A: Array3D, B: Array3D) -> Array3D:
+    '''Matrix multiplication in axes 1, 2, broadcasted along axis 0.'''
     n, a, b = A.shape
     n, b, c = B.shape
     C = np.zeros((n, a, c), dtype=A.dtype)
     for i in range(a):
-        # for j in range(c):
-            C[:, i, :] += np.sum(np.expand_dims(A[:,i,:], axis=-1) * B[:,:,:], axis=1)
+        C[:, i, :] += np.sum(np.expand_dims(A[:,i,:], axis=-1) * B[:,:,:], axis=1)
     return C
 
 @jit(nopython=True)
-def get_shapes(coords: np.ndarray) -> np.ndarray:  # (n, 3) -> (n, k, 3); k = 4
+def get_shapes1(coords: Array2D) -> Array3D:  # (n, 3) -> (n, k, 3); k = 4
     coord_type = coords.dtype
     # TODO compare float64 (default numpy) vs float32 (coords for some reason)
     n, _3 = coords.shape
@@ -171,7 +180,86 @@ def get_shapes(coords: np.ndarray) -> np.ndarray:  # (n, 3) -> (n, k, 3); k = 4
     return shapes
 
 @jit(nopython=True)
-def get_shapes_nice(coords: np.ndarray, omit_center: bool = True) -> np.ndarray:  # (n, 3) -> (n, k, 3); k = 5
+def get_shapes2(coords: Array2D) -> Array3D:  # (n, 3) -> (n, k, 3); k = 4
+    coord_type = coords.dtype
+    # TODO compare float64 (default numpy) vs float32 (coords for some reason)
+    n, _3 = coords.shape
+    assert _3 == 3
+    assert n >= 5
+    shape_length = 4
+    shapes = np.empty((n, shape_length, 3), dtype=coord_type) 
+    center = coords[2:n-2, :]
+    q0 = coords[0:n-4, :] - center
+    q1 = coords[1:n-3, :] - center
+    # q2 == center - center == 0
+    q3 = coords[3:n-1, :] - center
+    q4 = coords[4:n, :] - center
+    q01 = q0+q1
+    q34 = q3+q4
+    # chi = q3 - q1
+    # psi = np.cross(-q1, q3)  # psi==np.cross(q2-q1, q3-q2), but q2==0
+    chi = q34 - q01
+    psi = np.cross(-q01, q34)  # psi==np.cross(q2-q1, q3-q2), but q2==0
+    omega = np.cross(chi, psi)
+    chipsiomega = np.stack((chi, psi, omega), axis=-1)  # Transformation from x-y-z to chi-psi-omega coords
+    normalize_inplace(chipsiomega, axis=1)
+    quints = np.stack((q0, q1, q3, q4), axis=1)  # center point q2 is omitted because it is 0
+    # Numba.jit cannot compile this: 
+    # shapes[2:n-2, :, :] = centered_quints @ chipsiomega
+    # Still the following loop with jit is faster than the previous line without jit
+    for i in range(n-4):
+        shapes[i+2, :, :] = quints[i] @ chipsiomega[i]
+    # Fill missing values:
+    shapes[0] = shapes[1] = shapes[2]
+    shapes[-1] = shapes[-2] = shapes[-3]
+    return shapes
+
+# @jit(nopython=True)
+def get_shapes(coords: Array2D) -> Array3D:  # (n, 3) -> (n, SHAPE_LEN, 3)
+    coord_type = coords.dtype
+    # TODO compare float64 (default numpy) vs float32 (coords for some reason)
+    n, _3 = coords.shape
+    assert _3 == 3
+    assert n >= 5
+    shapes = np.empty((n, SHAPE_LEN, 3), dtype=coord_type) 
+    q0 = coords[0:n-4, :]
+    q1 = coords[1:n-3, :]
+    q2 = coords[2:n-2, :]
+    q3 = coords[3:n-1, :]
+    q4 = coords[4:n, :]
+    center = (q0+q1+q2+q3+q4)/5
+    q0 = q0 - center
+    q1 = q1 - center
+    q2 = q2 - center
+    q3 = q3 - center
+    q4 = q4 - center
+    quints = np.stack((q0, q1, q2, q3, q4), axis=1)
+    q01 = 0.5*(q0+q1)
+    q34 = 0.5*(q3+q4)
+    
+    chi = q34 - q01
+    psi_ = q2 - 0.5 * (q1+q3)
+    omega = np.cross(chi, psi_)
+    psi = np.cross(omega, chi)
+    
+    # chi = q3 - q1
+    # psi = np.cross(q2-q1, q3-q2)
+    # omega = np.cross(chi, psi)
+    
+    chipsiomega = np.stack((chi, psi, omega), axis=-1)  # Transformation from x-y-z to chi-psi-omega coords
+    normalize_inplace(chipsiomega, axis=1)
+    # Numba.jit cannot compile this: 
+    # shapes[2:n-2, :, :] = centered_quints @ chipsiomega
+    # Still the following loop with jit is faster than the previous line without jit
+    for i in range(n-4):
+        shapes[i+2, :, :] = quints[i] @ chipsiomega[i]
+    # Fill missing values:
+    shapes[0] = shapes[1] = shapes[2]
+    shapes[-1] = shapes[-2] = shapes[-3]
+    return shapes
+
+@jit(nopython=True)
+def get_shapes_nice(coords: Array2D, omit_center: bool = True) -> Array3D:  # (n, 3) -> (n, k, 3); k = 5
     '''This should be more readable (but slow) implementation of get_shapes'''
     n, _3 = coords.shape
     assert _3 == 3
@@ -192,7 +280,7 @@ def get_shapes_nice(coords: np.ndarray, omit_center: bool = True) -> np.ndarray:
         shapes = np.stack((shapes[:,0,:], shapes[:,1,:], shapes[:,3,:], shapes[:,4,:]), axis=1)
     return shapes
 
-def matrix_info(name: str, A: np.ndarray) -> None:
+def matrix_info(name: str, A: Array) -> None:
     print(name, ':', A.shape, A.dtype, 'min:', A.min(), 'max:', A.max())
 
 def length_dist_min(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str]) -> float:
@@ -209,25 +297,23 @@ def length_dist_max(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, 
     n, _3 = coordsB.shape; assert _3 == 3
     return 0.5 * (m + n)
 
+DIST_TYPE = 's+op'
 SHAPEDIST_MAX_RMSD = 7.0  #5.0
-# VERSION_NAME = '-maxrmsd7'
-OPDIST_MAX_RMSD = 15.0
 OPDIST_SCORE_TYPE = 'linear'  # 'exponential'|'linear'
-VERSION_NAME = '-sop-maxrmsd7*lin15'
+OPDIST_MAX_RMSD = 15
+# VERSION_NAME = '-v3maxrmsd7'
+# VERSION_NAME = '-op-lin15'
+VERSION_NAME = '-s+op-v3maxrmsd7-lin15'  # so far the best is s+op-v3maxrmsd7-lin15 (best in classifying against CATH)
 # best options: exp20, lin15 (based on sample885)
 
-def op_score(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str], rot_trans: Optional[Tuple[np.ndarray, np.ndarray]] = None) -> np.ndarray:
-    coordsA = np.load(ALPHAS_NPY/f'{domainA}.npy') if isinstance(domainA, str) else domainA
-    m, _3 = coordsA.shape; assert _3 == 3
-    coordsB = np.load(ALPHAS_NPY/f'{domainB}.npy') if isinstance(domainB, str) else domainB
-    n, _3 = coordsB.shape; assert _3 == 3
+def op_score(domainA: StructInfo, domainB: StructInfo, rot_trans: Optional[Tuple[Array2D, Array2D]] = None) -> Tuple[Array2D, Tuple[Array2D, Array2D]]:
     if rot_trans is None:
-        cealign = lib_pymol.cealign(ALPHAS_CIF/f'{domainA}.cif', ALPHAS_CIF/f'{domainB}.cif', fallback_to_dumb_align=True)
-        R, t = cealign.rotation.T, cealign.translation.T  # convert matrices from column style (3, n) to row style (n, 3)
-    else:
-        R, t = rot_trans
-    coordsB = coordsB @ R + t
-    r = np.sqrt(np.sum((coordsA.reshape((m, 1, 3)) - coordsB.reshape((1, n, 3)))**2, axis=2))
+        cealign = lib_pymol.cealign(domainA.alphas_cif, domainB.alphas_cif, fallback_to_dumb_align=True)
+        rot_trans = cealign.rotation.T, cealign.translation.T  # convert matrices from column style (3, n) to row style (n, 3)
+    R, t = rot_trans
+    coordsA = domainA.coords
+    coordsB = domainB.coords @ R + t
+    r = np.sqrt(np.sum((coordsA.reshape((domainA.n, 1, 3)) - coordsB.reshape((1, domainB.n, 3)))**2, axis=2))
     if OPDIST_SCORE_TYPE == 'exponential':
         score = np.exp(-r / OPDIST_MAX_RMSD)
     elif OPDIST_SCORE_TYPE == 'linear':
@@ -235,148 +321,57 @@ def op_score(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str], r
         score[score < 0] = 0
     else: 
         raise AssertionError
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.hist(score.flatten())
-    # plt.savefig(DATA / f'score_hist_{domainA}_{domainB}.png')
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.imshow(score)
-    # plt.savefig(DATA / f'score_{domainA}_{domainB}.png')
-    # np.savetxt(DATA / f'score_{domainA}_{domainB}.csv', score)
-    return score
-    
+    return score, rot_trans
 
-def sop_dist(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str], shapesA: Optional[np.ndarray] = None, shapesB: Optional[np.ndarray] = None, rot_trans: Optional[Tuple[np.ndarray, np.ndarray]] = None) -> float:
-    coordsA = np.load(ALPHAS_NPY/f'{domainA}.npy') if isinstance(domainA, str) else domainA
-    m, _3 = coordsA.shape; assert _3 == 3
-    coordsB = np.load(ALPHAS_NPY/f'{domainB}.npy') if isinstance(domainB, str) else domainB
-    n, _3 = coordsB.shape; assert _3 == 3
-    if rot_trans is None:
-        cealign = lib_pymol.cealign(ALPHAS_CIF/f'{domainA}.cif', ALPHAS_CIF/f'{domainB}.cif', fallback_to_dumb_align=True)
-        R, t = cealign.rotation.T, cealign.translation.T  # convert matrices from column style (3, n) to row style (n, 3)
-    else:
-        R, t = rot_trans
-    coordsB = coordsB @ R + t
-    r = np.sqrt(np.sum((coordsA.reshape((m, 1, 3)) - coordsB.reshape((1, n, 3)))**2, axis=2))
-    if OPDIST_SCORE_TYPE == 'exponential':
-        score_op = np.exp(-r / OPDIST_MAX_RMSD)
-    elif OPDIST_SCORE_TYPE == 'linear':
-        score_op = 1 - r / OPDIST_MAX_RMSD
-        score_op[score_op < 0] = 0
-    else: 
-        raise AssertionError
-
-    SHAPE_LEN = 4
-    if shapesA is None:
-        coordsA = np.load(ALPHAS_NPY/f'{domainA}.npy') if isinstance(domainA, str) else domainA
-        m, _3 = coordsA.shape; assert _3 == 3
-        shapesA = get_shapes(coordsA)
-    else:
-        m, _SHAPE_LEN, _3 = shapesA.shape; assert _SHAPE_LEN == SHAPE_LEN; assert _3 == 3
-    if shapesB is None:
-        coordsB = np.load(ALPHAS_NPY/f'{domainB}.npy') if isinstance(domainB, str) else domainB
-        n, _3 = coordsB.shape; assert _3 == 3
-        shapesB = get_shapes(coordsB)
-    else:
-        n, _SHAPE_LEN, _3 = shapesB.shape; assert _SHAPE_LEN == SHAPE_LEN; assert _3 == 3
-    diff = shapesA.reshape((m, 1, SHAPE_LEN, 3)) - shapesB.reshape((1, n, SHAPE_LEN, 3))
-    sqerror = np.sum(diff**2, axis=(2, 3))
-    rmsd = np.sqrt(sqerror / SHAPE_LEN)
-    score_s = 1 - (rmsd / SHAPEDIST_MAX_RMSD)
-    score_s[score_s < 0] = 0
-
-    # score = 0.5 * (score_s + score_op)
-    score = score_s * score_op
-    
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.hist(score.flatten())
-    # plt.savefig(DATA / f'score_hist_{domainA}_{domainB}.png')
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.imshow(score)
-    # plt.savefig(DATA / f'score_{domainA}_{domainB}.png')
-    # np.savetxt(DATA / f'score_{domainA}_{domainB}.csv', score)
-    
-    matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
-    distance = 0.5 * (m + n) - total_score
-    return distance, R, t
-
-def op_dist(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str], rot_trans: Optional[Tuple[np.ndarray, np.ndarray]] = None) -> float:
-    coordsA = np.load(ALPHAS_NPY/f'{domainA}.npy') if isinstance(domainA, str) else domainA
-    m, _3 = coordsA.shape; assert _3 == 3
-    coordsB = np.load(ALPHAS_NPY/f'{domainB}.npy') if isinstance(domainB, str) else domainB
-    n, _3 = coordsB.shape; assert _3 == 3
-    if rot_trans is None:
-        cealign = lib_pymol.cealign(ALPHAS_CIF/f'{domainA}.cif', ALPHAS_CIF/f'{domainB}.cif', fallback_to_dumb_align=True)
-        R, t = cealign.rotation.T, cealign.translation.T  # convert matrices from column style (3, n) to row style (n, 3)
-    else:
-        R, t = rot_trans
-    coordsB = coordsB @ R + t
-    r = np.sqrt(np.sum((coordsA.reshape((m, 1, 3)) - coordsB.reshape((1, n, 3)))**2, axis=2))
-    if OPDIST_SCORE_TYPE == 'exponential':
-        score = np.exp(-r / OPDIST_MAX_RMSD)
-    elif OPDIST_SCORE_TYPE == 'linear':
-        score = 1 - r / OPDIST_MAX_RMSD
-        score[score < 0] = 0
-    else: 
-        raise AssertionError
-    
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.hist(score.flatten())
-    # plt.savefig(DATA / f'score_hist_{domainA}_{domainB}.png')
-    # matrix_info('score', score)
-    # plt.figure()
-    # plt.imshow(score)
-    # plt.savefig(DATA / f'score_{domainA}_{domainB}.png')
-    # np.savetxt(DATA / f'score_{domainA}_{domainB}.csv', score)
-    
-    matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
-    distance = 0.5 * (m + n) - total_score
-    return distance, R, t
-
-def shape_dist(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, str], shapesA: Optional[np.ndarray] = None, shapesB: Optional[np.ndarray] = None) -> float:
-    SHAPE_LEN = 4
-    if shapesA is None:
-        coordsA = np.load(ALPHAS_NPY/f'{domainA}.npy') if isinstance(domainA, str) else domainA
-        m, _3 = coordsA.shape; assert _3 == 3
-        shapesA = get_shapes(coordsA)
-    else:
-        m, _SHAPE_LEN, _3 = shapesA.shape; assert _SHAPE_LEN == SHAPE_LEN; assert _3 == 3
-    if shapesB is None:
-        coordsB = np.load(ALPHAS_NPY/f'{domainB}.npy') if isinstance(domainB, str) else domainB
-        n, _3 = coordsB.shape; assert _3 == 3
-        shapesB = get_shapes(coordsB)
-    else:
-        n, _SHAPE_LEN, _3 = shapesB.shape; assert _SHAPE_LEN == SHAPE_LEN; assert _3 == 3
-    diff = shapesA.reshape((m, 1, SHAPE_LEN, 3)) - shapesB.reshape((1, n, SHAPE_LEN, 3))
+def shape_score(domainA: StructInfo, domainB: StructInfo) -> Tuple[Array2D]:
+    diff = domainA.shapes.reshape((domainA.n, 1, SHAPE_LEN, 3)) - domainB.shapes.reshape((1, domainB.n, SHAPE_LEN, 3))
     sqerror = np.sum(diff**2, axis=(2, 3))
     rmsd = np.sqrt(sqerror / SHAPE_LEN)
     score = 1 - (rmsd / SHAPEDIST_MAX_RMSD)
     score[score < 0] = 0
-    
+    return score,
+   
+def sop_dist(type: Literal['s', 'op', 's+op', 's*op', 's_Opt', 's_Pes'], domainA: StructInfo, domainB: StructInfo, rot_trans: Optional[Tuple[Array2D, Array2D]] = None) -> Tuple[float, Optional[Tuple[Array2D, Array2D]]]:
+    if type == 's':
+        score, = shape_score(domainA, domainB)
+        rot_trans = None
+    elif type == 'op':
+        score, rot_trans = op_score(domainA, domainB, rot_trans)
+    elif type == 's+op':
+        score_s, = shape_score(domainA, domainB)
+        score_op, rot_trans = op_score(domainA, domainB, rot_trans=rot_trans)
+        score = 0.5 * (score_s + score_op)
+    elif type == 's_Opt':
+        score_s, = shape_score(domainA, domainB)
+        score = 0.5 * (score_s + 1)
+    elif type == 's_Pes':
+        score_s, = shape_score(domainA, domainB)
+        score = 0.5 * score_s
+    elif type == 's*op':
+        score_s, = shape_score(domainA, domainB)
+        score_op, rot_trans = op_score(domainA, domainB, rot_trans=rot_trans)
+        score = score_s * score_op
+    else:
+        raise AssertionError
     # matrix_info('score', score)
     # plt.figure()
     # plt.hist(score.flatten())
-    # plt.savefig(DATA / f'score_hist_{domainA}_{domainB}.png')
+    # plt.savefig(RESULTS / f'score_hist_{domainA}_{domainB}.png')
     # matrix_info('score', score)
     # plt.figure()
     # plt.imshow(score)
-    # plt.savefig(DATA / f'score_{domainA}_{domainB}.png')
-    # np.savetxt(DATA / f'score_{domainA}_{domainB}.csv', score)
-    
+    # plt.savefig(RESULTS / f'score_{domainA}_{domainB}.png')
+    # np.savetxt(RESULTS / f'score_{domainA}_{domainB}.csv', score)
     matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
-    distance = 0.5 * (m + n) - total_score
-    return distance
+    distance = 0.5 * (domainA.n + domainB.n) - total_score
+    return distance, rot_trans
 
 def test_shape_dist():
-    domains = '2nnj 1pq2 1og2 1tqn 1akd 6eye 1bpv 3mbt'.split()
+    domains = [StructInfo(dom) for dom in '2nnj 1pq2 1og2 1tqn 1akd 6eye 1bpv 3mbt'.split()]
     domA = domains[-1]
     with Timing(f'shape_dist * {len(domains)}'):
         for domB in domains:
-            shape_dist(domA, domB)
+            sop_dist('s', domA, domB)
 
 def test_shape():
     domA, domB = get_domains(2)
@@ -390,7 +385,7 @@ def test_shape():
     diff = shapesA - shapesA_
     error = np.sqrt(np.sum(diff**2))
     print('Diff (min, max, rse):', diff.min(), diff.max(), error)
-    k = 5_000
+    k = 500
     # with Timing(f'get_shapes_o=nice * {2*k}'):
     #     for i in range(k):
     #         shapesA = get_shapes_nice(coordsA)
@@ -401,68 +396,167 @@ def test_shape():
             shapesB = get_shapes(coordsB)
     assert error < EPSILON, error
 
+def make_lengths(n: int):
+    domains = [StructInfo(dom) for dom in get_domains(n)]
+    lengths = [dom.n for dom in domains]
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    np.savetxt(RESULTS / f'length_{n}.csv', lengths)
+
 def make_tree(n: int):
-    nntree = NNTree(shape_dist, with_nearest_pair_queue=True)
-    domains = get_domains(n)
-    dup = 1
-    structs = {domain: np.load(ALPHAS_NPY/f'{domain}.npy') for domain in domains}
-    with Timing() as timing, ProgressBar(dup*n, title=f'{dup}x adding {n} domains to NNTree') as bar:
-        for i in range(dup):
+    domains = [StructInfo(dom) for dom in get_domains(n)]
+    index = {dom.name: i for i, dom in enumerate(domains)}
+    try:
+        distances = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
+        precomputed = 'distances'
+        print('Using precomputed distances.')
+    except OSError:
+        try:
+            rotations: Array4D = np.load(RESULTS / f'rotations_{n}x{n}.npy')
+            translations: Array4D = np.load(RESULTS / f'translations_{n}x{n}.npy')
+            precomputed = 'alignment'
+            print('Using precomputed alignments.')
+        except FileNotFoundError:
+            rotations = np.zeros((n, n, 3, 3))
+            translations = np.zeros((n, n, 1, 3))
+            precomputed = 'nothing'
+            print('ALIGNING!!!')
+    if precomputed == 'distances':
+        distance_function = lambda a, b: distances[index[a.name], index[b.name]]
+    elif precomputed == 'alignment':
+        distance_function = lambda a, b: sop_dist('s+op', a, b, rot_trans=(rotations[index[a.name], index[b.name]], translations[index[a.name], index[b.name]]))[0]
+    else:
+        distance_function = lambda a, b: sop_dist('s+op', a, b)[0]
+    # ghtree = GHTree(distance_function)
+    # ghtree2 = GHTree(distance_function)
+    # mtree = MTree(distance_function)
+    # nntree = NNTree(distance_function)
+    n_dup = 50
+    k = 3 * n_dup
+
+    bulk_domains = [(f'{domain.name}_{i}', domain) for i in range(n_dup) for domain in np.random.permutation(domains)]
+    # bulk_domains = [(f'{domain.name}_{i}', domain) for i in range(n_dup) for domain in domains]
+    with Timing(f'{n_dup}x adding {n} domains to the tree') as timing, ProgressBar(n_dup*n, title=f'{n_dup}x adding {n} domains to the tree') as bar:
+        for domain_key, domain in bulk_domains:
+            # ghtree.insert(domain_key, domain)
+            # ghtree2.insert(domain_key, domain)
+            # nntree.insert(domain_key, domain)
+            # mtree.insert(domain_key, domain)
+            bar.step()
+        # ghtreeB = GHTree(distance_function, bulk_domains)
+        ghtreeBn = GHTree(distance_function, bulk_domains)
+    print('Per one:', timing.time / (n_dup*n))
+    # print(ghtree.get_statistics())
+    # print(ghtreeB.get_statistics())
+    print(ghtreeBn.get_statistics())
+    calcs_before = ghtreeBn._distance_cache._calculated_distances_counter
+    # print(nntree.get_statistics())
+    # print(mtree.get_statistics())
+
+    idx = 0
+    wrongies = 0
+    n_dup = 1
+    with Timing(f'{n_dup}x searching {n} domains in the tree') as timing, ProgressBar(n_dup*n, title=f'{n_dup}x searching {n} domains in the tree', mute=False) as bar:
+        for i in range(n_dup):
             for domain in np.random.permutation(domains):
-                struct = np.load(ALPHAS_NPY/f'{domain}.npy')
-                # struct = structs[domain]
-                nntree.insert(f'{domain}_{i}', struct)
+                idx += 1
+                # real_knn = sorted((distance_function(domain, other), f'{other.name}_{i}') for other in domains)[:k]
+                # knn = ghtree.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
+                # knnB = ghtreeB.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
+                # knnB = ghtreeB.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
+                # knnBn = ghtreeBn.kNN_query_classical_by_value(domain, k)
+                knnBn = ghtreeBn.kNN_query_classical_by_value_with_priority_queue(domain, k)
+                # knnM = mtree.kNN_query(f'{domain.name}_{i}', k, include_query=True)
+                # knnN = nntree.kNN_query_by_value(domain, k)
+                # rang = knn[-1][0]
+                # range_query = ghtree2.range_query(f'{domain.name}_{i}', rang)
+                # if [dom for dist, dom in knnBn] != [dom for dist, dom in real_knn]:
+                #     print('  Real kNN:', real_knn, 'Found kNN:', knnBn)
+                #     wrongies += 1
+                # if [dom for dist, dom in knn] != [dom for dist, dom in real_knn]:
+                #     print('  Real kNN:', real_knn, 'Found kNN:', knn)
+                # if [dom for dist, dom in knnN] != [dom for dist, dom in real_knn]:
+                #     wrongies += 1
+                #     # print('N Real kNN:', real_knn, 'Found kNN:', knnN)
                 bar.step()
-    print('Per one:', timing.time / (dup*n))
-    print(nntree.get_statistics())
+    print('Per one:', timing.time / (n_dup*n))
+    print('Wrongies:', wrongies)
+    # print(ghtree.get_statistics())
+    # print(ghtreeB.get_statistics())
+    print(ghtreeBn.get_statistics())
+    calcs_after = ghtreeBn._distance_cache._calculated_distances_counter
+    print('Calculations:', calcs_after - calcs_before)
+    # print(nntree.get_statistics())
+    # print(mtree.get_statistics())
+    # print(treeB)
 
 def make_distance_matrix(n: int):
-    domains = get_domains(n)
-    structs = {domain: np.load(ALPHAS_NPY/f'{domain}.npy') for domain in domains}
-    shapes = {domain: get_shapes(structs[domain]) for domain in domains}
+    print('make_distance_matrix', DIST_TYPE, SHAPEDIST_MAX_RMSD, OPDIST_SCORE_TYPE, OPDIST_MAX_RMSD, VERSION_NAME)
+    domains = [StructInfo(domain) for domain in get_domains(n)]
     distances = np.zeros((n, n))
     try: 
-        rotations = np.load(DATA / f'rotations_{n}x{n}.npy')
-        translations = np.load(DATA / f'translations_{n}x{n}.npy')
+        rotations: Array4D = np.load(RESULTS / f'rotations_{n}x{n}.npy')
+        translations: Array4D = np.load(RESULTS / f'translations_{n}x{n}.npy')
         aligning = False
     except FileNotFoundError:
         rotations = np.zeros((n, n, 3, 3))
         translations = np.zeros((n, n, 1, 3))
         aligning = True
+    aligned = False
     print('aligning:', aligning)
     with Timing(f'Calculating distances {n}x{n}') as timing, ProgressBar(n*(n+1)//2, title=f'Calculating distances {n}x{n}') as bar:
         for i in range(n):
             domA = domains[i]
             for j in range(i+1):
                 domB = domains[j]
-                if aligning:
-                    rot_trans = None
-                else:
-                    rot_trans = rotations[i, j], translations[i, j]
-                # dist, R, t = op_dist(domA, domB, rot_trans=rot_trans)
-                dist, R, t = sop_dist(domA, domB, shapesA=shapes[domA], shapesB=shapes[domB], rot_trans=rot_trans)
-                if aligning:
+                rot_trans = None if aligning else (rotations[i, j], translations[i, j])
+                dist, rot_trans = sop_dist(DIST_TYPE, domA, domB, rot_trans=rot_trans)
+                distances[i,j] = distances[j, i] = dist
+                if aligning and rot_trans is not None:
+                    R, t = rot_trans
                     rotations[i,j] = R
                     rotations[j,i] = R.T
                     translations[i,j] = t
                     translations[j,i] = -t @ R.T
-                # dist = shape_dist(structs[domA], structs[domB])
-                # dist = shape_dist(structs[domA], structs[domB], shapesA=shapes[domA], shapesB=shapes[domB])
-                # dist = length_dist_min(structs[domA], structs[domB])
-                distances[i,j] = distances[j, i] = dist
+                    aligned = True
                 bar.step()
     matrix_info('distances:', distances)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     plt.figure()
     plt.hist(distances.flatten(), bins=range(0, 281, 28))
-    plt.savefig(DATA / f'distance_hist_{n}x{n}{VERSION_NAME}.png')
+    plt.savefig(RESULTS / f'distance_hist_{n}x{n}{VERSION_NAME}.png')
     plt.figure()
     plt.imshow(distances)
-    plt.savefig(DATA / f'distance_{n}x{n}{VERSION_NAME}.png')
-    np.savetxt(DATA / f'distance_{n}x{n}{VERSION_NAME}.csv', distances)
-    if aligning:
-        np.save(DATA / f'rotations_{n}x{n}.npy', rotations)
-        np.save(DATA / f'translations_{n}x{n}.npy', translations)
+    plt.savefig(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.png')
+    np.savetxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv', distances)
+    if aligned:
+        np.save(RESULTS / f'rotations_{n}x{n}.npy', rotations)
+        np.save(RESULTS / f'translations_{n}x{n}.npy', translations)
     
+def test_triangle_inequality(n):
+    print('picovina')
+    distance = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
+    n, n = distance.shape
+    A_through_B_to_C = distance.reshape((n, n, 1)) + distance.reshape((1, n, n))
+    A_direct_to_C = distance.reshape((n, 1, n))
+    mask = np.where(A_direct_to_C > EPSILON)
+    ratio = A_through_B_to_C[mask] / A_direct_to_C[mask]
+    # ratio = (distance.reshape((n, n, 1)) + distance.reshape((1, n, n))) / distance.reshape((n, 1, n))
+    print(ratio.shape, ratio.min())
+    wrong = 0
+    if ratio.min() < 1.0:
+        for i in range(n):
+            for j in range(n):
+                if distance[i,j] > EPSILON:
+                    rat = (distance[i,:] + distance[:,j]) / distance[i,j]
+                    if np.any(rat < 1.0):
+                        for k in range(n):
+                            if rat[k] < 1.0:
+                                print(f'{i} - {k} - {j}:  {distance[i,k]+distance[k,j]} / {distance[i,j]} ({rat[k]})')
+                                wrong += 1
+    print('wrong:', wrong)
+    plt.hist(ratio, bins=np.arange(0,2.5,0.1))
+    plt.savefig(RESULTS / f'triangle_inequality_{n}x{n}{VERSION_NAME}.png')
+
 def sort_sample():
     '''Sort families 1st by class, 2nd by size.'''
     js = json.loads((DATA / 'sample.json').read_text())
@@ -473,22 +567,17 @@ def sort_sample():
 
 def main() -> None:
     '''Main'''
+    # download_structures()
     # create_alphas()
-    n = 885
-    # cealign_try2(n)
-    # cealign_try(n)
+    n = 100  # 885
+    # n = 40
     # visualize_matrix(n)
-    # d = shape_dist('2opkA01', '2opkA01')
-    # print(d)
-    # c = np.load(ALPHAS_NPY / '2opkA01.npy')
-    # s = get_shapes(c)
-    # np.save(DATA / 'shapes_2opkA01.npy', s)
-    # print(s)
-    # return
-    test_shape()
+    # test_shape()
     # test_shape_dist()
+    # make_lengths(n)
     make_distance_matrix(n)
     # make_tree(n)
+    # test_triangle_inequality(n)
 
 
 

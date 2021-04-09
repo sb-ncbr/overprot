@@ -7,20 +7,23 @@ The tree has simple invariants:
 - Each element (except for the root) is a child of its nearest older neighbor.
 '''
 
-from collections import defaultdict
-from typing import NamedTuple, Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Iterable, Iterator, Any, Counter, ClassVar, Sized, Container
+from typing import Generic, TypeVar, List, Tuple, Dict, Set, Optional, Callable, Mapping, Iterable, Iterator, Any
 from dataclasses import dataclass, field
-import itertools
 import math
 
 from .. import lib
 from .abstract_similarity_tree import AbstractSimilarityTree
+from .caches import DistanceCache, FunctionCache
 
 K = TypeVar('K')  # Type of keys
 V = TypeVar('V')  # Type of values
 
 
 GNAT_RANGES = False
+PIVOT_PIVOT_CONSTRAINT = True
+PIVOT_GUESS_CONSTRAINT = True
+PIVOT_SIBLING_CONSTRAINT = True
+USE_IS_UNDER = False
 
 
 @dataclass(order=True)
@@ -84,11 +87,47 @@ class _NNTree(Generic[V]):
     def _json_subtree(self, node: _Node) -> dict:
         return {str(child): self._json_subtree(child) for child in node.children}
     
+    def kNN_query(self, query_value: V, k: int) -> List[Tuple[float, int]]:
+        '''Perform classical kNN query, return the k nearest neighbors to query.'''
+        assert len(self) >= k
+        if k == 0:
+            return []
+        query_dist = FunctionCache[int, float](lambda key: self._distance_cache.get_distance_to_value(key, query_value))
+        root = self._root
+        assert root is not None
+        d_rq = query_dist[root.pivot]
+        dmin = max(0, d_rq - root.rc)
+        NOTHING = -1
+        worklist = k * [(math.inf, NOTHING)]  # sorted kNN with their distances from query
+        worklist[0] = (d_rq, root.pivot)
+        current_range = worklist[-1][0]
+        queue = lib.PriorityQueue[float, _Node]()
+        queue.add(dmin, root)  # TODO what if the queue is sorted by d_pq instead of dmin? (I might have tried it and it might have not worked)
+        while not queue.is_empty():
+            best = queue.pop_min()
+            assert best is not None
+            dmin, node = best
+            if dmin >= current_range:
+                break
+            for child in node.children:
+                if PIVOT_PIVOT_CONSTRAINT and not self._pivot_pivot_constraints2(child, query_dist, current_range):
+                    continue
+                if PIVOT_SIBLING_CONSTRAINT and not self._pivot_sibling_constraints2(child, query_dist, current_range):
+                    continue
+                if USE_IS_UNDER:
+                    print('Warning: Not using USE_IS_UNDER')
+                d_cq = query_dist[child.pivot]
+                if d_cq < current_range:
+                    self._bubble_into_sorted_list(worklist, (d_cq, child.pivot), keep_size=True)
+                    current_range = worklist[-1][0]
+                dmin = max(0, d_cq - child.rc)
+                if dmin < current_range:
+                    queue.add(dmin, child)
+        result = [dk for dk in worklist if dk[1] != NOTHING]
+        assert len(result) == k, f'Requested {k} nearest neighbors, found only {len(result)} ({query_value}, {worklist})'
+        return result
+
     def _nearest_older_node(self, query: int, root: Optional[_Node], initial_guess: Optional[_Node] = None) -> Optional[_Node]:
-        PIVOT_PIVOT_CONSTRAINT = True
-        PIVOT_GUESS_CONSTRAINT = True
-        PIVOT_SIBLING_CONSTRAINT = True
-        USE_IS_UNDER = False
         if root is None:
             return None
         assert query > root.pivot
@@ -107,6 +146,8 @@ class _NNTree(Generic[V]):
             if dmin >= current_range:
                 break
             d_pq = self.get_distance(node.pivot, query)
+            # if d_pq == 0.0:
+            #     break
             for child in node.children:
                 if child.pivot > query:
                     break
@@ -156,16 +197,7 @@ class _NNTree(Generic[V]):
     def _can_be_under(self, key1: int, key2: int, through: int, r: float, force_calculations: bool = False) -> bool:
         '''Decide if d(key1, key2) can be less than r, using through as auxiliary point for distance approximation.
         If force_calculations==True, proceed even if d(key1, through) or d(key2, through) are not calculated yet.'''
-        # if force_calculations:
-        #     assert self._is_calculated(key1, through) and self._is_calculated(key2, through)
         return self._distance_cache.can_be_under(key1, key2, through, r, force_calculations=force_calculations)
-        # if force_calculations or self._is_calculated(key1, through) and self._is_calculated(key2, through):
-        #     d_1_t = self.get_distance(key1, through)
-        #     d_2_t = self.get_distance(key2, through)
-        #     dmin_1_2 = abs(d_1_t - d_2_t)
-        #     return dmin_1_2 < r
-        # else:
-        #     return True
 
     def _pivot_pivot_constraints(self, query: int, node: _Node, range_: float) -> bool:
         for ancestor in self._gen_ancestors(node):
@@ -187,7 +219,29 @@ class _NNTree(Generic[V]):
                 if not self._can_be_under(node.pivot, query, sibling.pivot, range_ + node.rc, force_calculations=False):
                     return False
         return True
-    
+
+    def _pivot_pivot_constraints2(self, node: _Node, query_distance: Mapping[int, float], range_: float) -> bool:
+        for ancestor in self._gen_ancestors(node):
+            assert self._is_calculated(node.pivot, ancestor.pivot)
+            assert ancestor.pivot in query_distance
+            d_nq_min = abs(self.get_distance(node.pivot, ancestor.pivot) - query_distance[ancestor.pivot])
+            if d_nq_min > range_:
+                return False
+        return True
+
+    def _pivot_sibling_constraints2(self, node: _Node, query_distance: Mapping[int, float], range_: float) -> bool:
+        if node.parent is not None:
+            siblings = node.parent.children
+            for sibling in siblings:
+                if sibling.pivot == node.pivot:
+                    break
+                if self._is_calculated(node.pivot, sibling.pivot) and sibling.pivot in query_distance:
+                # if True:  # debug
+                    d_nq_min = abs(self.get_distance(node.pivot, sibling.pivot) - query_distance[sibling.pivot])
+                    if d_nq_min > range_:
+                        return False
+        return True
+        
     def _gnat_constraints(self, query: int, node: _Node, range_: float) -> bool:
         assert node.parent is not None
         for sibling in node.parent.children:
@@ -209,7 +263,7 @@ class _NNTree(Generic[V]):
         parent = self._nearest_older_node(key, self._root, initial_guess=nearest_node_guess)
         self._link(parent, new_node)
         return key
-
+    
     def _link(self, parent: Optional[_Node], child: _Node) -> None:
         if parent is None:
             child.parent = None
@@ -329,14 +383,17 @@ class _NNTree(Generic[V]):
         return self._distance_cache.get_statistics()
 
     @staticmethod
-    def _bubble_into_sorted_list(lst: List[Any], new_elem: Any) -> None:
-        '''Add new_elem to a sorted list lst and keep it sorted.'''
+    def _bubble_into_sorted_list(lst: List[Any], new_elem: Any, keep_size: bool = False) -> None:
+        '''Add new_elem to a sorted list lst and keep it sorted. 
+        If keep_size==True, then also remove the new maximum, thus keeping the same length.'''
         lst.append(new_elem)
         for i in range(len(lst)-1, 0, -1):
             if lst[i-1] > lst[i]:
                 lst[i], lst[i-1] = lst[i-1], lst[i]
             else:
                 break
+        if keep_size:
+            lst.pop()
 
 
 class NNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
@@ -369,6 +426,11 @@ class NNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def kNN_query(self, query: K, k: int, include_query: bool = False) -> List[K]:
         '''Perform classical kNN query, return the k nearest neighbors to query (including itself iff include_query==True). query must be present in the tree.'''
         raise NotImplementedError
+    
+    def kNN_query_by_value(self, query_value: V, k: int) -> List[Tuple[float, K]]:
+        '''Perform classical kNN query, return the k nearest neighbors to query (including itself iff include_query==True). query must be present in the tree.'''
+        result = self._tree.kNN_query(query_value, k)
+        return [(dist, self._index2key[idx]) for dist, idx in result]
 
     # def nearest_older_neighbor(self, key: K) -> Optional[K]:
     #     nn_index = self._tree.nearest_older_neighbor(self._key2index[key])
@@ -391,6 +453,7 @@ class NNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
  
     def _check_invariants(self):
         self._tree._check_invariants()
+
 
 class _MagicNNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def __init__(self, *args, **kwargs):
@@ -427,182 +490,4 @@ class _MagicNNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         helper_calcs = self._helping_tree._tree._distance_cache._calculated_distances_counter
         saving = (helper_calcs - main_calcs) / helper_calcs
         return f'Main tree:\n{main_stats}\nHelper tree:\n{helper_stats}\nSaving: {100*saving:.0f}%'
-    
-class DistanceCache(Generic[K, V], Sized, Container):
-    def __init__(self, distance_function: Callable[[V, V], float]):
-        self._distance_function: Callable[[V, V], float] = distance_function
-        self._elements: Dict[K, V] = {}  # mapping of element keys to values (i.e. objects on which distance function is defined)
-        self._cache: Dict[K, Dict[K, float]] = {}  # 
-        self._calculated_distances_counter = 0  # really calculated distances
-        self._worst_calculated_distances_counter = 0  # theoretical number of calculated distances in worst case (i.e. each-to-each)
 
-    def __len__(self) -> int:
-        '''Return number of elements'''
-        return len(self._elements)
-
-    def __contains__(self, element) -> bool:
-        '''Decide if element is present here'''
-        return element in self._elements
-
-    def insert(self, key: K, value: V) -> None:
-        '''Insert a new element with given key and value. The key must be unique.'''
-        assert key not in self, f'Key {key} is already here'
-        self._worst_calculated_distances_counter += len(self._elements)
-        self._elements[key] = value
-        self._cache[key] = {}
-    
-    def delete(self, key: K) -> None:
-        assert key in self, f'Key {key} is not here'    
-        self._elements.pop(key)
-        dists = self._cache.pop(key)
-        for other in dists.keys():
-            self._cache[other].pop(key)
-
-    def get_distance(self, key1: K, key2: K) -> float:
-        '''Get the distance between two objects present in the tree'''
-        if key1 == key2:
-            return 0.0
-        else:
-            assert key1 in self, f'Key {key1} not here'
-            assert key2 in self, f'Key {key2} not here'
-            try: 
-                return self._cache[key1][key2]
-            except KeyError:
-                dist = self._distance_function(self._elements[key1], self._elements[key2])
-                self._cache[key1][key2] = dist
-                self._cache[key2][key1] = dist
-                self._calculated_distances_counter += 1
-                return dist
-
-    def is_calculated(self, key1: K, key2: K) -> bool:
-        return key1 == key2 or key2 in self._cache[key1]
-
-    def can_be_under(self, key1: K, key2: K, through: K, r: float, force_calculations: bool = False) -> bool:
-        '''Decide if d(key1, key2) can be less than r, using through as auxiliary point for distance approximation.
-        If force_calculations==True, proceed even if d(key1, through) or d(key2, through) are not calculated yet.'''
-        # if force_calculations:
-        #     assert self._is_calculated(key1, through) and self._is_calculated(key2, through)
-        if force_calculations or self.is_calculated(key1, through) and self.is_calculated(key2, through):
-            d_1_t = self.get_distance(key1, through)
-            d_2_t = self.get_distance(key2, through)
-            dmin_1_2 = abs(d_1_t - d_2_t)
-            return dmin_1_2 < r
-        else:
-            return True
-
-    def get_statistics(self) -> str:
-        '''Return string with basic statistics about the cache'''
-        n_elements = len(self._elements)
-        n_distance_cache_entries = sum(len(dic) for dic in self._cache.values())
-        if self._worst_calculated_distances_counter > 0:
-            percent_calculated_distances = self._calculated_distances_counter / self._worst_calculated_distances_counter * 100
-        else: 
-            percent_calculated_distances = 100
-        result = f'''Distance cache statistics:
-        Elements: {n_elements}, Entries in distance cache: {n_distance_cache_entries}
-        Calculated distances: {self._calculated_distances_counter} / {self._worst_calculated_distances_counter} ({percent_calculated_distances:#.3g}%) '''
-        return result
-    
-    def _is_under(self, key1: K, key2: K, r: float) -> bool:
-        '''Decide if distance(key1, key2) <= r.
-        Try to use all already-computed distances to avoid new computation.'''
-        if key1 == key2:
-            return 0.0 < r
-        cache1 = self._cache[key1]
-        if key2 in cache1:
-            return cache1[key2] < r
-        cache2 = self._cache[key2]
-        if len(cache1) > len(cache2):
-            cache1, cache2 = cache2, cache1
-        for p, d_p_k1 in cache1.items():
-            if p in cache2:
-                d_p_k2 = cache2[p]
-                if r <= abs(d_p_k1 - d_p_k2):  # <= d(key1, key2)
-                    return False
-        return self.get_distance(key1, key2) < r
-
-
-class Range(NamedTuple):
-    low: float
-    high: float
-
-
-class DistanceCacheWithRanges(Generic[K, V], DistanceCache[K, V]):
-    def __init__(self, distance_function: Callable[[V, V], float]):
-        super().__init__(distance_function)
-        self._range_cache: Dict[K, Dict[K, Range]] = {}
-    
-    def insert(self, key: K, value: V) -> None:
-        '''Insert a new element with given key and value. The key must be unique.'''
-        super().insert(key, value)
-        self._range_cache[key] = {}
-    
-    def delete(self, key: K) -> None:
-        ranges = self._range_cache.pop(key)
-        for other in ranges.keys():
-            self._range_cache[other].pop(key)
-
-    def get_distance(self, key1: K, key2: K) -> float:
-        '''Get the distance between two objects present in the tree'''
-        new = not self.is_calculated(key1, key2)
-        distance = super().get_distance(key1, key2)
-        if new:
-            self._range_cache[key1][key2] = self._range_cache[key2][key1] = Range(distance, distance)
-        return distance
-
-    def get_range(self, key1: K, key2: K) -> Range:
-        '''Get the distance range between two objects present in the tree'''
-        assert key1 in self, f'Key {key1} not here'
-        assert key2 in self, f'Key {key2} not here'
-        if key1 == key2:
-            return Range(0.0, 0.0)
-        try: 
-            return self._range_cache[key1][key2]
-        except KeyError:
-            return Range(0.0, math.inf)
-
-    def can_be_under(self, p: K, q: K, through: K, r: float, force_calculations: bool = False) -> bool:
-        '''Decide if d(p, q) can be less than r, using through as auxiliary point for distance approximation.
-        If force_calculations==True, proceed even if d(p, through) or d(q, through) are not calculated yet.'''
-        # if force_calculations:
-        #     assert self._is_calculated(key1, through) and self._is_calculated(key2, through)
-        if force_calculations:
-            d_pt = self.get_distance(p, through)
-            d_qt = self.get_distance(q, through)
-        dmin, dmax = self.approximate_distance_range(p, q, through)
-        if dmin >= r:
-            return False
-        # if force_calculations:
-        #     d_pt = self.get_distance(p, through)
-        #     d_qt = self.get_distance(q, through)
-        #     dmin, dmax = self.approximate_distance_range(p, q, through)
-        #     # dmin_pq = abs(d_pt - d_qt)
-        #     return dmin < r
-        return True
-
-    def approximate_distance_range(self, p: K, q: K, through: K) -> Range:
-        low_pq, high_pq = self.get_range(p, q)
-        low_pt, high_pt = self.get_range(p, through)
-        low_qt, high_qt = self.get_range(q, through)
-        # print(f'd_{p}_{q} ({through}): {low_pq:.2f}-{high_pq:.2f} => ', end='')
-        low_pq = max(low_pq, low_pt - high_qt, low_qt - high_pt)
-        high_pq = min(high_pq, high_pt + high_qt)
-        # print(f'{low_pq:.2f}-{high_pq:.2f}')
-        range_pq = Range(low_pq, high_pq)
-        self._range_cache[p][q] = self._range_cache[q][p] = range_pq
-        return range_pq
-
-    def get_statistics(self) -> str:
-        '''Return string with basic statistics about the cache'''
-        n_elements = len(self._elements)
-        n_distance_cache_entries = sum(len(dic) for dic in self._cache.values())
-        n_range_cache_entries = sum(len(dic) for dic in self._range_cache.values())
-        if self._worst_calculated_distances_counter > 0:
-            percent_calculated_distances = self._calculated_distances_counter / self._worst_calculated_distances_counter * 100
-        else: 
-            percent_calculated_distances = 100
-        result = f'''Distance cache statistics:
-        Elements: {n_elements}, Entries in distance cache: {n_distance_cache_entries}, Entries in range cache: {n_range_cache_entries}
-        Calculated distances: {self._calculated_distances_counter} / {self._worst_calculated_distances_counter} ({percent_calculated_distances:#.3g}%) '''
-        return result
-   

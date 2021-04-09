@@ -138,7 +138,7 @@ class MTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         Elements: {n_elements}, Forks: {n_forks}, Leaves: {n_leaves}
         Fork occupancy: {fork_occupancy:.1f}/{self._fork_arity}, Leaf occupancy: {leaf_occupancy:.1f}/{self._leaf_arity}
         Entries in distance cache: {n_distance_cache_entries}
-        Calculated distances: {self._calculated_distances_counter} / {self._worst_calculated_distances_counter} ({percent_calculated_distances:.0f}%) '''
+        Calculated distances: {self._calculated_distances_counter} / {self._worst_calculated_distances_counter} ({percent_calculated_distances:#.3g}%) '''
         return result
     
     def json(self, entry: Optional[_Entry[K]] = None) -> Any:
@@ -423,15 +423,30 @@ class MTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         children2 = []
         rc1 = 0.0
         rc2 = 0.0
+        last_tie = 2
         for i, (elem, rc_elem) in enumerate(elements_rcs):
             d_p1_elem = self.get_distance(pivot1, elem)
             d_p2_elem = self.get_distance(pivot2, elem)
-            if d_p1_elem <= d_p2_elem:
+            if d_p1_elem < d_p2_elem:
+                to = 1
+            elif d_p1_elem > d_p2_elem:
+                to = 2
+            elif last_tie == 1:  # tie
+                to = last_tie = 2
+            else:
+                to = last_tie = 1
+            if to == 1:
                 children1.append(i)
                 rc1 = max(rc1, d_p1_elem + rc_elem)
-            else: 
+            else:  # to == 2
                 children2.append(i)
                 rc2 = max(rc2, d_p2_elem + rc_elem)
+            # if d_p1_elem <= d_p2_elem:
+            #     children1.append(i)
+            #     rc1 = max(rc1, d_p1_elem + rc_elem)
+            # else: 
+            #     children2.append(i)
+            #     rc2 = max(rc2, d_p2_elem + rc_elem)
         assert len(children1) > 0
         assert len(children2) > 0
         return children1, children2, rc1, rc2
