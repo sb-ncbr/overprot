@@ -1,12 +1,10 @@
 import math
-from typing import NamedTuple, Generic, TypeVar, Dict, Callable, Mapping, Iterator, Sized, Container
+import heapq
+from multiprocessing import Pool
+from typing import NamedTuple, Generic, Dict, Callable, Mapping, Iterator, Iterable, Sized, Container, Optional, List, Tuple
 
-
-K = TypeVar('K')  # Type of keys
-V = TypeVar('V')  # Type of values
-X = TypeVar('X')  # Input type of a function
-Y = TypeVar('Y')  # Output type of a function
-
+from .. import lib
+from .abstract_similarity_tree import K, V, X, Y
 
 class FunctionCache(Generic[X, Y], Mapping[X, Y]):
     def __init__(self, function: Callable[[X], Y]) -> None:
@@ -77,6 +75,15 @@ class DistanceCache(Generic[K, V], Sized, Container):
                 self._calculated_distances_counter += 1
                 return dist
 
+    def set_distance(self, key1: K, key2: K, distance: float) -> None:
+        '''Set the distance between two objects present in the tree, without calculating it.'''
+        assert key1 in self, f'Key {key1} not here'
+        assert key2 in self, f'Key {key2} not here'
+        if not self.is_calculated(key1, key2):
+            self._calculated_distances_counter += 1
+        self._cache[key1][key2] = distance
+        self._cache[key2][key1] = distance
+
     def get_distance_to_value(self, key1: K, value2: V) -> float:
         '''Get the distance between two objects present in the tree'''
         assert key1 in self, f'Key {key1} not here'
@@ -130,6 +137,36 @@ class DistanceCache(Generic[K, V], Sized, Container):
                 if r <= abs(d_p_k1 - d_p_k2):  # <= d(key1, key2)
                     return False
         return self.get_distance(key1, key2) < r
+
+    def json(self) -> object:
+        result_dict = {}
+        for key1, cache in self._cache.items():
+            for key2, distance in cache.items():
+                kmin = min(key1, key2)  # type: ignore
+                kmax = max(key1, key2)  # type: ignore
+                result_dict[(kmin, kmax)] = distance
+        result = [(key1, key2, distance) for (key1, key2), distance in result_dict.items()]
+        return result
+
+    def calculate_distances(self, pairs: List[Tuple[K, K]], pool: Optional[Pool] = None, overwrite: bool = False) -> None:
+        # print(f'Calculating {len(pairs)} in {pool}')
+        jobs = []
+        index = {}
+        for i, (key1, key2) in enumerate(pairs):
+            if not self.is_calculated(key1, key2) or overwrite:
+                value1 = self._elements[key1]
+                value2 = self._elements[key2]
+                name = str(i)
+                index[name] = (key1, key2)
+                job = lib.Job(name=name, func=self._distance_function, args=(value1, value2), kwargs={}, stdout=None, stderr=None)
+                jobs.append(job)
+        job_results = lib.run_jobs_with_multiprocessing(jobs, n_processes=1, pool=pool)
+        for result in job_results:
+            key1, key2 = index[result.job.name]
+            value1 = self._elements[key1]
+            value2 = self._elements[key2]
+            distance = result.result
+            self.set_distance(key1, key2, distance)
 
 
 class Range(NamedTuple):
@@ -216,3 +253,66 @@ class DistanceCacheWithRanges(Generic[K, V], DistanceCache[K, V]):
         Calculated distances: {self._calculated_distances_counter} / {self._worst_calculated_distances_counter} ({percent_calculated_distances:#.3g}%) '''
         return result
    
+
+class MinFinder(Generic[V]):
+    '''This class serves for maintaining a set of n smallest elements of type V (their size is a float).
+    It is implemented using a max heap.'''
+    def __init__(self, keys_elements: Optional[Iterable[Tuple[float, Optional[V]]]] = None, n: Optional[int] = None) -> None:
+        if keys_elements is None:
+            n = n or 0
+            keys_elements = [(math.inf, None) for i in range(n)]
+        self._heap = [(-k, -i, v) for i, (k, v) in enumerate(keys_elements)]
+        self._seq = -len(self._heap)
+        heapq.heapify(self._heap)
+        if n is None:
+            n = len(self)
+        else:
+            if len(self) < n:
+                raise ValueError('len(keys_elements) must be at least size')
+            while len(self) > n:
+                heapq.heappop(self._heap)
+    def __len__(self) -> int:
+        '''Return current number of elements.'''
+        return len(self._heap)
+    def top(self) -> Tuple[float, Optional[V]]:
+        '''Return the size of the max element and the element itself.'''
+        if len(self) == 0:
+            raise ValueError
+        k_neg, seq, v = self._heap[0]
+        return -k_neg, v
+    def top_size(self) -> float:
+        '''Return the size of the max element.'''
+        size, elem = self.top()
+        return size
+    def bubble_in(self, key: float, element: V) -> float:
+        '''Iff key is smaller than current top, insert element and remove current top; otherwise do nothing.
+        Return the new top size.'''
+        if len(self) == 0:
+            return
+        k_top_neg, _, _ = self._heap[0]
+        k_neg = -key
+        if k_neg > k_top_neg:
+            heapq.heapreplace(self._heap, (k_neg, self._seq, element))
+            self._seq -= 1
+        return self.top_size()
+    def pop_all(self) -> List[Tuple[float, Optional[V]]]:
+        '''Remove and return all elements (min to max).'''
+        result = []
+        while len(self) > 0:
+            k_neg, seq, value = heapq.heappop(self._heap)
+            result.append((-k_neg, value))
+        result.reverse()
+        return result
+    def pop_all_not_none(self, raise_on_none: bool = True) -> List[Tuple[float, V]]:
+        '''Remove and return all elements (min to max) that are not None. If raise_on_none, then raise if any element is None.'''
+        result = []
+        while len(self) > 0:
+            k_neg, seq, value = heapq.heappop(self._heap)
+            if value is None:
+                if raise_on_none:
+                    raise ValueError('None encountered')
+                else:
+                    continue
+            result.append((-k_neg, value))
+        result.reverse()
+        return result

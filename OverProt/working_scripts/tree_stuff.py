@@ -4,7 +4,7 @@ from numba import jit
 from pathlib import Path
 from matplotlib import pyplot as plt
 from dataclasses import dataclass
-from typing import List, Optional, Union, Tuple, Literal
+from typing import List, Dict, Optional, Union, Tuple, Literal, NamedTuple
 from numpy import ndarray as Array
 np.seterr(all='raise')
 
@@ -17,11 +17,17 @@ from overprot.libs.lib import Timing, ProgressBar
 from overprot.libs.lib_similarity_trees.nntree import NNTree
 from overprot.libs.lib_similarity_trees.ghtree import GHTree
 from overprot.libs.lib_similarity_trees.mtree import MTree
+from overprot.libs.lib_similarity_trees.vptree import VPTree
+from overprot.libs.lib_similarity_trees.mvptree import MVPTree
+from overprot.libs.lib_similarity_trees.target import Target
+from overprot.libs.lib_similarity_trees.target_with_vpt import TargetWithVPT
+from overprot.libs.lib_similarity_trees.dummy_searcher import DummySearcher
+from overprot.libs.lib_similarity_trees.bubble_tree import BubbleTree
+
 
 Array1D = Array2D = Array3D = Array4D = Array
 
-DATA = Path('/home/adam/Workspace/Python/OverProt/data-ssd/tree/sample885')
-# DATA = Path('/home/adam/Workspace/Python/OverProt/data-ssd/tree/sample40')
+DATA = Path('/home/adam/Workspace/Python/OverProt/data-ssd/tree/sample4076')
 SAMPLE_JSON = DATA / 'sample.json'
 STRUCTURES = DATA / 'structures_cif'
 ALPHAS_CIF = DATA / 'alphas_cif'
@@ -30,7 +36,6 @@ ALPHAS_NPY = DATA / 'alphas_npy'
 RESULTS = DATA / 'results'
 EPSILON = 1e-4
 
-# SHAPE_LEN = 4
 SHAPE_LEN = 5
 
 
@@ -39,6 +44,11 @@ class StructInfo(object):
     name: str
     _coords: Optional[Array2D] = None
     _shapes: Optional[Array3D] = None
+    def __init__(self, name: str, init_all: bool = False) -> None:
+        self.name = name
+        if init_all:
+            _ = self.coords
+            _ = self.shapes
     @property
     def coords(self) -> Array2D:
         if self._coords is None:
@@ -93,6 +103,20 @@ def get_domains(n: int, create_choice: Optional[bool] = None) -> List[str]:
         domains_with_families = Path.read_text(DATA/f'choice_{n}.txt').split()
     domains = [domfam.split('/')[0] for domfam in domains_with_families]
     return domains
+
+def get_domains_and_families() -> Tuple[List[str], Dict[str, List[int]]]:
+    js = json.loads(SAMPLE_JSON.read_text())
+    assert isinstance(js, dict)
+    families = {}
+    domains = []
+    i = 0
+    for fam, doms in js.items():
+        families[fam] = []
+        for dom in doms:
+            domains.append(dom['domain'])
+            families[fam].append(i)
+            i += 1
+    return domains, families
 
 def download_structures() -> None:
     sample = json.loads(SAMPLE_JSON.read_text())
@@ -301,7 +325,7 @@ DIST_TYPE = 's+op'
 SHAPEDIST_MAX_RMSD = 7.0  #5.0
 OPDIST_SCORE_TYPE = 'linear'  # 'exponential'|'linear'
 OPDIST_MAX_RMSD = 15
-# VERSION_NAME = '-v3maxrmsd7'
+# VERSION_NAME = '-s-v3maxrmsd7'
 # VERSION_NAME = '-op-lin15'
 VERSION_NAME = '-s+op-v3maxrmsd7-lin15'  # so far the best is s+op-v3maxrmsd7-lin15 (best in classifying against CATH)
 # best options: exp20, lin15 (based on sample885)
@@ -396,61 +420,125 @@ def test_shape():
             shapesB = get_shapes(coordsB)
     assert error < EPSILON, error
 
+def make_bubbles(n: int):
+    distance_matrix = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
+    for max_radius in [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.0625]:
+        bubbles = []
+        for i in range(n):
+            d, closest_bubble = min(((distance_matrix[i, b[0]], b) for b in bubbles), default=(np.inf, None))
+            if d <= max_radius:
+                closest_bubble.append(i)
+            else:
+                bubbles.append([i])
+        print(max_radius, len(bubbles), max(len(bub) for bub in bubbles), sep='\t')
+        # print(*[len(bub) for bub in bubbles])
+
 def make_lengths(n: int):
     domains = [StructInfo(dom) for dom in get_domains(n)]
     lengths = [dom.n for dom in domains]
     RESULTS.mkdir(parents=True, exist_ok=True)
     np.savetxt(RESULTS / f'length_{n}.csv', lengths)
 
+ZERO_ELEMENT = '-'
+
+@dataclass
+class DistanceCalculatorFromMatrix(object):
+    distance_matrix: Array2D
+    domain_index: Dict[str, int]
+    domain_structures: Dict[str, StructInfo]
+    distance_matrix_s_low: Optional[Array2D] = None
+    def distance_function(self, a: str, b: str):
+        if a == ZERO_ELEMENT:
+            return 0.5 * self.domain_structures[b].n
+        elif b == ZERO_ELEMENT:
+            return 0.5 * self.domain_structures[a].n
+        else:
+            return self.distance_matrix[self.domain_index[a], self.domain_index[b]]
+    def dist_low_bound_len(self, a: str, b: str):
+        return 0.5*abs(self.domain_structures[a].n - self.domain_structures[a].n)
+    def dist_low_bound_s(self, a: str, b: str):
+        if self.distance_matrix_s_low is None:
+            return 0.0
+        else:
+            return self.distance_matrix_s_low[self.domain_index[a], self.domain_index[b]]
+
+@dataclass
+class DistanceCalculatorFromAlignment(object):
+    rotations: Array4D
+    translations: Array4D
+    domain_index: Dict[str, int]
+    domain_structures: Dict[str, StructInfo]
+    def distance_function(self, a: str, b: str):
+        domA = self.domain_structures[a]
+        domB = self.domain_structures[b]
+        if a == ZERO_ELEMENT:
+            return 0.5 * domB.n
+        elif b == ZERO_ELEMENT:
+            return 0.5 * domA.n
+        else:
+            ia = self.domain_index[a]
+            ib = self.domain_index[b]
+            rot = self.rotations[ia, ib]
+            trans = self.translations[ia, ib]
+            dist, _ = sop_dist(DIST_TYPE, domA, domB, rot_trans=(rot, trans))
+            return dist
+
+@dataclass
+class DistanceCalculatorFromScratch(object):
+    domain_structures: Dict[str, StructInfo]
+    def distance_function(self, a: str, b: str):
+        domA = self.domain_structures[a]
+        domB = self.domain_structures[b]
+        if a == ZERO_ELEMENT:
+            return 0.5 * domB.n
+        elif b == ZERO_ELEMENT:
+            return 0.5 * domA.n
+        else:
+            dist, _ = sop_dist(DIST_TYPE, domA, domB)
+            return dist
+
+global distance_calculator
+
+def global_distance_function(a: str, b: str):
+    return distance_calculator.distance_function(a, b)
+
 def make_tree(n: int):
-    domains = [StructInfo(dom) for dom in get_domains(n)]
-    index = {dom.name: i for i, dom in enumerate(domains)}
+    domains = [StructInfo(dom, init_all=True) for dom in get_domains(n)]
+    domain_dict = {dom.name: dom for dom in domains}
+    domain_index = {dom.name: i for i, dom in enumerate(domains)}
+    global distance_calculator
     try:
         distances = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
-        precomputed = 'distances'
+        distances_s_opt = np.loadtxt(RESULTS / f'distance_{n}x{n}-s_Opt-v3maxrmsd7.csv')
+        # distance_popul = np.array([distances[i, j] for i in range(n) for j in range(i)])
+        # print(f'distances: {min(distance_popul):.3f}-{max(distance_popul):.3f}, mean: {np.mean(distance_popul):.3f} median: {np.median(distance_popul):.3f}')
+        distance_calculator = DistanceCalculatorFromMatrix(distances, domain_index, domain_dict, distance_matrix_s_low=distances_s_opt)
         print('Using precomputed distances.')
     except OSError:
         try:
             rotations: Array4D = np.load(RESULTS / f'rotations_{n}x{n}.npy')
             translations: Array4D = np.load(RESULTS / f'translations_{n}x{n}.npy')
-            precomputed = 'alignment'
+            distance_calculator = DistanceCalculatorFromAlignment(rotations, translations, domain_index, domain_dict)
             print('Using precomputed alignments.')
-        except FileNotFoundError:
+        except OSError:
             rotations = np.zeros((n, n, 3, 3))
             translations = np.zeros((n, n, 1, 3))
-            precomputed = 'nothing'
+            distance_calculator = DistanceCalculatorFromScratch(domain_dict)
             print('ALIGNING!!!')
-    if precomputed == 'distances':
-        distance_function = lambda a, b: distances[index[a.name], index[b.name]]
-    elif precomputed == 'alignment':
-        distance_function = lambda a, b: sop_dist('s+op', a, b, rot_trans=(rotations[index[a.name], index[b.name]], translations[index[a.name], index[b.name]]))[0]
-    else:
-        distance_function = lambda a, b: sop_dist('s+op', a, b)[0]
-    # ghtree = GHTree(distance_function)
-    # ghtree2 = GHTree(distance_function)
-    # mtree = MTree(distance_function)
-    # nntree = NNTree(distance_function)
-    n_dup = 50
+    distance_function = global_distance_function
+    n_dup = 1
     k = 3 * n_dup
+    N_LOADING_PROCESSES = 4
 
-    bulk_domains = [(f'{domain.name}_{i}', domain) for i in range(n_dup) for domain in np.random.permutation(domains)]
-    # bulk_domains = [(f'{domain.name}_{i}', domain) for i in range(n_dup) for domain in domains]
-    with Timing(f'{n_dup}x adding {n} domains to the tree') as timing, ProgressBar(n_dup*n, title=f'{n_dup}x adding {n} domains to the tree') as bar:
-        for domain_key, domain in bulk_domains:
-            # ghtree.insert(domain_key, domain)
-            # ghtree2.insert(domain_key, domain)
-            # nntree.insert(domain_key, domain)
-            # mtree.insert(domain_key, domain)
-            bar.step()
-        # ghtreeB = GHTree(distance_function, bulk_domains)
-        ghtreeBn = GHTree(distance_function, bulk_domains)
-    print('Per one:', timing.time / (n_dup*n))
-    # print(ghtree.get_statistics())
-    # print(ghtreeB.get_statistics())
-    print(ghtreeBn.get_statistics())
-    calcs_before = ghtreeBn._distance_cache._calculated_distances_counter
-    # print(nntree.get_statistics())
-    # print(mtree.get_statistics())
+    bulk_domains = [(f'{domain.name}', domain.name) for i in range(n_dup) for domain in np.random.permutation(domains)]
+    with Timing(f'Bulk-loading {n*n_dup} domains in {N_LOADING_PROCESSES} processes'):
+        tree = MVPTree(distance_function, bulk_domains, n_processes=N_LOADING_PROCESSES)
+    calcs_before = tree._distance_cache._calculated_distances_counter
+    # tree.save(RESULTS / f'mvptree_{n}.json', with_cache=False)
+    tree.save(RESULTS / f'mvptree_with_cache_{n}.json', with_cache=True)
+    # tree = MVPTree.load(RESULTS / f'mvptree_with_cache_{n}.json', distance_function=distance_function, get_value = lambda key: StructInfo(key.split('_')[0]))
+    print(tree.get_statistics())
+    return
 
     idx = 0
     wrongies = 0
@@ -459,35 +547,18 @@ def make_tree(n: int):
         for i in range(n_dup):
             for domain in np.random.permutation(domains):
                 idx += 1
-                # real_knn = sorted((distance_function(domain, other), f'{other.name}_{i}') for other in domains)[:k]
-                # knn = ghtree.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
-                # knnB = ghtreeB.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
-                # knnB = ghtreeB.kNN_query_classical(f'{domain.name}_{i}', k, include_query=True)
-                # knnBn = ghtreeBn.kNN_query_classical_by_value(domain, k)
-                knnBn = ghtreeBn.kNN_query_classical_by_value_with_priority_queue(domain, k)
-                # knnM = mtree.kNN_query(f'{domain.name}_{i}', k, include_query=True)
-                # knnN = nntree.kNN_query_by_value(domain, k)
-                # rang = knn[-1][0]
-                # range_query = ghtree2.range_query(f'{domain.name}_{i}', rang)
-                # if [dom for dist, dom in knnBn] != [dom for dist, dom in real_knn]:
-                #     print('  Real kNN:', real_knn, 'Found kNN:', knnBn)
-                #     wrongies += 1
-                # if [dom for dist, dom in knn] != [dom for dist, dom in real_knn]:
-                #     print('  Real kNN:', real_knn, 'Found kNN:', knn)
-                # if [dom for dist, dom in knnN] != [dom for dist, dom in real_knn]:
-                #     wrongies += 1
-                #     # print('N Real kNN:', real_knn, 'Found kNN:', knnN)
+                real_knn = sorted((distance_function(domain.name, other.name), other.name) for other in domains)[:k]
+                knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[])
+                # knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[distance_calculator.dist_low_bound_len, distance_calculator.dist_low_bound_s])
+                if [dom for dist, dom in knn] != [dom for dist, dom in real_knn]:
+                    wrongies += 1
+                    # print('N Real kNN:', real_knn, 'Found kNN:', knn)
                 bar.step()
     print('Per one:', timing.time / (n_dup*n))
     print('Wrongies:', wrongies)
-    # print(ghtree.get_statistics())
-    # print(ghtreeB.get_statistics())
-    print(ghtreeBn.get_statistics())
-    calcs_after = ghtreeBn._distance_cache._calculated_distances_counter
+    print(tree.get_statistics())
+    calcs_after = tree._distance_cache._calculated_distances_counter
     print('Calculations:', calcs_after - calcs_before)
-    # print(nntree.get_statistics())
-    # print(mtree.get_statistics())
-    # print(treeB)
 
 def make_distance_matrix(n: int):
     print('make_distance_matrix', DIST_TYPE, SHAPEDIST_MAX_RMSD, OPDIST_SCORE_TYPE, OPDIST_MAX_RMSD, VERSION_NAME)
@@ -531,9 +602,65 @@ def make_distance_matrix(n: int):
     if aligned:
         np.save(RESULTS / f'rotations_{n}x{n}.npy', rotations)
         np.save(RESULTS / f'translations_{n}x{n}.npy', translations)
-    
+
+def show_distances_in_families():
+    domains, families = get_domains_and_families()
+    n = len(domains)
+    n_fams = len(families)
+    print(n, 'domains,', n_fams, 'families')
+    distances = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
+    lengths = np.loadtxt(RESULTS / f'length_{n}.csv')
+    sizes = []
+    diameters = []
+    mean_dists = []
+    median_dists = []
+    mean_lengths = []
+    median_lengths = []
+    classes = []
+    shown_families = []
+    for fam, doms in families.items():
+        size = len(doms)
+        clas = int(fam[0])
+        if size == 1 or clas > 3:
+            continue
+        dists = np.array([distances[i,j] for i in doms for j in doms])
+        lens = np.array([lengths[i] for i in doms])
+        diameter = np.max(dists)
+        if fam.startswith('3.40.50.'):
+            d = max((distances[i,j], domains[i], domains[j]) for i in doms for j in doms)
+            print(fam, size, d)
+        sizes.append(size)
+        diameters.append(diameter)
+        mean_dists.append(np.mean(dists))
+        median_dists.append(np.median(dists))
+        mean_lengths.append(np.mean(lens))
+        median_lengths.append(np.median(lens))
+        classes.append(clas)
+        shown_families.append(fam)
+        if fam == '1.10.630.10':
+            print(fam, size, diameter, np.mean(dists))
+    plt.figure(figsize=(10, 10))
+    x = mean_lengths
+    y = np.array(diameters)/np.array(mean_lengths)
+    plt.scatter(x, y, c=classes, s=sizes)
+    for i, fam in enumerate(shown_families):
+        plt.annotate(fam, (x[i], y[i]))
+    # plt.xlog(sizes, diameters, '.')
+    # plt.gca().set_xscale('log')
+    plt.axis(xmin=0, ymin=0)
+    # plt.xlabel('Family size (#domains in sample)')
+    plt.xlabel('Family mean length')
+    # plt.ylabel('Family rel. mean distance')
+    plt.ylabel('Family rel. diameter')
+    plt.savefig(RESULTS / f'family_length_vs_reldiameter{VERSION_NAME}.png')
+    plt.figure()
+    ml, l = zip(*[(mean_lengths[i_fam], lengths[i_dom]) for i_fam, fam in enumerate(shown_families) for i_dom in families[fam]])
+    plt.scatter(ml, l, marker='.')
+    plt.xlabel('Family length')
+    plt.ylabel('Length')
+    plt.savefig(RESULTS / f'length_vs_family_length.png')
+
 def test_triangle_inequality(n):
-    print('picovina')
     distance = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
     n, n = distance.shape
     A_through_B_to_C = distance.reshape((n, n, 1)) + distance.reshape((1, n, n))
@@ -557,6 +684,26 @@ def test_triangle_inequality(n):
     plt.hist(ratio, bins=np.arange(0,2.5,0.1))
     plt.savefig(RESULTS / f'triangle_inequality_{n}x{n}{VERSION_NAME}.png')
 
+def test_triangle_inequality2(n):
+    distance = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
+    n, n = distance.shape
+    wrongies = 0
+    max_diff = 0.0
+    with ProgressBar(n) as bar:
+        for i in range(n):
+            for j in range(i+1, n):
+                d_direct = distance[i,j]
+                d_throughs = distance[i,:] + distance[:,j]
+                d_through = np.min(d_throughs)
+                if d_through < d_direct:
+                    wrongies += 1
+                    max_diff = max(max_diff, d_direct - d_through)
+                    k = np.argmin(d_throughs)
+                    print(f'{i}-{k}-{j}: {distance[i,k]} + {distance[k,j]} = {d_through} >= {d_direct}')
+                # print(f'{i}-{j}')
+            bar.step()
+    print('wrongies:', wrongies, 'max_diff:', max_diff)
+
 def sort_sample():
     '''Sort families 1st by class, 2nd by size.'''
     js = json.loads((DATA / 'sample.json').read_text())
@@ -569,15 +716,16 @@ def main() -> None:
     '''Main'''
     # download_structures()
     # create_alphas()
-    n = 100  # 885
-    # n = 40
+    n = 4076
     # visualize_matrix(n)
     # test_shape()
     # test_shape_dist()
     # make_lengths(n)
-    make_distance_matrix(n)
-    # make_tree(n)
-    # test_triangle_inequality(n)
+    # make_distance_matrix(n)
+    # show_distances_in_families()
+    # make_bubbles(n)
+    make_tree(n)
+    # test_triangle_inequality2(n)
 
 
 

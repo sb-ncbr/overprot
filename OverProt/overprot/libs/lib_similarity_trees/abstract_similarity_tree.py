@@ -1,7 +1,10 @@
 from typing import Generic, TypeVar, List, Sized, Container
 
-K = TypeVar('K')
-V = TypeVar('V')
+
+K = TypeVar('K')  # Type of keys
+V = TypeVar('V')  # Type of values
+X = TypeVar('X')  # Input type of a function
+Y = TypeVar('Y')  # Output type of a function
 
 
 class AbstractSimilarityTree(Generic[K, V], Sized, Container):

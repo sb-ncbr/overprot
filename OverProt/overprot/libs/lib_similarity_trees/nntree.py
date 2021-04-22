@@ -12,11 +12,8 @@ from dataclasses import dataclass, field
 import math
 
 from .. import lib
-from .abstract_similarity_tree import AbstractSimilarityTree
+from .abstract_similarity_tree import AbstractSimilarityTree, K, V
 from .caches import DistanceCache, FunctionCache
-
-K = TypeVar('K')  # Type of keys
-V = TypeVar('V')  # Type of values
 
 
 GNAT_RANGES = False

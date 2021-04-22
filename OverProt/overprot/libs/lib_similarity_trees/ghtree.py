@@ -2,16 +2,14 @@
 
 import math
 import itertools
-from typing import Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
+from typing import Generic, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
 from dataclasses import dataclass, field
-import heapq
+import json
 
-from .abstract_similarity_tree import AbstractSimilarityTree
-from .caches import FunctionCache, DistanceCache
-from ..lib import PriorityQueue
+from .abstract_similarity_tree import AbstractSimilarityTree, K, V
+from .caches import FunctionCache, DistanceCache, MinFinder
+from ..lib import PriorityQueue, ProgressBar
 
-K = TypeVar('K')
-V = TypeVar('V')
 
 OrderInParent = Literal[0, 1, 2]
 ONLY_CHILD: Final = 0
@@ -44,6 +42,9 @@ class _GHLeaf(Generic[K]):
 _GHNode = Union[_GHRoot[K], _GHFork[K], _GHLeaf[K]]
 
 
+REUSE_PIVOTS = True
+
+
 class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def __init__(self, distance_function: Callable[[V, V], float], keys_values: Sequence[Tuple[K, V]] = (), leaf_size: int = 8):
         assert leaf_size >= 1
@@ -54,10 +55,10 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         self._home_leaves: Dict[K, _GHLeaf[K]] = {}  # mapping of elements to their accommodating leaves
         self._distance_cache = DistanceCache[K, V](distance_function)
         self._root = _GHRoot[K]()
-        self._bulk_load(keys_values)
+        self._bulk_load(keys_values, with_progress_bar=True)
         # TODO implement distance_cache, values etc. by lists instead of dicts? (insert() will return the new sequentially assigned key instead of taking it)
     
-    def _bulk_load(self, keys_values: Sequence[Tuple[K, V]]) -> None:
+    def _bulk_load(self, keys_values: Sequence[Tuple[K, V]], with_progress_bar: bool = False) -> None:
         elements = [k for k, v in keys_values]
         n = len(elements)
         assert len(self) == 0, 'Bulk-load only works on an empty tree'
@@ -68,7 +69,10 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         for k, v in keys_values:
             self._distance_cache.insert(k, v)
         self._root = _GHRoot()
-        self._root.subtree = self._create_node_from_bulk(elements)
+        bar = ProgressBar(len(elements), title=f'Bulk-loading {n} elements into GHTree').start() if with_progress_bar else None
+        self._root.subtree = self._create_node_from_bulk(elements, progress_bar=bar)
+        if bar is not None:
+            bar.finalize()
         # refs from the subtree to the root are set by default in _create_node_from_bulk()
         print(f'Bulk-loaded {n} elements')
     
@@ -80,17 +84,25 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         self._distance_cache.insert(key, value)
         self._insert_to_node(self._root, key)
     
-    def _create_node_from_bulk(self, elements: List[K]) -> Union[_GHFork, _GHLeaf]:
+    def _create_node_from_bulk(self, elements: List[K], progress_bar: Optional[ProgressBar] = None, pivot1: Optional[K] = None) -> Union[_GHFork, _GHLeaf]:
         if len(elements) <= self._leaf_size:
-            return _GHLeaf(parent=self._root, order_in_parent=ONLY_CHILD, elements=elements)
+            if progress_bar is not None:
+                progress_bar.step(len(elements))
+            new_leaf = _GHLeaf(parent=self._root, order_in_parent=ONLY_CHILD, elements=elements)
+            for elem in elements:
+                self._home_leaves[elem] = new_leaf
+            return new_leaf
         else:
-            p0 = elements[0]
-            d_max, p1 = max((self.get_distance(p0, k), k) for k in elements)
+            if pivot1 is not None:
+                p1 = pivot1
+            else:
+                p0 = elements[0]
+                d_max, p1 = max((self.get_distance(p0, k), k) for k in elements)
             d_max, p2 = max((self.get_distance(p1, k), k) for k in elements if k != p1)
             # TODO solve special case of len(keys_values)==1
             elems1, elems2, rc1, rc2 = self._partition(p1, p2, elements)
-            subtree1 = self._create_node_from_bulk(elems1)
-            subtree2 = self._create_node_from_bulk(elems2)
+            subtree1 = self._create_node_from_bulk(elems1, progress_bar=progress_bar, pivot1=(p1 if REUSE_PIVOTS else None))
+            subtree2 = self._create_node_from_bulk(elems2, progress_bar=progress_bar, pivot1=(p2 if REUSE_PIVOTS else None))
             new_fork = _GHFork(parent=self._root, order_in_parent=ONLY_CHILD, pivot1=p1, pivot2=p2, subtree1=subtree1, subtree2=subtree2, rc1=rc1, rc2=rc2)
             subtree1.parent = new_fork
             subtree1.order_in_parent = FIRST_CHILD
@@ -231,11 +243,102 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         elif isinstance(node, _GHLeaf):
             pass
         else: 
-            raise AssertionError('GHNode must be one of: GHRoot, GHFork, GHLeaf')
+            raise AssertionError('_GHNode must be one of: _GHRoot, _GHFork, _GHLeaf')
     
     def __str__(self) -> str:
         return '\n'.join(self._str_lines(self._root))
+
+    def _node_to_json(self, node: _GHNode[K]) -> object:
+        if isinstance(node, _GHRoot):
+            return {
+                'type': 'root', 
+                'subtree': self._node_to_json(node.subtree)
+            }
+        elif isinstance(node, _GHFork):
+            return {
+                'type': 'fork',
+                'p1': node.pivot1,
+                'rc1': node.rc1,
+                'p2': node.pivot2,
+                'rc2': node.rc2,
+                'subtree1': self._node_to_json(node.subtree1),
+                'subtree2': self._node_to_json(node.subtree2),
+            }
+        elif isinstance(node, _GHLeaf):
+            return {
+                'type': 'leaf',
+                'elements': node.elements
+            }
+        else:
+            raise AssertionError('_GHNode must be one of: _GHRoot, _GHFork, _GHLeaf')
+
+    def _node_from_json(self, js: dict) -> _GHNode[K]:
+        node_type = js['type']
+        node: _GHNode[K]
+        if node_type == 'root':
+            node = _GHRoot()
+            subtree = self._node_from_json(js['subtree'])
+            assert isinstance(subtree, (_GHFork, _GHLeaf))
+            node.subtree = subtree
+            node.subtree.parent = node
+            node.subtree.order_in_parent = ONLY_CHILD
+        elif node_type == 'fork':
+            subtree1 = self._node_from_json(js['subtree1'])
+            subtree2 = self._node_from_json(js['subtree2'])
+            assert isinstance(subtree1, (_GHFork, _GHLeaf))
+            assert isinstance(subtree2, (_GHFork, _GHLeaf))
+            node = _GHFork(parent=self._root, order_in_parent=ONLY_CHILD, pivot1=js['p1'], pivot2=js['p2'], rc1=js['rc1'], rc2=js['rc2'],
+                subtree1=subtree1, subtree2=subtree2)
+            node.subtree1.parent = node
+            node.subtree1.order_in_parent = FIRST_CHILD
+            node.subtree2.parent = node
+            node.subtree2.order_in_parent = SECOND_CHILD
+        elif node_type == 'leaf':
+            node = _GHLeaf(parent=self._root, order_in_parent=ONLY_CHILD, elements=js['elements'])
+        else:
+            raise ValueError
+        return node
+
+    def json(self, with_cache: bool = False, **kwargs) -> str:
+        result = {
+            'leaf_size': self._leaf_size, 
+            'root': self._node_to_json(self._root),
+            'distance_cache': self._distance_cache.json() if with_cache else []
+        }
+        # TODO try saving only needed cached distances (pivot-ancestor, pivot-sibling, element-ancestor)
+        return json.dumps(result, **kwargs)
+
+    def save(self, file: str, with_cache: bool = False) -> None:
+        with open(file, 'w') as w:
+            w.write(self.json(with_cache=with_cache, indent=1))
     
+    @staticmethod
+    def load(file: str, distance_function: Callable[[V, V], float], get_value: Callable[[K], V]) -> 'GHTree[K, V]':
+        with open(file) as r:
+            js = json.load(r)
+        leaf_size = js['leaf_size']
+        result = GHTree[K, V](distance_function, leaf_size=leaf_size)
+        root = result._node_from_json(js['root'])
+        assert isinstance(root, _GHRoot)
+        result._root = root
+        forks, leaves = result.get_forks_and_leaves()
+        for leaf in leaves:
+            for elem in leaf.elements:
+                result._elements.add(elem)
+                result._home_leaves[elem] = leaf
+                result._distance_cache.insert(elem, get_value(elem))
+        for fork in forks:
+            result._pivots[fork.pivot1] += 1
+            result._pivots[fork.pivot2] += 1
+            if fork.pivot1 not in result._distance_cache:
+                result._distance_cache.insert(fork.pivot1, get_value(fork.pivot1))
+            if fork.pivot2 not in result._distance_cache:
+                result._distance_cache.insert(fork.pivot2, get_value(fork.pivot2))
+        for k1, k2, dist in js['distance_cache']:
+            result._distance_cache.set_distance(k1, k2, dist)
+        # TODO continue here (load cached distances)
+        return result
+
     def __len__(self) -> int:
         '''Return number of elements'''
         return len(self._elements)
@@ -318,7 +421,6 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def kNN_query_classical_by_value(self, query_value: V, k: int) -> List[Tuple[float, K]]:
         '''Perform classical kNN query starting in the root.'''
         # TODO test on more real dataset (random subset of PDB/non-redundant-PDB?)
-        # TODO try using priority queue?
         # TODO try sibling-sibling-query and pivot-ancestor-query constraints
         # TODO using cheaper distance approximations
         besties = MinFinder[K](n=k)
@@ -363,9 +465,13 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def kNN_query_classical_by_value_with_priority_queue(self, query_value: V, k: int) -> List[Tuple[float, K]]:
         '''Perform classical kNN query starting in the root.'''
         # TODO test on more real dataset (random subset of PDB/non-redundant-PDB?)
-        # TODO try using priority queue?
         # TODO try sibling-sibling-query and pivot-ancestor-query constraints
         # TODO using cheaper distance approximations
+        # TODO try having r_low_i_j and r_high_i_j like in GNAT?
+        # TODO try reusing pivot in subtree
+        QAE = False
+        QAP = False#True
+        QPS = False
         besties = MinFinder[K](n=k)
         query_dist = FunctionCache[K, float](lambda key: self._distance_cache.get_distance_to_value(key, query_value))
         queue = PriorityQueue[float, Union[_GHFork, _GHLeaf]]()
@@ -375,6 +481,8 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
             assert best is not None
             dmin, node = best
             range_, _ = besties.top()
+            if dmin >= range_:
+                continue
             if isinstance(node.parent, _GHFork):
                 d_p1_q, d_p2_q = query_dist[node.parent.pivot1], query_dist[node.parent.pivot2]
                 rc1, rc2 = node.parent.rc1, node.parent.rc2
@@ -386,26 +494,93 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
                         continue
             if isinstance(node, _GHLeaf):
                 for elem in node.elements:
-                    besties.bubble_in(query_dist[elem], elem)
+                    if QAE:
+                        d_low, d_high = self._distance_bounds_of_element_from_ancestors(elem, query_dist)
+                        if d_low < range_:
+                            besties.bubble_in(query_dist[elem], elem)
+                    else:
+                        besties.bubble_in(query_dist[elem], elem)
             elif isinstance(node, _GHFork):
                 # TODO include this constraint: d_q_p2 >= d_p1_p2 - d_p1_q
                 # TODO try to include pivot-ancestor-query constraint?
-                d_p1_q = query_dist[node.pivot1]
-                d_p2_q = query_dist[node.pivot2]
-                if d_p1_q <= d_p2_q:
-                    if d_p1_q + range_ >= d_p2_q - range_ and d_p2_q <= node.rc2 + range_:  # Double-pivot constraint
-                        queue.add(max(0.0, d_p2_q-node.rc2), node.subtree2)
-                    if d_p1_q <= node.rc1 + range_:
-                        queue.add(max(0.0, d_p1_q-node.rc1), node.subtree1)
+                if QAP:
+                    d_p1_q_low, d_p1_q_high = self._distance_bounds_from_ancestors(node, FIRST_CHILD, query_dist)
+                    d_p2_q_low, d_p2_q_high = self._distance_bounds_from_ancestors(node, SECOND_CHILD, query_dist)
+                    can_be_in_1 = d_p1_q_low <= d_p2_q_high + 2 * range_ and d_p1_q_low <= node.rc1 + range_
+                    can_be_in_2 = d_p2_q_low <= d_p1_q_high + 2 * range_ and d_p2_q_low <= node.rc2 + range_
+                    # if not can_be_in_1: print('cmunda1')
+                    # if not can_be_in_2: print('cmunda2')
+                    # TODO continue here
+                if QPS:
+                    d_p1_q = query_dist[node.pivot1]
+                    d_p1_p2 = self.get_distance(node.pivot1, node.pivot2)
+                    if 2 * d_p1_q < d_p1_p2 - 2 * range_:
+                        can_be_in_1 = d_p1_q <= node.rc1 + range_
+                        can_be_in_2 = False
+                    else:
+                        d_p2_q = query_dist[node.pivot2]
+                        can_be_in_1 = d_p1_q <= d_p2_q + 2 * range_ and d_p1_q <= node.rc1 + range_
+                        can_be_in_2 = d_p2_q <= d_p1_q + 2 * range_ and d_p2_q <= node.rc2 + range_
+                    if can_be_in_1:
+                        dmin1 = max(dmin, d_p1_q - node.rc1)
+                        queue.add(dmin1, node.subtree1)
+                    if can_be_in_2:
+                        dmin2 = max(dmin, d_p2_q - node.rc2)
+                        queue.add(dmin2, node.subtree2)
                 else:
-                    if d_p1_q - range_ <= d_p2_q + range_ and d_p1_q <= node.rc1 + range_:  # Double-pivot constraint
-                        queue.add(max(0.0, d_p1_q-node.rc1), node.subtree1)
-                    if d_p2_q <= node.rc2 + range_:
-                        queue.add(max(0.0, d_p2_q-node.rc2), node.subtree2)
+                    d_p1_q = query_dist[node.pivot1]
+                    d_p2_q = query_dist[node.pivot2]
+                    can_be_in_1 = d_p1_q <= d_p2_q + 2 * range_ and d_p1_q <= node.rc1 + range_
+                    can_be_in_2 = d_p2_q <= d_p1_q + 2 * range_ and d_p2_q <= node.rc2 + range_
+                    if can_be_in_1:
+                        dmin1 = max(dmin, d_p1_q - node.rc1)
+                        queue.add(dmin1, node.subtree1)
+                    if can_be_in_2:
+                        dmin2 = max(dmin, d_p2_q - node.rc2)
+                        queue.add(dmin2, node.subtree2)
             else:
                 raise AssertionError('node must be one of: _GHFork, _GHLeaf')
         result = besties.pop_all_not_none()
+        # print('Calc.dists:', len(query_dist))
         return result
+
+    def _gen_ancestors(self, node: _GHFork[K], pivot_position: OrderInParent, include_self: bool = False) -> Iterator[Tuple[_GHFork[K], OrderInParent]]:
+        if include_self:
+            yield (node, pivot_position)
+        ancestor_node, ancestor_position = node.parent, node.order_in_parent
+        while not isinstance(ancestor_node, _GHRoot):
+            yield (ancestor_node, ancestor_position)
+            ancestor_node, ancestor_position = ancestor_node.parent, ancestor_node.order_in_parent  # type: ignore
+
+    def _gen_ancestors_of_element(self, element: K) -> Iterator[Tuple[_GHFork[K], OrderInParent]]:
+        leaf = self._home_leaves[element]
+        if not isinstance(leaf.parent, _GHRoot):
+            yield from self._gen_ancestors(leaf.parent, leaf.order_in_parent, include_self=True)
+
+    def _distance_bounds_from_ancestors(self, node: _GHFork[K], pivot_position: OrderInParent, query_distance: FunctionCache[K, float]) -> Tuple[float, float]:
+        '''Return lower and upper bound for distance pivot-query, using all its ancestors 
+        (it is expected that all ancestor-query and ancestor-pivot distances are already known, otherwise they will be calculated).''' 
+        pivot = node.pivot1 if pivot_position == FIRST_CHILD else node.pivot2
+        d_p_q_low, d_p_q_high = 0.0, math.inf
+        for ancestor_node, ancestor_position in self._gen_ancestors(node, pivot_position):
+            ancestor = ancestor_node.pivot1 if ancestor_position == FIRST_CHILD else ancestor_node.pivot2
+            d_p_a = self.get_distance(pivot, ancestor)
+            d_a_q = query_distance[ancestor]
+            d_p_q_low = max(d_p_q_low, abs(d_p_a - d_a_q))
+            d_p_q_high = min(d_p_q_high, d_p_a + d_a_q)
+        return d_p_q_low, d_p_q_high
+
+    def _distance_bounds_of_element_from_ancestors(self, element: K, query_distance: FunctionCache[K, float]) -> Tuple[float, float]:
+        '''Return lower and upper bound for distance element-query, using all its ancestors 
+        (it is expected that all ancestor-query and ancestor-element distances are already known, otherwise they will be calculated).''' 
+        d_p_q_low, d_p_q_high = 0.0, math.inf
+        for ancestor_node, ancestor_position in self._gen_ancestors_of_element(element):
+            ancestor = ancestor_node.pivot1 if ancestor_position == FIRST_CHILD else ancestor_node.pivot2
+            d_p_a = self.get_distance(element, ancestor)
+            d_a_q = query_distance[ancestor]
+            d_p_q_low = max(d_p_q_low, abs(d_p_a - d_a_q))
+            d_p_q_high = min(d_p_q_high, d_p_a + d_a_q)
+        return d_p_q_low, d_p_q_high
 
     def kNN_query_classical(self, query: K, k: int, include_query: bool = False) -> List[Tuple[float, K]]:
         '''Perform classical kNN query starting in the root.'''
@@ -466,9 +641,7 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     def get_statistics(self):
         n_elements = len(self._elements)
         n_pivots = len(self._pivots)
-        forks = []
-        leaves = []
-        self._collect_nodes(self._root, forks, leaves)
+        forks, leaves = self.get_forks_and_leaves()
         n_forks = len(forks)
         n_leaves = len(leaves)
         # for leaf in leaves:
@@ -479,6 +652,12 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         {self._distance_cache.get_statistics()}'''
         return result
     
+    def get_forks_and_leaves(self) -> Tuple[List[_GHFork], List[_GHLeaf]]:
+        forks: List[_GHFork[K]] = []
+        leaves: List[_GHLeaf[K]] = []
+        self._collect_nodes(self._root, forks, leaves)
+        return forks, leaves
+
     def _collect_nodes(self, node: _GHNode[K], out_forks: List[_GHFork[K]], out_leaves: List[_GHLeaf[K]]):
         if isinstance(node, _GHLeaf):
             out_leaves.append(node)
@@ -491,61 +670,4 @@ class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         else:
             raise AssertionError
 
-
-class MinFinder(Generic[V]):
-    '''This class serves for maintaining a set of n smallest elements of type V (their size is a float).
-    It is implemented using a max heap.'''
-    def __init__(self, keys_elements: Optional[Iterable[Tuple[float, Optional[V]]]] = None, n: Optional[int] = None) -> None:
-        if keys_elements is None:
-            n = n or 0
-            keys_elements = [(math.inf, None) for i in range(n)]
-        self._heap = [(-k, -i, v) for i, (k, v) in enumerate(keys_elements)]
-        self._seq = -len(self._heap)
-        heapq.heapify(self._heap)
-        if n is None:
-            n = len(self)
-        else:
-            if len(self) < n:
-                raise ValueError('len(keys_elements) must be at least size')
-            while len(self) > n:
-                heapq.heappop(self._heap)
-    def __len__(self) -> int:
-        '''Return current number of elements.'''
-        return len(self._heap)
-    def top(self) -> Tuple[float, Optional[V]]:
-        '''Return the size of the max element and the element itself.'''
-        if len(self) == 0:
-            raise ValueError
-        k_neg, seq, v = self._heap[0]
-        return -k_neg, v
-    def bubble_in(self, key: float, element: V) -> None:
-        '''Iff key is smaller than current top, insert element and remove current top; otherwise do nothing.'''
-        if len(self) == 0:
-            return
-        k_top_neg, _, _ = self._heap[0]
-        k_neg = -key
-        if k_neg > k_top_neg:
-            heapq.heapreplace(self._heap, (k_neg, self._seq, element))
-            self._seq -= 1
-    def pop_all(self) -> List[Tuple[float, Optional[V]]]:
-        '''Remove and return all elements (min to max).'''
-        result = []
-        while len(self) > 0:
-            k_neg, seq, value = heapq.heappop(self._heap)
-            result.append((-k_neg, value))
-        result.reverse()
-        return result
-    def pop_all_not_none(self, raise_on_none: bool = True) -> List[Tuple[float, V]]:
-        '''Remove and return all elements (min to max) that are not None. If raise_on_none, then raise if any element is None.'''
-        result = []
-        while len(self) > 0:
-            k_neg, seq, value = heapq.heappop(self._heap)
-            if value is None:
-                if raise_on_none:
-                    raise ValueError('None encountered')
-                else:
-                    continue
-            result.append((-k_neg, value))
-        result.reverse()
-        return result
         

@@ -711,13 +711,12 @@ class Timing:
         self.mute = mute
         self.time = None
     def __enter__(self):
-        if not self.mute:
-            self.t0 = datetime.now()
+        self.t0 = datetime.now()
         return self
     def __exit__(self, *args):
+        dt = datetime.now() - self.t0
+        self.time = dt
         if not self.mute:
-            dt = datetime.now() - self.t0
-            self.time = dt
             if self.name is not None:
                 message = f'Timing: {self.name}: {dt}'
             else:
@@ -1126,17 +1125,24 @@ class JobResult(NamedTuple):
     result: Any
     worker: str
 
-def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, callback: Optional[Callable[[JobResult], Any]] = None) -> List[JobResult]:
+def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.Pool] = None) -> List[JobResult]:
     '''Run jobs (i.e. call job.func(*job.args, **job.kwargs)) in n_processes processes. 
     Standard output and standard error output are saved in files job.stdout and job.stderr.
     Default n_processes: number of CPUs.
     If n_processes==1, then run jobs sequentially without starting new processes (useful for debugging).'''
-    if n_processes is None:
+    if n_processes is None and pool is None:
         n_processes = multiprocessing.cpu_count()
     n_jobs = len(jobs)
     results = []
     with ProgressBar(n_jobs, title=f'Running {n_jobs} jobs in {n_processes} processes', mute = not progress_bar) as bar:
-        if n_processes == 1:
+        if pool is not None:
+            result_iterator = pool.imap_unordered(_run_job, jobs)
+            for result in result_iterator:
+                if callback is not None:
+                    callback(result)
+                results.append(result)
+                bar.step()
+        elif n_processes == 1:
             for job in jobs:
                 result = _run_job(job)
                 if callback is not None:
@@ -1144,8 +1150,8 @@ def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int
                 results.append(result)
                 bar.step()
         else:
-            with multiprocessing.Pool(n_processes) as pool:
-                result_iterator = pool.imap_unordered(_run_job, jobs)
+            with multiprocessing.Pool(n_processes) as ad_hoc_pool:
+                result_iterator = ad_hoc_pool.imap_unordered(_run_job, jobs)
                 for result in result_iterator:
                     if callback is not None:
                         callback(result)
