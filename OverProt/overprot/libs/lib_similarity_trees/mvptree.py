@@ -117,7 +117,6 @@ class MVPTree(Generic[K, V], AbstractSimilarityTree[K, V]):
 
     def _partition(self, pivot: K, elements: List[K], pool: Optional[Pool] = None) -> Tuple[List[List[K]], List[float]]:
         bins = [[] for i in range(self._K)]
-        print('partition', len(elements))
         self._distance_cache.calculate_distances([(pivot, elem) for elem in elements], pool=pool)
         distances = [self.get_distance(pivot, elem) for elem in elements]
         rs = statistics.quantiles(distances, n=self._K)

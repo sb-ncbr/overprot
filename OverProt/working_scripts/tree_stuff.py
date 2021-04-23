@@ -328,6 +328,8 @@ OPDIST_MAX_RMSD = 15
 # VERSION_NAME = '-s-v3maxrmsd7'
 # VERSION_NAME = '-op-lin15'
 VERSION_NAME = '-s+op-v3maxrmsd7-lin15'  # so far the best is s+op-v3maxrmsd7-lin15 (best in classifying against CATH)
+LOWBOUND_VERSION_NAME = '-s_Opt-v3maxrmsd7'
+# LOWBOUND_VERSION_NAME = '-s-v3maxrmsd7'
 # best options: exp20, lin15 (based on sample885)
 
 def op_score(domainA: StructInfo, domainB: StructInfo, rot_trans: Optional[Tuple[Array2D, Array2D]] = None) -> Tuple[Array2D, Tuple[Array2D, Array2D]]:
@@ -502,14 +504,21 @@ global distance_calculator
 def global_distance_function(a: str, b: str):
     return distance_calculator.distance_function(a, b)
 
-def make_tree(n: int):
-    domains = [StructInfo(dom, init_all=True) for dom in get_domains(n)]
+def make_tree(n: int, n_search: int = -1):
+    if n_search == -1:
+        n_search = n
+    domains = []
+    with ProgressBar(n, title=f'Creating {n} StructInfos') as bar, Timing(f'Creating {n} StructInfos'):
+        for dom in get_domains(n):
+            domains.append(StructInfo(dom, init_all=True))
+            bar.step()
+    # domains = [StructInfo(dom, init_all=True) for dom in get_domains(n)]
     domain_dict = {dom.name: dom for dom in domains}
     domain_index = {dom.name: i for i, dom in enumerate(domains)}
     global distance_calculator
     try:
         distances = np.loadtxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv')
-        distances_s_opt = np.loadtxt(RESULTS / f'distance_{n}x{n}-s_Opt-v3maxrmsd7.csv')
+        distances_s_opt = np.loadtxt(RESULTS / f'distance_{n}x{n}{LOWBOUND_VERSION_NAME}.csv')
         # distance_popul = np.array([distances[i, j] for i in range(n) for j in range(i)])
         # print(f'distances: {min(distance_popul):.3f}-{max(distance_popul):.3f}, mean: {np.mean(distance_popul):.3f} median: {np.median(distance_popul):.3f}')
         distance_calculator = DistanceCalculatorFromMatrix(distances, domain_index, domain_dict, distance_matrix_s_low=distances_s_opt)
@@ -521,44 +530,117 @@ def make_tree(n: int):
             distance_calculator = DistanceCalculatorFromAlignment(rotations, translations, domain_index, domain_dict)
             print('Using precomputed alignments.')
         except OSError:
-            rotations = np.zeros((n, n, 3, 3))
-            translations = np.zeros((n, n, 1, 3))
+            # rotations = np.zeros((n, n, 3, 3))
+            # translations = np.zeros((n, n, 1, 3))
             distance_calculator = DistanceCalculatorFromScratch(domain_dict)
             print('ALIGNING!!!')
     distance_function = global_distance_function
     n_dup = 1
     k = 3 * n_dup
-    N_LOADING_PROCESSES = 4
-
+    N_LOADING_PROCESSES = 1
+    
     bulk_domains = [(f'{domain.name}', domain.name) for i in range(n_dup) for domain in np.random.permutation(domains)]
     with Timing(f'Bulk-loading {n*n_dup} domains in {N_LOADING_PROCESSES} processes'):
-        tree = MVPTree(distance_function, bulk_domains, n_processes=N_LOADING_PROCESSES)
-    calcs_before = tree._distance_cache._calculated_distances_counter
+        # tree = MVPTree(distance_function, bulk_domains, n_processes=N_LOADING_PROCESSES)
+        tree = MVPTree(distance_function, bulk_domains, root_element=(ZERO_ELEMENT, ZERO_ELEMENT), n_processes=N_LOADING_PROCESSES)
     # tree.save(RESULTS / f'mvptree_{n}.json', with_cache=False)
     tree.save(RESULTS / f'mvptree_with_cache_{n}.json', with_cache=True)
-    # tree = MVPTree.load(RESULTS / f'mvptree_with_cache_{n}.json', distance_function=distance_function, get_value = lambda key: StructInfo(key.split('_')[0]))
+    # tree = MVPTree.load(RESULTS / f'mvptree_with_cache_{n}.json', distance_function=distance_function, get_value = lambda key: key)
+
     print(tree.get_statistics())
-    return
+    calcs_before = tree._distance_cache._calculated_distances_counter
+    # return
 
     idx = 0
     wrongies = 0
     n_dup = 1
-    with Timing(f'{n_dup}x searching {n} domains in the tree') as timing, ProgressBar(n_dup*n, title=f'{n_dup}x searching {n} domains in the tree', mute=False) as bar:
+    times = []    
+    with Timing(f'{n_dup}x searching {n_search} domains in the tree') as timing, ProgressBar(n_dup*n, title=f'{n_dup}x searching {n_search} domains in the tree', mute=False) as bar:
         for i in range(n_dup):
-            for domain in np.random.permutation(domains):
+            domains_to_search = np.random.choice(domains, n_search, replace=False)
+            for domain in np.random.permutation(domains_to_search):
                 idx += 1
                 real_knn = sorted((distance_function(domain.name, other.name), other.name) for other in domains)[:k]
-                knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[])
-                # knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[distance_calculator.dist_low_bound_len, distance_calculator.dist_low_bound_s])
+                with Timing(f'Searching {domain}', mute=True) as timing1:
+                    # knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[])
+                    knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[distance_calculator.dist_low_bound_len, distance_calculator.dist_low_bound_s])
+                times.append(timing1.time.total_seconds())
                 if [dom for dist, dom in knn] != [dom for dist, dom in real_knn]:
                     wrongies += 1
-                    # print('N Real kNN:', real_knn, 'Found kNN:', knn)
+                #     # print('N Real kNN:', real_knn, 'Found kNN:', knn)
                 bar.step()
-    print('Per one:', timing.time / (n_dup*n))
+    print('Per one:', timing.time / (n_dup*n_search))
     print('Wrongies:', wrongies)
     print(tree.get_statistics())
     calcs_after = tree._distance_cache._calculated_distances_counter
     print('Calculations:', calcs_after - calcs_before)
+    # print(sorted(times))
+    # matrix_info('times', times)
+
+def make_distance_matrix_multiprocessing(n: int):
+    N_PROCESSES = 6
+    print('make_distance_matrix', DIST_TYPE, SHAPEDIST_MAX_RMSD, OPDIST_SCORE_TYPE, OPDIST_MAX_RMSD, VERSION_NAME, N_PROCESSES, 'processes')
+    domains = []
+    with ProgressBar(n, title=f'Creating {n} StructInfos') as bar, Timing(f'Creating {n} StructInfos'):
+        for dom in get_domains(n):
+            domains.append(StructInfo(dom, init_all=True))
+            bar.step()
+    domain_dict = {dom.name: dom for dom in domains}
+    domain_index = {dom.name: i for i, dom in enumerate(domains)}
+    
+    global distance_calculator
+    try:
+        file = RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv'
+        distances = np.loadtxt(file)
+        raise Exception(f"{file} already exists. Refusing to overwrite. Please remove it manually before calculating distances again.")
+    except OSError:
+        try:
+            rotations: Array4D = np.load(RESULTS / f'rotations_{n}x{n}.npy')
+            translations: Array4D = np.load(RESULTS / f'translations_{n}x{n}.npy')
+            distance_calculator = DistanceCalculatorFromAlignment(rotations, translations, domain_index, domain_dict)
+            print('Using precomputed alignments.')
+            aligning = False
+        except OSError:
+            rotations = np.zeros((n, n, 3, 3))
+            translations = np.zeros((n, n, 1, 3))
+            distance_calculator = DistanceCalculatorFromScratch(domain_dict)
+            print('ALIGNING!!!')
+            aligning = True
+
+    aligned = False
+
+    distance_function = global_distance_function
+    distances = np.zeros((n, n))
+
+    from multiprocessing import Pool
+    pool = Pool(N_PROCESSES)
+    n_calcs = n*(n+1)//2
+    with lib.ProgressBar(n_calcs, title=f'Running {n_calcs} distance calculations in {N_PROCESSES} processes') as bar, Timing(f'Running {n_calcs} distance calculations in {N_PROCESSES} processes'):
+        for i in range(n):
+            jobs = []
+            for j in range(i, n):
+                job = lib.Job(name=f'{i}-{j}', func=distance_function, args=(domains[i].name, domains[j].name), kwargs={}, stdout=None, stderr=None)
+                jobs.append(job)
+            results = lib.run_jobs_with_multiprocessing(jobs, pool=pool)
+            for result in results:
+                si, sj = result.job.name.split('-')
+                i, j = int(si), int(sj)
+                dist = result.result
+                distances[i,j] = distances[j,i] = dist
+                bar.step()
+    
+    matrix_info('distances:', distances)
+    np.savetxt(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.csv', distances)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    plt.figure()
+    plt.hist(distances.flatten(), bins=range(0, 281, 28))
+    plt.savefig(RESULTS / f'distance_hist_{n}x{n}{VERSION_NAME}.png')
+    plt.figure()
+    plt.imshow(distances)
+    plt.savefig(RESULTS / f'distance_{n}x{n}{VERSION_NAME}.png')
+    if aligned:
+        np.save(RESULTS / f'rotations_{n}x{n}.npy', rotations)
+        np.save(RESULTS / f'translations_{n}x{n}.npy', translations)
 
 def make_distance_matrix(n: int):
     print('make_distance_matrix', DIST_TYPE, SHAPEDIST_MAX_RMSD, OPDIST_SCORE_TYPE, OPDIST_MAX_RMSD, VERSION_NAME)
@@ -722,6 +804,7 @@ def main() -> None:
     # test_shape_dist()
     # make_lengths(n)
     # make_distance_matrix(n)
+    # make_distance_matrix_multiprocessing(n)
     # show_distances_in_families()
     # make_bubbles(n)
     make_tree(n)
