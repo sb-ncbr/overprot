@@ -4,7 +4,7 @@ from numba import jit
 from pathlib import Path
 from matplotlib import pyplot as plt
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Union, Tuple, Literal, NamedTuple
+from typing import List, Dict, Optional, Union, Tuple, Literal, NamedTuple, Final
 from numpy import ndarray as Array
 np.seterr(all='raise')
 
@@ -14,6 +14,7 @@ from overprot.libs import lib_pymol
 from overprot.libs import lib_acyclic_clustering_simple
 from overprot.libs.lib_structure import Structure
 from overprot.libs.lib import Timing, ProgressBar
+from overprot.libs import superimpose3d
 from overprot.libs.lib_similarity_trees.nntree import NNTree
 from overprot.libs.lib_similarity_trees.ghtree import GHTree
 from overprot.libs.lib_similarity_trees.mtree import MTree
@@ -23,6 +24,8 @@ from overprot.libs.lib_similarity_trees.target import Target
 from overprot.libs.lib_similarity_trees.target_with_vpt import TargetWithVPT
 from overprot.libs.lib_similarity_trees.dummy_searcher import DummySearcher
 from overprot.libs.lib_similarity_trees.bubble_tree import BubbleTree
+from overprot.libs.lib_similarity_trees.laesa import LAESA
+
 
 
 Array1D = Array2D = Array3D = Array4D = Array
@@ -321,13 +324,13 @@ def length_dist_max(domainA: Union[np.ndarray, str], domainB: Union[np.ndarray, 
     n, _3 = coordsB.shape; assert _3 == 3
     return 0.5 * (m + n)
 
-DIST_TYPE = 's+op'
+DIST_TYPE = 'opi'
 SHAPEDIST_MAX_RMSD = 7.0  #5.0
 OPDIST_SCORE_TYPE = 'linear'  # 'exponential'|'linear'
 OPDIST_MAX_RMSD = 15
 # VERSION_NAME = '-s-v3maxrmsd7'
-# VERSION_NAME = '-op-lin15'
-VERSION_NAME = '-s+op-v3maxrmsd7-lin15'  # so far the best is s+op-v3maxrmsd7-lin15 (best in classifying against CATH)
+VERSION_NAME = '-opi10-lin15'
+# VERSION_NAME = '-s+op-v3maxrmsd7-lin15'  # so far the best is s+op-v3maxrmsd7-lin15 (best in classifying against CATH)
 LOWBOUND_VERSION_NAME = '-s_Opt-v3maxrmsd7'
 # LOWBOUND_VERSION_NAME = '-s-v3maxrmsd7'
 # best options: exp20, lin15 (based on sample885)
@@ -349,6 +352,57 @@ def op_score(domainA: StructInfo, domainB: StructInfo, rot_trans: Optional[Tuple
         raise AssertionError
     return score, rot_trans
 
+def op_score_iterated(domainA: StructInfo, domainB: StructInfo, rot_trans: Optional[Tuple[Array2D, Array2D]] = None, n_iter: int = 10) -> Tuple[Array2D, Tuple[Array2D, Array2D]]:
+    if rot_trans is None:
+        cealign = lib_pymol.cealign(domainA.alphas_cif, domainB.alphas_cif, fallback_to_dumb_align=True)
+        rot_trans = cealign.rotation.T, cealign.translation.T  # convert matrices from column style (3, n) to row style (n, 3)
+    R, t = rot_trans
+    i_iter = 0
+    print(f'{domainA.name}-{domainB.name}')
+    while True:
+        coordsA = domainA.coords
+        coordsB = domainB.coords @ R + t
+        r = np.sqrt(np.sum((coordsA.reshape((domainA.n, 1, 3)) - coordsB.reshape((1, domainB.n, 3)))**2, axis=2))
+        if OPDIST_SCORE_TYPE == 'exponential':
+            score = np.exp(-r / OPDIST_MAX_RMSD)
+        elif OPDIST_SCORE_TYPE == 'linear':
+            score = 1 - r / OPDIST_MAX_RMSD
+            score[score < 0] = 0
+        else: 
+            raise AssertionError
+        if i_iter == n_iter:
+            break
+        if i_iter == 0:
+            matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+        else:
+            _, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+        print(f'    {i_iter}: {total_score}')
+        n_matched = len(matching)
+        coordsA_matched = domainA.coords[[u for u, v in matching]]
+        coordsB_matched = domainB.coords[[v for u, v in matching]]
+        r_uv = np.array([r[u, v] for u, v in matching])
+        if OPDIST_SCORE_TYPE == 'exponential':
+            MINR = 5.0
+            r_uv[r_uv<MINR] = MINR
+            weights = np.exp(-r_uv / OPDIST_MAX_RMSD) / r_uv
+        elif OPDIST_SCORE_TYPE == 'linear':
+            MINR = 5.0
+            r_uv[r_uv<MINR] = MINR
+            weights = 1 / (r_uv + EPSILON)
+            weights[r_uv > OPDIST_MAX_RMSD] = 0.0  # TODO only calculate where <=
+            if np.sum(weights) == 0:
+                weights = np.ones((n_matched,))
+        # weights = np.ones((n_matched,))
+        # weights[r_uv > OPDIST_MAX_RMSD] = 0.0
+        R, t = optimal_rot_trans(coordsA_matched, coordsB_matched, weights)
+        i_iter += 1
+    rot_trans = R, t
+    return score, rot_trans
+
+def optimal_rot_trans(A: Array2D, B: Array2D, weights: Optional[Array1D] = None) -> Tuple[Array2D, Array2D]:
+    R_T, t_T = superimpose3d.optimal_rotation_translation(A.T, B.T, weights=weights)
+    return R_T.T, t_T.T
+
 def shape_score(domainA: StructInfo, domainB: StructInfo) -> Tuple[Array2D]:
     diff = domainA.shapes.reshape((domainA.n, 1, SHAPE_LEN, 3)) - domainB.shapes.reshape((1, domainB.n, SHAPE_LEN, 3))
     sqerror = np.sum(diff**2, axis=(2, 3))
@@ -363,6 +417,8 @@ def sop_dist(type: Literal['s', 'op', 's+op', 's*op', 's_Opt', 's_Pes'], domainA
         rot_trans = None
     elif type == 'op':
         score, rot_trans = op_score(domainA, domainB, rot_trans)
+    elif type == 'opi':
+        score, rot_trans = op_score_iterated(domainA, domainB, rot_trans)
     elif type == 's+op':
         score_s, = shape_score(domainA, domainB)
         score_op, rot_trans = op_score(domainA, domainB, rot_trans=rot_trans)
@@ -389,6 +445,8 @@ def sop_dist(type: Literal['s', 'op', 's+op', 's*op', 's_Opt', 's_Pes'], domainA
     # plt.savefig(RESULTS / f'score_{domainA}_{domainB}.png')
     # np.savetxt(RESULTS / f'score_{domainA}_{domainB}.csv', score)
     matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+    print(f'    Score:{total_score}')
+    input()
     distance = 0.5 * (domainA.n + domainB.n) - total_score
     return distance, rot_trans
 
@@ -489,14 +547,12 @@ class DistanceCalculatorFromAlignment(object):
 class DistanceCalculatorFromScratch(object):
     domain_structures: Dict[str, StructInfo]
     def distance_function(self, a: str, b: str):
-        domA = self.domain_structures[a]
-        domB = self.domain_structures[b]
         if a == ZERO_ELEMENT:
-            return 0.5 * domB.n
+            return 0.5 * self.domain_structures[b].n
         elif b == ZERO_ELEMENT:
-            return 0.5 * domA.n
+            return 0.5 * self.domain_structures[a].n
         else:
-            dist, _ = sop_dist(DIST_TYPE, domA, domB)
+            dist, _ = sop_dist(DIST_TYPE, self.domain_structures[a], self.domain_structures[b])
             return dist
 
 global distance_calculator
@@ -538,13 +594,14 @@ def make_tree(n: int, n_search: int = -1):
     n_dup = 1
     k = 3 * n_dup
     N_LOADING_PROCESSES = 1
-    
+
     bulk_domains = [(f'{domain.name}', domain.name) for i in range(n_dup) for domain in np.random.permutation(domains)]
     with Timing(f'Bulk-loading {n*n_dup} domains in {N_LOADING_PROCESSES} processes'):
         # tree = MVPTree(distance_function, bulk_domains, n_processes=N_LOADING_PROCESSES)
-        tree = MVPTree(distance_function, bulk_domains, root_element=(ZERO_ELEMENT, ZERO_ELEMENT), n_processes=N_LOADING_PROCESSES)
+        # tree = MVPTree(distance_function, bulk_domains, root_element=(ZERO_ELEMENT, ZERO_ELEMENT), n_processes=N_LOADING_PROCESSES, leaf_size=8)
+        tree = LAESA(distance_function, bulk_domains, n_pivots=100, n_processes=N_LOADING_PROCESSES)
     # tree.save(RESULTS / f'mvptree_{n}.json', with_cache=False)
-    tree.save(RESULTS / f'mvptree_with_cache_{n}.json', with_cache=True)
+    # tree.save(RESULTS / f'mvptree_with_cache_{n}.json', with_cache=True)
     # tree = MVPTree.load(RESULTS / f'mvptree_with_cache_{n}.json', distance_function=distance_function, get_value = lambda key: key)
 
     print(tree.get_statistics())
@@ -561,13 +618,15 @@ def make_tree(n: int, n_search: int = -1):
             for domain in np.random.permutation(domains_to_search):
                 idx += 1
                 real_knn = sorted((distance_function(domain.name, other.name), other.name) for other in domains)[:k]
+                real_range = real_knn[-1][0]
                 with Timing(f'Searching {domain}', mute=True) as timing1:
-                    # knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[])
-                    knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[distance_calculator.dist_low_bound_len, distance_calculator.dist_low_bound_s])
+                    knn = tree.kNN_query_by_value3(domain.name, k, distance_low_bounds=[])
+                    # knn = tree.kNN_query_by_value3(domain.name, k, distance_low_bounds=[], the_range=real_range+EPSILON)
+                    # knn = tree.kNN_query_by_value(domain.name, k, distance_low_bounds=[distance_calculator.dist_low_bound_len, distance_calculator.dist_low_bound_s])
                 times.append(timing1.time.total_seconds())
                 if [dom for dist, dom in knn] != [dom for dist, dom in real_knn]:
                     wrongies += 1
-                #     # print('N Real kNN:', real_knn, 'Found kNN:', knn)
+                    # print('N Real kNN:', real_knn, 'Found kNN:', knn)
                 bar.step()
     print('Per one:', timing.time / (n_dup*n_search))
     print('Wrongies:', wrongies)
@@ -798,16 +857,16 @@ def main() -> None:
     '''Main'''
     # download_structures()
     # create_alphas()
-    n = 4076
+    n = 100 #4076
     # visualize_matrix(n)
     # test_shape()
     # test_shape_dist()
     # make_lengths(n)
-    # make_distance_matrix(n)
+    make_distance_matrix(n)
     # make_distance_matrix_multiprocessing(n)
     # show_distances_in_families()
     # make_bubbles(n)
-    make_tree(n)
+    # make_tree(n)
     # test_triangle_inequality2(n)
 
 

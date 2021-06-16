@@ -75,7 +75,7 @@ export var OverProtViewerCore;
         if (settings.file != '') {
             let absoluteFilePath = new URL(settings.file, document.baseURI).toString();
             console.log(`Fetching ${absoluteFilePath}`);
-            fetch(absoluteFilePath, { mode: 'no-cors' })
+            fetch(absoluteFilePath)
                 .then((response) => __awaiter(this, void 0, void 0, function* () {
                 if (response.ok) {
                     let text = yield response.text();
@@ -85,7 +85,12 @@ export var OverProtViewerCore;
                 else {
                     let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
                     setDataToViewer(viewer, data);
+                    console.error(`${absoluteFilePath} response:`, response);
                 }
+            }))
+                .catch(() => __awaiter(this, void 0, void 0, function* () {
+                let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
+                setDataToViewer(viewer, data);
             }));
         }
         else {

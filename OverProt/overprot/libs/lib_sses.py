@@ -221,6 +221,7 @@ def spectrum_color(x: float) -> str:
     '''Assign color to number x (0.0 <= x <= 1.0)'''
     FROM, TO = 100, 900
     num_color = int(FROM + (TO - FROM) * x)  # n elements span almost the whole rainbow (from 100-900, to distinguish start from end)
+    # num_color = (num_color + 500) % 1000  # Retarded inversion  # Debug
     return 's' + str(num_color).zfill(3)
 
 def spectrum_color_i(i: int, n: int) -> str:

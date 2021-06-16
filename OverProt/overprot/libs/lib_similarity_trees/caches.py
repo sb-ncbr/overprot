@@ -148,7 +148,7 @@ class DistanceCache(Generic[K, V], Sized, Container):
         result = [(key1, key2, distance) for (key1, key2), distance in result_dict.items()]
         return result
 
-    def calculate_distances(self, pairs: List[Tuple[K, K]], pool: Optional[Pool] = None, overwrite: bool = False) -> None:
+    def calculate_distances(self, pairs: List[Tuple[K, K]], pool: Optional[Pool] = None, overwrite: bool = False, with_progress_bar: bool = False) -> None:
         # print(f'Calculating {len(pairs)} in {pool}')
         jobs = []
         index = {}
@@ -160,7 +160,7 @@ class DistanceCache(Generic[K, V], Sized, Container):
                 index[name] = (key1, key2)
                 job = lib.Job(name=name, func=self._distance_function, args=(value1, value2), kwargs={}, stdout=None, stderr=None)
                 jobs.append(job)
-        job_results = lib.run_jobs_with_multiprocessing(jobs, n_processes=1, pool=pool)
+        job_results = lib.run_jobs_with_multiprocessing(jobs, n_processes=1, pool=pool, progress_bar=with_progress_bar)
         for result in job_results:
             key1, key2 = index[result.job.name]
             value1 = self._elements[key1]

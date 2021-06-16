@@ -83,7 +83,7 @@ export namespace OverProtViewerCore {
         if (settings.file != ''){
             let absoluteFilePath = new URL(settings.file, document.baseURI).toString();
             console.log(`Fetching ${absoluteFilePath}`);
-            fetch(absoluteFilePath, {mode: 'no-cors'})
+            fetch(absoluteFilePath)
                 .then(async response => {
                     if (response.ok) {
                         let text = await response.text();
@@ -92,7 +92,12 @@ export namespace OverProtViewerCore {
                     } else {
                         let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
                         setDataToViewer(viewer, data);
+                        console.error(`${absoluteFilePath} response:`, response);
                     }
+                })
+                .catch(async () => {                    
+                    let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
+                    setDataToViewer(viewer, data);
                 });
         } else {
             let data = Dag.newDagWithError('No file specified');

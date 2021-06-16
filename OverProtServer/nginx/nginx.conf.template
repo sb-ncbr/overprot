@@ -65,7 +65,8 @@ http {
 		listen      80;
 		server_name sestra.ncbr.muni.cz sestra.*;
 
-		root        /server_data/annotator_data;
+		add_header  Access-Control-Allow-Origin *;
+		root        /server_data/sestra_data;
 		location / {
 			proxy_pass http://localhost:5000;  # Gunicorn should run on 5000
 			proxy_set_header Host              $http_host;
@@ -82,10 +83,11 @@ http {
 		# SECSTRANNOTATOR - HTTPS
 		listen              443 ssl;
 		server_name         sestra.ncbr.muni.cz sestra.*;
-		ssl_certificate     /server_data/annotator_ssl/1616580846.pem;
-		ssl_certificate_key /server_data/annotator_ssl/key.pem;
+		ssl_certificate     /server_data/sestra_ssl/1616580846.pem;
+		ssl_certificate_key /server_data/sestra_ssl/key.pem;
 
-		root        /server_data/annotator_data;
+		add_header  Access-Control-Allow-Origin *;
+		root        /server_data/sestra_data;
 		location / {
 			proxy_pass http://localhost:5000;  # Gunicorn should run on 5000
 			proxy_set_header Host              $http_host;
@@ -102,7 +104,8 @@ http {
 		# OVERPROT
 		listen 80 default_server;
 
-		root   /server_data/overprot_data;
+		add_header Access-Control-Allow-Origin *;
+		root       /server_data/overprot_data;
 		location / {
 			proxy_pass http://localhost:4000;  # Gunicorn should run on 4000
 			proxy_set_header Host              $http_host;
@@ -121,7 +124,8 @@ http {
 		ssl_certificate     /server_data/overprot_ssl/1612540450.pem;
 		ssl_certificate_key /server_data/overprot_ssl/key.pem;
 
-		root   /server_data/overprot_data;
+		add_header Access-Control-Allow-Origin *;
+		root       /server_data/overprot_data;
 		location / {
 			proxy_pass http://localhost:4000;  # Gunicorn should run on 4000
 			proxy_set_header Host              $http_host;

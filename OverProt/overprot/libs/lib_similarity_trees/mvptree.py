@@ -210,12 +210,12 @@ class MVPTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         else:
             raise AssertionError
 
-    def kNN_query_by_value(self, query_value: V, k: int, distance_low_bounds: List[Callable[[V, V], float]] = []) -> List[Tuple[float, K]]:
+    def kNN_query_by_value(self, query_value: V, k: int, distance_low_bounds: List[Callable[[V, V], float]] = [], the_range: float = math.inf) -> List[Tuple[float, K]]:
         besties = MinFinder[K](n=k)
         query_dist = FunctionCache[K, float](lambda key: self._get_distance_to_value(key, query_value))
         queue = PriorityQueue[float, _MVPNode]()
         queue.add(0.0, self._root)
-        current_range = besties.top_size()
+        current_range = min(besties.top_size(), the_range)
         seen = set()
         QAE = True
         n_leaves = 0
@@ -238,13 +238,13 @@ class MVPTree(Generic[K, V], AbstractSimilarityTree[K, V]):
                     elem_value = self._distance_cache._elements[elem]
                     if any(d(elem_value, query_value) >= current_range for d in distance_low_bounds):
                         continue
-                    current_range = besties.bubble_in(query_dist[elem], elem)
+                    current_range = min(besties.bubble_in(query_dist[elem], elem), the_range)
                     seen.add(elem)
             elif isinstance(node, _MVPFork):
                 d_p_q = query_dist[node.pivot]
                 assert node.pivot not in seen
                 if node.pivot != ZERO_ELEMENT and node.pivot not in seen:
-                    current_range = besties.bubble_in(d_p_q, node.pivot)
+                    current_range = min(besties.bubble_in(d_p_q, node.pivot), the_range)
                     seen.add(node.pivot)
                 for i in range(self._K):
                     dmin_child = max(dmin, node.radii[i] - d_p_q, d_p_q - node.radii[i+1])
