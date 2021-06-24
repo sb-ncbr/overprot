@@ -28,34 +28,82 @@
         <img class="img-fluid d-block mx-auto" src="https://2dprots.ncbr.muni.cz/static/web/generated-{{family}}/imageCircle-multiple2.png" alt="2DProts for {{family}} not available">
     </div>
 </div>
-<div class="row mb-3">
-    <div class="col">
-        <b>External links:</b>
-        &emsp; &emsp;
-        <a href="https://cathdb.info/version/latest/superfamily/{{family}}" target="_blank">
-            <img src="/static/images/cath-logo.png" style="height: 1em;">
-            CATH &UpperRightArrow;
-        </a>
-        &emsp; &emsp;
-        <!-- <br><br> -->
-        <!-- <a href="http://78.128.250.85:5000/family/{{family}}" target="_blank">https://2dprots.ncbr.muni.cz/family/1.10.630.10 -->
-        <a href="https://2dprots.ncbr.muni.cz/family/{{family}}" target="_blank">
-            2DProts &UpperRightArrow;
-        </a>
-        &emsp; &emsp;
-        <!-- <input type="button" value="Save SVG" onclick="saveViewerSvg('main-viewer', 'overprot-{{family}}.svg')"> -->
+<div class="row">
+    <div class="col-12 col-md-6">
+        <h3>Family stats</h3>
+        <table class="summary">
+            <tr>
+                <th>PDB entries:</th>
+                <td class="num">{{666}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-pdbs">List</button>)</td>
+                <td><span class="info" title="Number of PDB entries that contain a domain from this family."></span></td>
+            </tr>
+            <tr>
+                <th>Protein domains:</th>
+                <td class="num">{{6666}} (<button class="btn btn-link p-0">List</button>)</td>
+                <td><span class="info" title="Total number of domains in the family."></span></td>
+            </tr>
+            <tr>
+                <th>Included domains:</th>
+                <td class="num">{{666}} (<button class="btn btn-link p-0">List</button>)</td>
+                <td><span class="info" title="Number of domains included in the consensus computation.&NewLine;This equals one domain per each PDB entry, excluding obsoleted entries."></span></td>
+            </tr>
+        </table>
     </div>
-</div>
-<div class="row mb-3">
-    <div class="col">
-        <b>Download:</b>
-        &emsp; &emsp;
-        <a href="/data/db/zip_results/results-{{family}}.zip" target="_blank">
-            results.zip
-        </a>
+    <div class="col-12 col-md-6">
+        <div class="row mb-3">
+            <div class="col">
+                <b>External links:</b>
+                &emsp;
+                <a href="https://cathdb.info/version/latest/superfamily/{{family}}" target="_blank">
+                    <img src="/static/images/cath-logo.png" style="height: 1em;">
+                    CATH&nbsp;&UpperRightArrow;
+                </a>
+                &emsp;
+                <a href="https://2dprots.ncbr.muni.cz/family/{{family}}" target="_blank">
+                    2DProts&nbsp;&UpperRightArrow;
+                </a>
+                &emsp;
+                <!-- <input type="button" value="Save SVG" onclick="saveViewerSvg('main-viewer', 'overprot-{{family}}.svg')"> -->
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <b>Download:</b>
+                &emsp;
+                <a href="/data/db/zip_results/results-{{family}}.zip" target="_blank">
+                    results.zip
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 <hr>
+
+<!-- Modal -->
+<div class="modal fade" id="modal-pdbs" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-pdbs">PDB list for family {{family}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    <button class="btn btn-link">CSV</button>
+                    <button class="btn btn-link">JSON</button>
+                </div>
+                <div id="table-pdbs" style="background-color: aliceblue;">
+                    <div class="p-2">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row">
     <div class="col text-justify">
@@ -74,7 +122,17 @@
 {% block scripts %}
 
 <script type='text/javascript'>
+    function loadPDBTable(e){
+        let tableDiv = $('#table-pdbs');
+        //fetch('');
+        tableDiv.empty();
+        tableDiv.append('Picovina grande');        
+    }
+
     initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
+
+    $('#modal-pdbs').on('show.bs.modal', loadPDBTable);
+    //$('#modal-pdbs').on('shown.bs.modal', loadPDBTable);
 </script>
 
 {% endblock %}

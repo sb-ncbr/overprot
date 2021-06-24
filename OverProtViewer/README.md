@@ -13,4 +13,4 @@
 
 ## Deployed instance
 
-    http://overprot.ncbr.muni.cz
+    https://overprot.ncbr.muni.cz
