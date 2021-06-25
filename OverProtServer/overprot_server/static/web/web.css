@@ -148,3 +148,21 @@ table.summary th, table.summary td {
   font-weight: bold; 
   content:"\24d8"
 }
+
+.striped-table, .striped-table table {
+  width: 100%;
+}
+
+.striped-table tr td, .striped-table tr th {
+  padding-block: 3px;
+  padding-inline: 5px;
+  font-size: 95%;
+}
+
+.striped-table tr:nth-child(1) th {
+  background-color: #e0e0e0;
+  padding-block: 6px;
+}
+.striped-table tr:nth-child(even) {
+  background-color: #f6f6f6;
+}

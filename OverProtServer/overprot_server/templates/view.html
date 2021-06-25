@@ -30,22 +30,22 @@
 </div>
 <div class="row">
     <div class="col-12 col-md-6">
-        <h3>Family stats</h3>
+        <h3>Family statistics</h3>
         <table class="summary">
             <tr>
                 <th>PDB entries:</th>
-                <td class="num">{{666}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-pdbs">List</button>)</td>
+                <td class="num">{{family_info.get('n_pdbs', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-pdbs">List</button>)</td>
                 <td><span class="info" title="Number of PDB entries that contain a domain from this family."></span></td>
             </tr>
             <tr>
-                <th>Protein domains:</th>
-                <td class="num">{{6666}} (<button class="btn btn-link p-0">List</button>)</td>
-                <td><span class="info" title="Total number of domains in the family."></span></td>
+                <th>Domains:</th>
+                <td class="num">{{family_info.get('n_domains', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-domains">List</button>)</td>
+                <td><span class="info" title="Total number of protein domains in the family."></span></td>
             </tr>
             <tr>
                 <th>Included domains:</th>
-                <td class="num">{{666}} (<button class="btn btn-link p-0">List</button>)</td>
-                <td><span class="info" title="Number of domains included in the consensus computation.&NewLine;This equals one domain per each PDB entry, excluding obsoleted entries."></span></td>
+                <td class="num">{{family_info.get('n_sample_without_obsoleted', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-included-domains">List</button>)</td>
+                <td><span class="info" title="Number of protein domains included in the consensus computation.&NewLine;This equals one domain per each PDB entry, excluding obsoleted entries."></span></td>
             </tr>
         </table>
     </div>
@@ -79,29 +79,14 @@
 </div>
 <hr>
 
-<!-- Modal -->
-<div class="modal fade" id="modal-pdbs" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modallabel-pdbs">PDB list for family {{family}}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <strong>Download:</strong>
-                    <button class="btn btn-link">CSV</button>
-                    <button class="btn btn-link">JSON</button>
-                </div>
-                <div id="table-pdbs" style="background-color: aliceblue;">
-                    <div class="p-2">
-                        Loading...
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="row">
+    <div class="col text-justify">
+        <p>
+            On this page you can view the precomputed OverProt results for all structural families in the CATH database.
+            The data were updated on {{last_update}}.
+            For each family (i.e. CATH superfamily), the list of protein domains and PDB entries was downloaded from PDBe API.
+            When a single PDB entry contained multiple domains from the same family, only one (randomly selected) domain was included in the algorithm's input.
+        </p>
     </div>
 </div>
 
@@ -116,23 +101,101 @@
     </div>
 </div>
 
+<!-- Modals -->
+<div class="modal fade" id="modal-pdbs" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-pdbs">PDB list for family {{family}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/data/db/families/{{family}}/pdbs.csv" download="pdbs-{{family}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/families/{{family}}/pdbs.json" download="pdbs-{{family}}.json">JSON</a>
+                </div>
+                <div id="table-pdbs" class="striped-table w-100 py-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-domains" tabindex="-1" role="dialog" aria-labelledby="modallabel-domains" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-domains">Domain list for family {{family}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/data/db/families/{{family}}/domains.csv" download="domains-{{family}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/families/{{family}}/domains.json" download="domains-{{family}}.json">JSON</a>
+                    &emsp;<a href="/data/db/families/{{family}}/family.json" download="family-{{family}}.json">JSON by PDB</a>
+                </div>
+                <div id="table-domains" class="striped-table w-100 py-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-included-domains" tabindex="-1" role="dialog" aria-labelledby="modallabel-included-domains" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-included-domains">Included domains for family {{family}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/data/db/families/{{family}}/sample.csv" download="sample-{{family}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/families/{{family}}/sample.json" download="sample-{{family}}.json">JSON</a>
+                </div>
+                <div id="table-included-domains" class="striped-table w-100 py-2"></div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 
 {% block scripts %}
 
 <script type='text/javascript'>
-    function loadPDBTable(e){
-        let tableDiv = $('#table-pdbs');
-        //fetch('');
-        tableDiv.empty();
-        tableDiv.append('Picovina grande');        
+    function loadContentToElement(element, source, overwrite=false){
+        let targetElement = $(element);
+        if (targetElement.attr('loaded') && !overwrite){
+            return;
+        }
+        let loadingText = `<div class="p-2 bg-light">Loading...</div>`;
+        let errorText = `<div class="p-2 bg-light">&#x26A0; Failed to load ${source}</div>`;
+        targetElement.empty();
+        targetElement.append(loadingText);  
+
+        fetch(source)
+        .then(response => response.ok ? response.text() : errorText)
+        .catch(response => errorText)
+        .then(text => {
+            targetElement.empty();
+            targetElement.append(text);        
+        });
+        targetElement.attr('loaded', true);
     }
 
     initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
 
-    $('#modal-pdbs').on('show.bs.modal', loadPDBTable);
-    //$('#modal-pdbs').on('shown.bs.modal', loadPDBTable);
+    $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs.html'));
+    $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains.html'));
+    $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample.html'));
 </script>
 
 {% endblock %}

@@ -4,7 +4,7 @@ import uuid
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, NamedTuple, Optional, Union, Dict
 
 from .constants import DATA_DIR, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_RESULT_FILE, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
 from . import domain_parsing
@@ -122,7 +122,8 @@ def view() -> Any:
         return flask.redirect(flask.url_for('view', family=DEFAULT_FAMILY_EXAMPLE, example=1))
     else:
         if family_exists(family):
-            return flask.render_template('view.html', family=family, last_update=get_last_update())
+            fam_info = family_info(family)
+            return flask.render_template('view.html', family=family, family_info=fam_info, last_update=get_last_update())
         else:
             return flask.render_template('search_fail.html', family=family)
 
@@ -179,7 +180,22 @@ def calculate_time_to_refresh(elapsed_time: timedelta) -> int:
         return -elapsed_seconds % REFRESH_TIMES[-1]
 
 def family_exists(family_id: str) -> bool:
-        return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
+    return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
+
+def family_info(family_id: str) -> Dict[str, str]:
+    SEP = ':'
+    result = {}
+    try:
+        with open(Path(DATA_DIR, 'db', 'families', family_id, f'family_info.txt')) as f:
+            for line in f:
+                if SEP in line:
+                    key, value = line.split(SEP, maxsplit=1)
+                    result[key.strip()] = value.strip()
+        return result
+    except OSError:
+        return {}
+
+
 
 
 

@@ -16,4 +16,4 @@ rq worker $RQ_QUEUE  & # run repeatedly to start more workers
 # FLASK
 export FLASK_APP='overprot_server'
 export FLASK_ENV='development'
-flask run
+flask run -p 8080
