@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, Union, List, Literal
 
@@ -35,7 +36,7 @@ def format_pdbs_html(family: dict, file: str):
 def format_pdbs_csv(family: dict, file: str):
     pdb_list = list(family.keys())
     with open(file, 'w') as w:
-        print('PDB', file=w)
+        print('pdb', file=w)
         for pdb in pdb_list:
             print(pdb, file=w)
 
@@ -71,7 +72,7 @@ def format_domains_html(domains: List[dict], file: str):
 
 def format_domains_csv(domains: List[dict], file: str):
     with open(file, 'w') as w:
-        header_line = ';'.join(header for header, field in DOMAIN_FIELDS)
+        header_line = ';'.join(field for header, field in DOMAIN_FIELDS)
         print(header_line, file=w)
         for dom in domains:
             line = ';'.join(str(dom[field]) for header, field in DOMAIN_FIELDS)
@@ -89,11 +90,19 @@ def main(input_family_json: str, input_sample_json: str,
         ) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
-    with open(Path(input_family_json)) as r:
-        family = json.load(r)
+    try:
+        with open(Path(input_family_json)) as r:
+            family = json.load(r)
+    except FileNotFoundError:
+        print(f'Warning: {input_family_json} not found', file=sys.stderr)
+        family = {}
     domains = [dom for doms in family.values() for dom in doms]
-    with open(Path(input_sample_json)) as r:
-        sample = json.load(r)
+    try:
+        with open(Path(input_sample_json)) as r:
+            sample = json.load(r)
+    except FileNotFoundError:
+        print(f'Warning: {input_sample_json} not found', file=sys.stderr)
+        sample = []
 
     if pdbs_html is not None:
         format_pdbs_html(family, pdbs_html)
