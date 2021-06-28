@@ -1,6 +1,6 @@
 import argparse
 import json
-import sys
+import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional, Union, List, Literal
 
@@ -22,6 +22,7 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('--sample_html', help='Output sample.html', type=str)
     parser.add_argument('--sample_json', help='Output sample.json', type=str)
     parser.add_argument('--sample_csv', help='Output sample.csv', type=str)
+    parser.add_argument('--out_dir', help='Output directory for all output file, overrides all other options', type=str)
     args = parser.parse_args()
     return vars(args)
 
@@ -84,25 +85,30 @@ def format_domains_json(domains: List[dict], file: str):
 
 
 def main(input_family_json: str, input_sample_json: str, 
-        pdbs_html: Optional[str], pdbs_json: Optional[str], pdbs_csv: Optional[str], 
-        domains_html: Optional[str], domains_json: Optional[str], domains_csv: Optional[str], 
-        sample_html: Optional[str], sample_json: Optional[str], sample_csv: Optional[str],
-        ) -> Optional[int]:
+        pdbs_html: Optional[str] = None, pdbs_json: Optional[str] = None, pdbs_csv: Optional[str] = None, 
+        domains_html: Optional[str] = None, domains_json: Optional[str] = None, domains_csv: Optional[str] = None, 
+        sample_html: Optional[str] = None, sample_json: Optional[str] = None, sample_csv: Optional[str] = None,
+        out_dir: Optional[str] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
-    try:
-        with open(Path(input_family_json)) as r:
-            family = json.load(r)
-    except FileNotFoundError:
-        print(f'Warning: {input_family_json} not found', file=sys.stderr)
-        family = {}
+    with open(Path(input_family_json)) as r:
+        family = json.load(r)
     domains = [dom for doms in family.values() for dom in doms]
-    try:
-        with open(Path(input_sample_json)) as r:
-            sample = json.load(r)
-    except FileNotFoundError:
-        print(f'Warning: {input_sample_json} not found', file=sys.stderr)
-        sample = []
+    with open(Path(input_sample_json)) as r:
+        sample = json.load(r)
+
+    if out_dir is not None:
+        Path(out_dir).mkdir(exist_ok=True)
+        shutil.copy(input_family_json, Path(out_dir, 'family.json'))
+        pdbs_html = Path(out_dir, 'pdbs.html')
+        pdbs_json = Path(out_dir, 'pdbs.json')
+        pdbs_csv = Path(out_dir, 'pdbs.csv')
+        domains_html = Path(out_dir, 'domains.html')
+        domains_json = Path(out_dir, 'domains.json')
+        domains_csv = Path(out_dir, 'domains.csv')
+        sample_html = Path(out_dir, 'sample.html')
+        sample_json = Path(out_dir, 'sample.json')
+        sample_csv = Path(out_dir, 'sample.csv')
 
     if pdbs_html is not None:
         format_pdbs_html(family, pdbs_html)

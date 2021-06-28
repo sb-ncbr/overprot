@@ -6,7 +6,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Union, Dict
 
-from .constants import DATA_DIR, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_RESULT_FILE, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
+from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_RESULT_FILE, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
 from . import domain_parsing
 from . import queuing
 
@@ -92,15 +92,16 @@ def job(job_id: str) -> Any:
     elif job_status.status in [queuing.JobStatus.PENDING, queuing.JobStatus.RUNNING]:
         now = queuing.get_current_time()
         elapsed_time = now - job_status.submission_time
-        refresh_time = calculate_time_to_refresh(elapsed_time)
+        refresh_time = _calculate_time_to_refresh(elapsed_time)
         url = flask.request.url
         return flask.render_template('waiting.html', job_id=job_id, job_name=job_status.name, job_status=job_status.status.value, 
                                      submission_time=job_status.submission_time, current_time=now, elapsed_time=elapsed_time, 
                                      url=url, refresh_time=refresh_time)
     elif job_status.status in [queuing.JobStatus.COMPLETED, queuing.JobStatus.ARCHIVED]:
         file = flask.url_for('diagram', job_id=job_id)
+        fam_info = _family_info_for_job(job_id)
         return flask.render_template('completed.html', file=file, job_id=job_id, job_name=job_status.name, job_status=job_status.status.value, 
-                                    submission_time=job_status.submission_time)
+                                    submission_time=job_status.submission_time, family_info=fam_info)
     elif job_status.status == queuing.JobStatus.FAILED:
         try:
             error_message = Path(DB_DIR_FAILED, job_id, JOB_ERROR_MESSAGE_FILE).read_text()
@@ -121,8 +122,8 @@ def view() -> Any:
     if family is None:
         return flask.redirect(flask.url_for('view', family=DEFAULT_FAMILY_EXAMPLE, example=1))
     else:
-        if family_exists(family):
-            fam_info = family_info(family)
+        if _family_exists(family):
+            fam_info = _family_info(family)
             return flask.render_template('view.html', family=family, family_info=fam_info, last_update=get_last_update())
         else:
             return flask.render_template('search_fail.html', family=family)
@@ -171,7 +172,7 @@ def data(file: str):
     # return f'{file} -- {escape(file)}'
 
 
-def calculate_time_to_refresh(elapsed_time: timedelta) -> int:
+def _calculate_time_to_refresh(elapsed_time: timedelta) -> int:
     elapsed_seconds = int(elapsed_time.total_seconds())
     try:
         next_refresh = next(t for t in REFRESH_TIMES if t > elapsed_seconds)
@@ -179,10 +180,10 @@ def calculate_time_to_refresh(elapsed_time: timedelta) -> int:
     except StopIteration:
         return -elapsed_seconds % REFRESH_TIMES[-1]
 
-def family_exists(family_id: str) -> bool:
+def _family_exists(family_id: str) -> bool:
     return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
 
-def family_info(family_id: str) -> Dict[str, str]:
+def _family_info(family_id: str) -> Dict[str, str]:
     SEP = ':'
     result = {}
     try:
@@ -194,6 +195,28 @@ def family_info(family_id: str) -> Dict[str, str]:
         return result
     except OSError:
         return {}
+
+def _family_info_for_job(job_id: str) -> Dict[str, str]:
+    SEP = ':'
+    result = {}
+    try:
+        family_info_file = _get_job_file(job_id, 'lists', 'family_info.txt')
+    except FileNotFoundError:
+        return {}
+    with open(family_info_file) as f:
+        for line in f:
+            if SEP in line:
+                key, value = line.split(SEP, maxsplit=1)
+                result[key.strip()] = value.strip()
+    return result
+
+def _get_job_file(job_id: str, *path_parts: str) -> Path:
+    '''Get path to file jobs/*/job_id/*path_parts of given job, where * can be Completed, Archived, Failed, or Pending etc. '''
+    for db_dir in (DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, DB_DIR_PENDING):
+        path = Path(db_dir, job_id, *path_parts)
+        if path.exists():
+            return path
+    raise FileNotFoundError('/'.join(['...', job_id, *path_parts]))
 
 
 

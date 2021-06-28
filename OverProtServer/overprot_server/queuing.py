@@ -21,7 +21,7 @@ def enqueue_job(job_name: str, domains: List[Domain], info: dict) -> Tuple['JobS
     job_status = JobStatusInfo(name=job_name)  # default status Pending
     Path(DB_DIR_PENDING, job_status.id).mkdir(parents=True, exist_ok=True)
     job_status.save(Path(DB_DIR_PENDING, job_status.id, JOB_STATUSINFO_FILE))
-    Path(DB_DIR_PENDING, job_status.id, JOB_DOMAINS_FILE).write_text('\n'.join(str(domain) for domain in domains))
+    Path(DB_DIR_PENDING, job_status.id, JOB_DOMAINS_FILE).write_text('\n'.join(str(domain) for domain in sorted(domains)))
     Path(DB_DIR_PENDING, job_status.id, JOB_INFO_FILE).write_text(json.dumps(info))
 
     queue = rq.Queue(QUEUE_NAME, connection=redis.Redis.from_url('redis://'), default_timeout=JOB_TIMEOUT+JOB_CLEANUP_TIMEOUT)
@@ -92,6 +92,7 @@ def process_job(job_id: str):
         # move(Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP+'.zip'), Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP))
         move(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, 'results'), Path(DB_DIR_RUNNING, job_id, 'results'))
         make_archive(Path(DB_DIR_RUNNING, job_id, 'results'), Path(DB_DIR_RUNNING, job_id, 'results.zip'))
+        move(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, 'lists'), Path(DB_DIR_RUNNING, job_id, 'lists'))
         # shutil.make_archive(Path(DB_DIR_RUNNING, job_id, 'results'), 'zip', Path(DB_DIR_RUNNING, job_id, 'results'))
         shutil.rmtree(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR))
 

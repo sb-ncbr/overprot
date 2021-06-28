@@ -58,7 +58,8 @@ def family_callback(result: lib.JobResult, directory: FilePath):
 
 
 
-def collect_results(families: List[str], input_dir: FilePath, filepath: List[str], output_dir: FilePath, zip: bool = False, hide_missing: bool = False) -> List[str]:
+def collect_results(families: List[str], input_dir: FilePath, filepath: List[str], output_dir: FilePath, 
+        zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False) -> List[str]:
     '''Collect results of the same type. Return the list of families with missing results.'''
     if output_dir.isdir():
         output_dir.rm(recursive=True)
@@ -67,7 +68,7 @@ def collect_results(families: List[str], input_dir: FilePath, filepath: List[str
     for family in families:
         inp = input_dir.sub('families', family, *filepath)
         filename = FilePath(filepath[-1])
-        out = output_dir.sub(f'{filename.name}-{family}{filename.ext}')
+        out = output_dir.sub(f'{filename.name}-{family}{filename.ext}') if include_original_name else output_dir.sub(family)
         if inp.exists():
             if zip:
                 shutil.make_archive(str(out), 'zip', str(inp))
@@ -80,7 +81,8 @@ def collect_results(families: List[str], input_dir: FilePath, filepath: List[str
                 json.dump(js_error, w)
         else:
             missing.append(family)
-            print('Missing results/ directory:', family, file=sys.stderr)
+            if print_missing:
+                print('Missing results/ directory:', family, file=sys.stderr)
     return missing
 
 
@@ -142,7 +144,8 @@ def main(family_list_file: Union[FilePath, str], sample_size: Union[int, str, No
     if collect:
         collect_results(families, directory, ['results'], directory.sub('collected_results', 'zip_results'), zip=True)
         collect_results(families, directory, ['results', 'diagram.json'], directory.sub('collected_results', 'diagrams'), hide_missing=True)
-        missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory.sub('collected_results', 'consensus_3d'))
+        collect_results(families, directory, ['lists'], directory.sub('collected_results', 'families'), include_original_name=False)
+        missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory.sub('collected_results', 'consensus_3d'), print_missing=True)
         with directory.sub('missing_results.txt').open('w') as w:
             for family in missing_families:
                 print(family, file=w)

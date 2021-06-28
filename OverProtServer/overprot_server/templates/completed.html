@@ -43,13 +43,126 @@
     <div class="col-12 col-md-6 mb-3">
         <h3 class="text-center">3D view (MAPSCI + OverProt)</h3>
         <img class="img-fluid d-block mx-auto" src="/results/{{job_id}}/results/consensus.png">
-        <!-- <img class="img-fluid d-block mx-auto" src="/results/{{job_id}}/consensus.png"> -->
     </div>
     <div class="col-12 col-md-6 mb-3">
-        <h3>Download</h3>
+        <h3>Family statistics</h3>
+        <table class="summary">
+            <tr>
+                <th>PDB entries:</th>
+                <td class="num">{{family_info.get('n_pdbs', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-pdbs">List</button>)</td>
+                <td><span class="info" title="Number of PDB entries that contain a domain from this family."></span></td>
+            </tr>
+            <tr>
+                <th>Domains:</th>
+                <td class="num">{{family_info.get('n_domains', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-domains">List</button>)</td>
+                <td><span class="info" title="Total number of protein domains in the family."></span></td>
+            </tr>
+            <tr>
+                <th>Included domains:</th>
+                <td class="num">{{family_info.get('n_sample_without_obsoleted', '?')}} (<button class="btn btn-link p-0" data-toggle="modal" data-target="#modal-included-domains">List</button>)</td>
+                <td><span class="info" title="Number of protein domains included in the consensus computation.&NewLine;For user-defined queries, this equals all domains."></span></td>
+            </tr>
+        </table>
+
+        <h3 class="pt-3">Download</h3>
         <p>Results: <a href='/results/{{job_id}}/results.zip'>results.zip</a></p>
         <p>All data: <a href='/results/{{job_id}}/data.zip'>data.zip</a></p>
     </div>
 </div>
+
+<!-- Modals -->
+<div class="modal fade" id="modal-pdbs" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-pdbs">PDB list for job {{job_id}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/results/{{job_id}}/lists/pdbs.csv" download="pdbs-{{job_id}}.csv">CSV</a>
+                    &emsp;<a href="/results/{{job_id}}/lists/pdbs.json" download="pdbs-{{job_id}}.json">JSON</a>
+                </div>
+                <div id="table-pdbs" class="striped-table w-100 py-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-domains" tabindex="-1" role="dialog" aria-labelledby="modallabel-domains" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-domains">Domain list for job {{job_id}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/results/{{job_id}}/lists/domains.csv" download="domains-{{job_id}}.csv">CSV</a>
+                    &emsp;<a href="/results/{{job_id}}/lists/domains.json" download="domains-{{job_id}}.json">JSON</a>
+                    &emsp;<a href="/results/{{job_id}}/lists/family.json" download="family-{{job_id}}.json">JSON by PDB</a>
+                </div>
+                <div id="table-domains" class="striped-table w-100 py-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-included-domains" tabindex="-1" role="dialog" aria-labelledby="modallabel-included-domains" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-included-domains">Included domains for job {{job_id}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <strong>Download:</strong>
+                    &emsp;<a href="/results/{{job_id}}/lists/sample.csv" download="sample-{{job_id}}.csv">CSV</a>
+                    &emsp;<a href="/results/{{job_id}}/lists/sample.json" download="sample-{{job_id}}.json">JSON</a>
+                </div>
+                <div id="table-included-domains" class="striped-table w-100 py-2"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript'>
+    function loadContentToElement(element, source, overwrite=false){
+        let targetElement = $(element);
+        if (targetElement.attr('loaded') && !overwrite){
+            return;
+        }
+        let loadingText = `<div class="p-2 bg-light">Loading...</div>`;
+        let errorText = `<div class="p-2 bg-light">&#x26A0; Failed to load ${source}</div>`;
+        targetElement.empty();
+        targetElement.append(loadingText);  
+
+        fetch(source)
+        .then(response => response.ok ? response.text() : errorText)
+        .catch(response => errorText)
+        .then(text => {
+            targetElement.empty();
+            targetElement.append(text);        
+        });
+        targetElement.attr('loaded', true);
+    }
+
+    $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs.html'));
+    $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains.html'));
+    $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample.html'));
+</script>
 
 {% endblock %}

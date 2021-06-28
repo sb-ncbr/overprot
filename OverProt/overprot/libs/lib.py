@@ -1015,10 +1015,10 @@ class FilePath(os.PathLike, object):
 
     def cp(self, dest: 'FilePath') -> 'FilePath':
         if self.isdir():
-            raise NotImplementedError('Copying directories not implemented yet')
+            new_path = shutil.copytree(self.full, dest.full)
         else:
             new_path = shutil.copy(self.full, dest.full)
-            return FilePath(new_path)
+        return FilePath(new_path)
 
     def rm(self, recursive: bool = False, ignore_errors: bool = False) -> None:
         '''Remove this file or empty directory ($ rm self || rmdir self).

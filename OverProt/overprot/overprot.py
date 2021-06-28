@@ -36,6 +36,7 @@ from . import make_guide_tree
 from . import acyclic_clustering_sides
 from . import draw_diagram
 from . import cealign_all
+from . import format_domains
     
 
 #  CONSTANTS  ################################################################################
@@ -121,9 +122,6 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     with datadir.sub('family_info.txt').open('a') as w:
         print('n_pdbs:', n_pdbs, file=w)
         print('n_domains:', n_domains, file=w)
-    if n_pdbs == 0:
-        datadir.sub('EMPTY_FAMILY').clear()
-        return 1
 
     datadir.sub('family-orig.json').cp(datadir.sub('family.json'))
     # python3  domains_with_observed_residues.py  --min_residues 4  $DIR/family-orig.json  >  $DIR/family.json  # TODO solve without an API call for each PDB
@@ -165,6 +163,13 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     n_sample = len(sample_domains)
     with datadir.sub('family_info.txt').open('a') as w:
         print('n_sample_without_obsoleted:', n_sample, file=w)
+
+    # Convert PDB and domain lists into various formats
+    format_domains.main(datadir.sub('family.json'), datadir.sub('sample.json'), out_dir=datadir.sub('lists'))
+    datadir.sub('family_info.txt').cp(datadir.sub('lists', 'family_info.txt'))
+    if n_sample == 0:
+        datadir.sub('EMPTY_FAMILY').clear()
+        return 1
 
     # Perform multiple structure alignment by MAPSCI
     print('\n::: MAPSCI :::')

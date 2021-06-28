@@ -77,6 +77,9 @@ class Domain(object):
         ranges = DOMAIN_FIELD_SEPARATOR.join(str(r) for r in self.ranges)
         return f'{self.pdb}{DOMAIN_FIELD_SEPARATOR}{self.chain}{DOMAIN_FIELD_SEPARATOR}{ranges}'
 
+    def __lt__(self, other: 'Domain') -> str:
+        return repr(self) < repr(other)
+
 
 def _is_valid_pdb(string: str) -> bool:
     return len(string) == 4 and string.isascii() and string.isalnum() and string[0].isdigit()
