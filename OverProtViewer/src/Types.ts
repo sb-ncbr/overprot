@@ -10,6 +10,8 @@ export namespace Types {
     export type D3Transition = d3.Transition<d3.BaseType, any, d3.BaseType, any>;
 
     export type Viewer = {
+        id: string,
+        uniqueId: string,
         mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
         guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
         canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>,
@@ -22,11 +24,15 @@ export namespace Types {
     };
 
     export function newViewer(
+            id: string,
+            uniqueId: string,
             d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, 
             d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, 
             d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, 
             settings: Settings|null = null): Viewer {
         return {
+            id: id,
+            uniqueId: uniqueId,
             mainDiv: d3mainDiv,
             guiDiv: d3guiDiv,
             canvas: d3canvas,
@@ -45,6 +51,7 @@ export namespace Types {
         height: number,
         colorMethod: Enums.ColorMethod,
         shapeMethod: Enums.ShapeMethod,
+        layoutMethod: Enums.LayoutMethod,
         betaConnectivityVisibility: boolean,
         occurrenceThreshold: number
     };
@@ -56,6 +63,7 @@ export namespace Types {
             height: Constants.CANVAS_HEIGHT,
             colorMethod: Constants.DEFAULT_COLOR_METHOD,
             shapeMethod: Constants.DEFAULT_SHAPE_METHOD,
+            layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
             betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
             occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD
         };
@@ -63,7 +71,7 @@ export namespace Types {
 
     export function newSettingsFromHTMLElement(element: HTMLElement): Settings {
         let MANDATORY_ATTRIBUTES = ['file'];
-        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'beta-connectivity', 'occurrence-threshold'];
+        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)){
                 console.error(`Missing attribute: "${attributeName}".`);
@@ -88,6 +96,10 @@ export namespace Types {
             'rectangle': Enums.ShapeMethod.Rectangle,
             'symcdf': Enums.ShapeMethod.SymCdf,
         }
+        let layoutMethodDictionary = {
+            'old': Enums.LayoutMethod.Old,
+            'new': Enums.LayoutMethod.New,
+        }
         let betaConnectivityDictionary = {
             'on': true,
             'off': false,
@@ -98,6 +110,7 @@ export namespace Types {
             width: parseIntAttribute('width', d3element.attr('width'), Constants.CANVAS_WIDTH),
             colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
             shapeMethod: parseEnumAttribute('shape-method', d3element.attr('shape-method'), shapeMethodDictionary, Constants.DEFAULT_SHAPE_METHOD),
+            layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
             betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), betaConnectivityDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
             occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true)
         }

@@ -168,7 +168,6 @@ export var Drawing;
     function addMouseHoldBehavior(selection, onDown, onHold, onUp) {
         selection.on('mousedown', () => __awaiter(this, void 0, void 0, function* () {
             if (d3.event.which == 1 || d3.event.which == undefined) { // d3.event.which: 1=left, 2=middle, 3=right mouse button
-                // console.log('mousedown', d3.event.which, d3.event.button, d3.event.buttons);
                 let thisClickId = Math.random().toString(36).slice(2);
                 onDown();
                 selection.attr('pressed', thisClickId);
@@ -176,18 +175,15 @@ export var Drawing;
                 while (selection.attr('pressed') == thisClickId) {
                     onHold();
                     yield sleep(Constants.MOUSE_HOLD_BEHAVIOR_STEP_SLEEP_TIME);
-                    // console.log('still down?', selection.attr('pressed'));
                 }
             }
         }));
         selection.on('mouseup', () => __awaiter(this, void 0, void 0, function* () {
             selection.attr('pressed', null);
-            // console.log('mouseup');
             onUp();
         }));
         selection.on('mouseleave', () => __awaiter(this, void 0, void 0, function* () {
             selection.attr('pressed', null);
-            // console.log('mouseup');
             onUp();
         }));
     }
@@ -204,6 +200,16 @@ export var Drawing;
             .transition().duration(duration)
             .style('fill', n => n.visual.fill)
             .style('stroke', n => n.visual.stroke);
+        let betaArcs = viewer.canvas
+            .select('g.beta-connectivity')
+            .selectAll('path');
+        if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
+            betaArcs.style('stroke', ladder => viewer.data.nodes[ladder[0]].visual.stroke);
+        }
+        else {
+            let arcColor = Colors.NEUTRAL_DARK.hex();
+            betaArcs.style('stroke', arcColor);
+        }
         show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
     }
     Drawing.recolor = recolor;
@@ -339,14 +345,12 @@ export var Drawing;
         viewer.settings.betaConnectivityVisibility = on;
         let oldBetaConnectivityVis = viewer.canvas.selectAll('g.beta-connectivity');
         if (oldBetaConnectivityVis.size() > 0 && !on) {
-            console.log('Hiding beta-connectivity.');
             if (transition)
                 fadeOutRemove(oldBetaConnectivityVis);
             else
                 oldBetaConnectivityVis.remove();
         }
         else if (oldBetaConnectivityVis.size() == 0 && on) {
-            console.log('Showing beta-connectivity.');
             let dag = viewer.data;
             dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
             let betaConnectivityVis = viewer.canvas

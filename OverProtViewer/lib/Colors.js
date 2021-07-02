@@ -3,6 +3,7 @@ export var Colors;
 (function (Colors) {
     var _a;
     _a = makeScheme(), Colors.NEUTRAL_COLOR = _a.neutral, Colors.COLOR_SCHEME = _a.scheme;
+    Colors.NEUTRAL_DARK = d3.rgb(0, 0, 0);
     function makeScheme() {
         let scheme = d3.schemeCategory10.map(str => d3.rgb(str));
         let neutral = scheme.splice(7, 1);

@@ -14,5 +14,11 @@ export var Enums;
         ShapeMethod[ShapeMethod["SymCdf"] = 1] = "SymCdf";
     })(ShapeMethod = Enums.ShapeMethod || (Enums.ShapeMethod = {}));
     ;
+    let LayoutMethod;
+    (function (LayoutMethod) {
+        LayoutMethod[LayoutMethod["Old"] = 0] = "Old";
+        LayoutMethod[LayoutMethod["New"] = 1] = "New";
+    })(LayoutMethod = Enums.LayoutMethod || (Enums.LayoutMethod = {}));
+    ;
 })(Enums || (Enums = {}));
 //# sourceMappingURL=Enums.js.map

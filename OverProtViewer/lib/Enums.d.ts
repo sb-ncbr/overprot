@@ -9,4 +9,8 @@ export declare namespace Enums {
         Rectangle = 0,
         SymCdf = 1
     }
+    enum LayoutMethod {
+        Old = 0,
+        New = 1
+    }
 }

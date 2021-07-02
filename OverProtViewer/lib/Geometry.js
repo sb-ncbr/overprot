@@ -143,7 +143,7 @@ export var Geometry;
         const b_ = sqrt(Math.min(r_1sq, r_2sq));
         const sin2theta_ = sin(2 * theta) * (1 / Math.pow(a, 2) - 1 / Math.pow(b, 2)) / q / (1 / Math.pow(a_, 2) - 1 / Math.pow(b_, 2));
         const theta_ = 0.5 * Math.asin(sin2theta_);
-        console.log(a, b, theta, '-->', a_, b_, theta_);
+        // console.log(a, b, theta, '-->', a_, b_, theta_);
         return [a_, b_, theta_];
     }
     /** Scale ellipse along x-axis and return the major semiaxis a', minor semiaxis b', and angle theta' of the new ellipse (angles are in radians) */

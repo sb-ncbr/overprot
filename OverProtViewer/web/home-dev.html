@@ -49,7 +49,7 @@
             <div class='greenbox'></div>
         </div> -->
 
-        <hr>
+        <!-- <hr>
         <h4>Rossman fold (CATH 3.40.50.2300) - sample of 4 domains</h4>
         <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-A.json'></overprot-viewer>
         <hr>
@@ -66,7 +66,14 @@
         <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-ABCD.json'></overprot-viewer>
         <hr>
         <br>
-        <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-whole-family.json'></overprot-viewer>
+        <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-whole-family.json' layout-method='old'></overprot-viewer>
+        <br>
+        <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-whole-family.json' layout-method='new'></overprot-viewer> -->
+        <hr>
+        <br>
+        <overprot-viewer id='rossmann-old' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='old'></overprot-viewer>
+        <br>
+        <overprot-viewer id='rossmann-new' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='new'></overprot-viewer>
         <br>
         <br>
         <br>
@@ -82,7 +89,9 @@
         <overprot-viewer id='aldolase' file='sample_data/aldolase_class1_3-20-20-70/diagram.json'></overprot-viewer>
         <hr>
         <h4>Cytochrome P450 (CATH 1.10.630.10)</h4>
-        <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json'></overprot-viewer>
+        <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='old'></overprot-viewer>
+        <br>
+        <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='new'></overprot-viewer>
         <hr>
         <h4>Immunoglobulin (CATH 2.60.40.10)</h4>
         <overprot-viewer id='immunoglobulin' file='sample_data/immunoglobulin_2-60-40-10/diagram.json' beta-connectivity='on'></overprot-viewer>
@@ -105,11 +114,14 @@
         <h4>Cellular retinoic acid-binding protein 2, <i>Homo sapiens</i> (1cbs) (UniProt P29373)</h4>
         <overprot-viewer id='1cbs' file='sample_data/per_uniprot/diagram_P29373.json'></overprot-viewer>
         <hr>
+        <h4>Rossman fold (CATH 3.40.50.2300) - 404</h4>
+        <overprot-viewer id='testing-404' file='sample_data/not_here.json'></overprot-viewer>
+        <br>
         <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTP</h4>
-        <overprot-viewer id='rossmann-cors' file='http://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
+        <overprot-viewer id='testing-cors' file='http://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
         <br>
         <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTPS</h4>
-        <overprot-viewer id='rossmann-cors-https' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
+        <overprot-viewer id='testing-cors-https' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
         <br>
     </body>
 </html>

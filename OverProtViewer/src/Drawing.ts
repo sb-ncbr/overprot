@@ -166,7 +166,6 @@ export namespace Drawing {
     export function addMouseHoldBehavior(selection: Types.D3Selection, onDown: ()=>any, onHold: ()=>any, onUp: ()=>any) {
         selection.on('mousedown', async () => {
             if (d3.event.which == 1 || d3.event.which == undefined) { // d3.event.which: 1=left, 2=middle, 3=right mouse button
-                // console.log('mousedown', d3.event.which, d3.event.button, d3.event.buttons);
                 let thisClickId = Math.random().toString(36).slice(2);
                 onDown();
                 selection.attr('pressed', thisClickId);
@@ -174,18 +173,15 @@ export namespace Drawing {
                 while (selection.attr('pressed') == thisClickId) {
                     onHold();
                     await sleep(Constants.MOUSE_HOLD_BEHAVIOR_STEP_SLEEP_TIME);
-                    // console.log('still down?', selection.attr('pressed'));
                 }
             }
         });
         selection.on('mouseup', async () => {
             selection.attr('pressed', null);
-            // console.log('mouseup');
             onUp();
         });
         selection.on('mouseleave', async () => {
             selection.attr('pressed', null);
-            // console.log('mouseup');
             onUp();
         });
     }
@@ -202,6 +198,15 @@ export namespace Drawing {
             .transition().duration(duration)
             .style('fill', n => (n as Dag.Node).visual.fill)
             .style('stroke', n => (n as Dag.Node).visual.stroke);
+        let betaArcs = viewer.canvas
+            .select('g.beta-connectivity')
+            .selectAll('path');
+        if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev){
+            betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
+        } else {
+            let arcColor = Colors.NEUTRAL_DARK.hex();
+            betaArcs.style('stroke', arcColor);
+        }
         show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
     }
 
@@ -342,11 +347,9 @@ export namespace Drawing {
         viewer.settings.betaConnectivityVisibility = on;
         let oldBetaConnectivityVis = viewer.canvas.selectAll('g.beta-connectivity');
         if (oldBetaConnectivityVis.size() > 0 && !on) {
-            console.log('Hiding beta-connectivity.');
             if (transition) fadeOutRemove(oldBetaConnectivityVis);
             else oldBetaConnectivityVis.remove();
         } else if (oldBetaConnectivityVis.size() == 0 && on) {
-            console.log('Showing beta-connectivity.');
             let dag = viewer.data;
             dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
             let betaConnectivityVis = viewer.canvas

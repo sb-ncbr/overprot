@@ -28,6 +28,7 @@ export declare namespace Constants {
     const HEATMAP_MIDDLE_VALUE = 5;
     const DEFAULT_OCCURRENCE_THRESHOLD = 0.2;
     const DEFAULT_BETA_CONNECTIVITY_VISIBILITY = true;
+    const DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
     const DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     const DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
     const LENGTH_SCALE = 4;

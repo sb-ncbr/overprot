@@ -5,8 +5,10 @@ import { Enums } from './Enums';
 import { Constants } from './Constants';
 export var Types;
 (function (Types) {
-    function newViewer(d3mainDiv, d3guiDiv, d3canvas, settings = null) {
+    function newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
         return {
+            id: id,
+            uniqueId: uniqueId,
             mainDiv: d3mainDiv,
             guiDiv: d3guiDiv,
             canvas: d3canvas,
@@ -27,6 +29,7 @@ export var Types;
             height: Constants.CANVAS_HEIGHT,
             colorMethod: Constants.DEFAULT_COLOR_METHOD,
             shapeMethod: Constants.DEFAULT_SHAPE_METHOD,
+            layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
             betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
             occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD
         };
@@ -35,7 +38,7 @@ export var Types;
     function newSettingsFromHTMLElement(element) {
         var _a;
         let MANDATORY_ATTRIBUTES = ['file'];
-        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'beta-connectivity', 'occurrence-threshold'];
+        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)) {
                 console.error(`Missing attribute: "${attributeName}".`);
@@ -59,6 +62,10 @@ export var Types;
             'rectangle': Enums.ShapeMethod.Rectangle,
             'symcdf': Enums.ShapeMethod.SymCdf,
         };
+        let layoutMethodDictionary = {
+            'old': Enums.LayoutMethod.Old,
+            'new': Enums.LayoutMethod.New,
+        };
         let betaConnectivityDictionary = {
             'on': true,
             'off': false,
@@ -69,6 +76,7 @@ export var Types;
             width: parseIntAttribute('width', d3element.attr('width'), Constants.CANVAS_WIDTH),
             colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
             shapeMethod: parseEnumAttribute('shape-method', d3element.attr('shape-method'), shapeMethodDictionary, Constants.DEFAULT_SHAPE_METHOD),
+            layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
             betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), betaConnectivityDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
             occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true)
         };

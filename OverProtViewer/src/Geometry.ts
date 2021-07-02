@@ -154,7 +154,7 @@ export namespace Geometry {
         const b_ = sqrt(Math.min(r_1sq, r_2sq));  
         const sin2theta_ = sin(2 * theta) * (1/a**2 - 1/b**2) / q / (1/a_**2 - 1/b_**2);   
         const theta_ = 0.5 * Math.asin(sin2theta_);
-        console.log(a, b, theta, '-->', a_, b_, theta_);
+        // console.log(a, b, theta, '-->', a_, b_, theta_);
         return [a_, b_, theta_];
     }
 

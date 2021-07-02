@@ -444,10 +444,6 @@ def make_diagram(labels, rel_occurrence, avg_lengths,
     else:  # draw as path
         dag = lib_graphs.Dag.from_path(range(n_vertices))
     vertex_sizes = {i: lib_graphs.Size(repr_lengths[i]*LENGTH_SCALE, rel_occurrence[i]*OCCUR_SCALE) for i in range(n_vertices)}
-    # box, positions = lib_graphs._embed_dag(dag, vertex_sizes, x_padding=GAP_RESIDUES*LENGTH_SCALE, y_padding=FLOOR_HEIGHT-OCCUR_SCALE)
-    # box, positions = lib_graphs.align_top_left((box, positions), 
-    #                                            left_margin=X_MARGIN, right_margin=X_MARGIN, 
-    #                                            top_margin=Y_MARGIN+UPPER_TEXT_HEIGHT, bottom_margin=Y_MARGIN+TEXT_HEIGHT)
     box, positions = lib_graphs.embed_dag(dag, vertex_sizes, 
                                           x_padding=GAP_RESIDUES*LENGTH_SCALE, y_padding=FLOOR_HEIGHT-OCCUR_SCALE,
                                           left_margin=X_MARGIN, right_margin=X_MARGIN, 

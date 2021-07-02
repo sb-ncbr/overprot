@@ -26,13 +26,14 @@ export var Constants;
     Constants.MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
     Constants.HEATMAP_MIDDLE_VALUE = 5;
     Constants.DEFAULT_OCCURRENCE_THRESHOLD = 0.2;
-    Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY = true; //#debug //false; 
+    Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY = true;
+    Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
     Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
     //#region measurements in the world
     Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
     Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
-    Constants.FLOOR_HEIGHT = 1.5 * Constants.OCCURRENCE_SCALE;
+    Constants.FLOOR_HEIGHT = 1.25 * Constants.OCCURRENCE_SCALE; // 1.5 * OCCURRENCE_SCALE;
     Constants.TOP_MARGIN = 0.25 * Constants.OCCURRENCE_SCALE;
     Constants.BOTTOM_MARGIN = 0.25 * Constants.OCCURRENCE_SCALE;
     Constants.LEFT_MARGIN = 4 * Constants.LENGTH_SCALE;

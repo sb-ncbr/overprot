@@ -12,6 +12,7 @@ import { Constants } from './Constants';
 import { Colors } from './Colors';
 import { Types } from './Types';
 import { Dag } from './Dag';
+import { Graphs } from './Graphs';
 import { Drawing } from './Drawing';
 import { Geometry } from './Geometry';
 import { Enums } from './Enums';
@@ -21,7 +22,9 @@ export var OverProtViewerCore;
     function initializeViewer(htmlElement) {
         var _a;
         let settings = Types.newSettingsFromHTMLElement(htmlElement);
-        let uniqueId = `${(htmlElement.id || '')}-${Math.random().toString(36).slice(2)}`;
+        const id = htmlElement.id || '';
+        const uniqueId = `${id}-${Math.random().toString(36).slice(2)}`;
+        console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`);
         // d3.select(htmlElement).selectAll(()=>htmlElement.childNodes as any).remove();
         d3.select(htmlElement).selectAll(':scope > *').remove(); // clear all children
         let d3mainDiv = d3.select(htmlElement).append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
@@ -36,8 +39,8 @@ export var OverProtViewerCore;
         let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
         let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
             .attrs({ width: settings.width, height: settings.height });
-        let viewer = Types.newViewer(d3mainDiv, d3guiDiv, d3canvas, settings);
-        // initializeExternalControls(viewer, uniqueId);
+        let viewer = Types.newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings);
+        // initializeExternalControls(viewer);
         initializeInternalControls(viewer);
         d3mainDiv.append('br');
         d3canvas.on('dblclick', () => Drawing.zoomAll(viewer));
@@ -64,7 +67,6 @@ export var OverProtViewerCore;
         let dragHandler = d3.drag()
             .on('drag', () => Drawing.shiftByMouse(viewer, -d3.event.dx, -d3.event.dy));
         dragHandler(d3canvas);
-        // TODO responsive resizing of the canvas
         d3.select(window).on('resize.' + uniqueId, () => {
             let newSize = d3guiDiv.node().getBoundingClientRect();
             resizeVisualization(viewer, newSize.width, newSize.height);
@@ -74,33 +76,39 @@ export var OverProtViewerCore;
             .text('Loading...');
         if (settings.file != '') {
             let absoluteFilePath = new URL(settings.file, document.baseURI).toString();
-            console.log(`Fetching ${absoluteFilePath}`);
+            // console.log(`Fetching ${absoluteFilePath}`);
             fetch(absoluteFilePath)
+                .catch((error) => __awaiter(this, void 0, void 0, function* () {
+                console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath, 'failed (this might be caused by CORS policy). Original error:', error);
+                let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
+                setDataToViewer(viewer, data);
+            }))
                 .then((response) => __awaiter(this, void 0, void 0, function* () {
-                if (response.ok) {
+                if (response && response.ok) {
                     let text = yield response.text();
                     let data = Dag.dagFromJson(text);
                     setDataToViewer(viewer, data);
                 }
-                else {
+                else if (response && !response.ok) {
+                    console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath, 'returned status code', response.status, response.statusText);
                     let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
                     setDataToViewer(viewer, data);
-                    console.error(`${absoluteFilePath} response:`, response);
                 }
             }))
-                .catch(() => __awaiter(this, void 0, void 0, function* () {
-                let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
+                .catch((error) => __awaiter(this, void 0, void 0, function* () {
+                console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because of internal error.`);
+                let data = Dag.newDagWithError(`Internal error`);
                 setDataToViewer(viewer, data);
+                throw error;
             }));
         }
         else {
             let data = Dag.newDagWithError('No file specified');
             setDataToViewer(viewer, data);
         }
-        // TODO place heatmap legend down if the view is too small (or put the legend label above the bar)
     }
     OverProtViewerCore.initializeViewer = initializeViewer;
-    function initializeExternalControls(viewer, uniqueId) {
+    function initializeExternalControls(viewer) {
         let d3controlsDiv = viewer.mainDiv.append('div').attr('id', 'controls');
         // ZOOM CONTROLS
         let d3zoomDiv = d3controlsDiv.append('div').attr('id', 'zoom');
@@ -108,55 +116,51 @@ export var OverProtViewerCore;
         d3zoomSpan.append('label').text('Zoom:');
         d3zoomSpan.append('button').text('+').on('click', () => Drawing.zoomIn(viewer));
         d3zoomSpan.append('button').text('-').on('click', () => Drawing.zoomOut(viewer));
-        // d3zoomSpan.append('button').text('<').on('click', () => Drawing.shift(viewer, -Constants.SHIFT_STEP_RELATIVE, 0));
-        // d3zoomSpan.append('button').text('>').on('click', () => Drawing.shift(viewer, +Constants.SHIFT_STEP_RELATIVE, 0));
-        // d3zoomSpan.append('button').text('^').on('click', () => Drawing.shift(viewer, 0, -Constants.SHIFT_STEP_RELATIVE));
-        // d3zoomSpan.append('button').text('v').on('click', () => Drawing.shift(viewer, 0, +Constants.SHIFT_STEP_RELATIVE));
         d3zoomSpan.append('button').text('Reset').on('click', () => Drawing.zoomAll(viewer));
         Drawing.setTooltips(viewer, d3zoomSpan, [`<div class="control-tooltip">Alternatively, use mouse wheel to zoom, mouse drag to shift, double-click to reset.</div>`], false, true);
         d3zoomDiv.append('br');
         // COLOR CONTROLS
         let d3colorRadioDiv = d3controlsDiv.append('div').attr('class', 'radio-group').attr('id', 'color');
         d3colorRadioDiv.append('label').text('Color:');
-        let radioGroupName = `color-radio-${uniqueId}`;
+        let radioGroupName = `color-radio-${viewer.uniqueId}`;
         let options = [
             { label: 'Uniform', value: 'uniform', method: Enums.ColorMethod.Uniform, tip: 'Show all SSEs in the same color.' },
             { label: 'Type', value: 'type', method: Enums.ColorMethod.Type, tip: 'Show &beta;-strands in blue, helices in gray.' },
             { label: 'Sheet', value: 'sheet', method: Enums.ColorMethod.Sheet, tip: 'Assign the same color to &beta;-strands from the same &beta;-sheet, <br>show helices in gray.' },
             { label: '3D Variability', value: 'variability', method: Enums.ColorMethod.Stdev, tip: '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.' }
         ];
-        options.forEach(option => {
-            let radioId = `radio-${option.value}-${uniqueId}`;
+        for (const option of options) {
+            let radioId = `radio-${option.value}-${viewer.uniqueId}`;
             let radioSpan = d3colorRadioDiv.append('span');
             radioSpan.append('input').attrs({ type: 'radio', name: radioGroupName, id: radioId })
                 .property('checked', viewer.settings.colorMethod == option.method)
                 .on('change', () => applyColors(viewer, option.method));
             radioSpan.append('label').attr('for', radioId).text(option.label);
             Drawing.setTooltips(viewer, radioSpan, [`<div class="control-tooltip">${option.tip}</div>`], false, true);
-        });
+        }
         d3colorRadioDiv.append('br');
         // SHAPE CONTROLS
         let d3shapeRadioDiv = d3controlsDiv.append('div').attr('class', 'radio-group').attr('id', 'shape');
         d3shapeRadioDiv.append('label').text('Shape:');
-        let shapeRadioGroupName = `shape-radio-${uniqueId}`;
+        let shapeRadioGroupName = `shape-radio-${viewer.uniqueId}`;
         let shapeOptions = [
             { label: 'Rectangle', value: 'rectangle', method: Enums.ShapeMethod.Rectangle, tip: 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).' },
             { label: 'Symmetric CDF', value: 'symcdf', method: Enums.ShapeMethod.SymCdf, tip: '<strong>Cumulative distribution function</strong> describes the statistical distribution of the SSE length. <br>The widest part of the shape corresponds to maximum length, the narrowest to minimum length, <br> the height corresponds to occurrence. <br>(The shape consists of four symmetrical copies of the CDF, the bottom right quarter is the classical CDF.)' },
         ];
-        shapeOptions.forEach(option => {
-            let radioId = `radio-${option.value}-${uniqueId}`;
+        for (const option of shapeOptions) {
+            let radioId = `radio-${option.value}-${viewer.uniqueId}`;
             let radioSpan = d3shapeRadioDiv.append('span');
             radioSpan.append('input').attrs({ type: 'radio', name: shapeRadioGroupName, id: radioId })
                 .property('checked', viewer.settings.shapeMethod == option.method)
                 .on('change', () => applyShapes(viewer, option.method));
             radioSpan.append('label').attr('for', radioId).text(option.label);
             Drawing.setTooltips(viewer, radioSpan, [`<div class="control-tooltip">${option.tip}</div>`], false, true);
-        });
+        }
         d3shapeRadioDiv.append('br');
         // BETA-CONNECTIVITY CONTROLS
         let d3betaConnectivityDiv = d3controlsDiv.append('div').attr('id', 'beta-connectivity');
         let d3betaConnectivitySpan = d3betaConnectivityDiv.append('span');
-        let checkboxId = `checkbox-beta-connectivity-${uniqueId}`;
+        let checkboxId = `checkbox-beta-connectivity-${viewer.uniqueId}`;
         d3betaConnectivitySpan.append('label').attr('for', checkboxId).text('Beta-connectivity:');
         d3betaConnectivitySpan.append('input').attr('type', 'checkbox').attr('id', checkboxId)
             .property('checked', viewer.settings.betaConnectivityVisibility)
@@ -171,7 +175,7 @@ export var OverProtViewerCore;
         d3betaConnectivityDiv.append('br');
         // OCCURRENCE THRESHOLD CONTROLS
         let d3sliderDiv = d3controlsDiv.append('div').attr('class', 'ext-slider').attr('id', 'occurrence-threshold');
-        let sliderId = 'occurrence-threshold-slider-' + uniqueId;
+        let sliderId = 'occurrence-threshold-slider-' + viewer.uniqueId;
         d3sliderDiv.append('label').attr('for', sliderId).text('Occurrence threshold: ')
             .append('span').attr('class', 'slider-indicator').attr('id', 'occurrence-threshold-indicator').text(viewer.settings.occurrenceThreshold * 100 + '%');
         d3sliderDiv.append('br');
@@ -246,50 +250,71 @@ export var OverProtViewerCore;
             dag.nodes.map(node => node.cdf[node.cdf.length - 1][0] * Constants.LENGTH_SCALE)
             : dag.nodes.map(node => node.avg_length * Constants.LENGTH_SCALE);
         let reprHeights = dag.nodes.map(node => node.occurrence * Constants.OCCURRENCE_SCALE);
-        let nNodes = dag.nodes.length;
-        let nLevels = dag.levels.length;
-        let starts = new Array(nNodes);
-        let ends = new Array(nNodes);
-        let floors = new Array(nNodes).fill(0);
-        let currentX = 0;
-        for (let iLevel = 0; iLevel < nLevels; iLevel++) {
-            const level = dag.levels[iLevel];
-            let nFloors = level.length;
-            for (let iFloor = 0; iFloor < nFloors; iFloor++) {
-                const iNode = level[iFloor];
-                starts[iNode] = currentX;
-                ends[iNode] = currentX + reprLengths[iNode];
-                floors[iNode] = iFloor - (nFloors - 1) / 2;
+        if (viewer.settings.layoutMethod == Enums.LayoutMethod.Old) {
+            let nNodes = dag.nodes.length;
+            let nLevels = dag.levels.length;
+            let starts = new Array(nNodes);
+            let ends = new Array(nNodes);
+            let floors = new Array(nNodes).fill(0);
+            let currentX = 0;
+            for (let iLevel = 0; iLevel < nLevels; iLevel++) {
+                const level = dag.levels[iLevel];
+                let nFloors = level.length;
+                for (let iFloor = 0; iFloor < nFloors; iFloor++) {
+                    const iNode = level[iFloor];
+                    starts[iNode] = currentX;
+                    ends[iNode] = currentX + reprLengths[iNode];
+                    floors[iNode] = iFloor - (nFloors - 1) / 2;
+                }
+                currentX = Math.max(...level.map(v => ends[v])) + Constants.GAP_LENGTH;
             }
-            currentX = Math.max(...level.map(v => ends[v])) + Constants.GAP_LENGTH;
+            for (let iNode = 0; iNode < dag.nodes.length; iNode++) {
+                dag.nodes[iNode].visual = Dag.newNodeVisual();
+                if (dag.nodes[iNode].active) {
+                    dag.nodes[iNode].visual.rect = {
+                        x: starts[iNode],
+                        width: reprLengths[iNode],
+                        y: floors[iNode] * Constants.FLOOR_HEIGHT - reprHeights[iNode] / 2,
+                        height: reprHeights[iNode]
+                    };
+                }
+                else { // put the inactive nodes somewhere, where they don't cause problems
+                    dag.nodes[iNode].visual.rect = {
+                        x: -Constants.LEFT_MARGIN,
+                        width: 0,
+                        y: 0,
+                        height: 0
+                    };
+                }
+            }
+            let totalLength = currentX - Constants.GAP_LENGTH;
+            let minFloor = Math.min(...floors);
+            let maxFloor = Math.max(...floors);
+            let minX = -Constants.LEFT_MARGIN;
+            let maxX = totalLength + Constants.RIGHT_MARGIN;
+            let minY = minFloor * Constants.FLOOR_HEIGHT - 0.5 * Constants.OCCURRENCE_SCALE - Constants.TOP_MARGIN;
+            let maxY = maxFloor * Constants.FLOOR_HEIGHT + 0.5 * Constants.OCCURRENCE_SCALE + Constants.BOTTOM_MARGIN;
+            viewer.world = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
         }
-        for (let iNode = 0; iNode < dag.nodes.length; iNode++) {
-            dag.nodes[iNode].visual = Dag.newNodeVisual();
-            if (dag.nodes[iNode].active) {
-                dag.nodes[iNode].visual.rect = {
-                    x: starts[iNode],
-                    width: reprLengths[iNode],
-                    y: floors[iNode] * Constants.FLOOR_HEIGHT - reprHeights[iNode] / 2,
-                    height: reprHeights[iNode]
-                };
-            }
-            else { // put the inactive nodes somewhere, where they don't cause problems
-                dag.nodes[iNode].visual.rect = {
-                    x: -Constants.LEFT_MARGIN,
-                    width: 0,
-                    y: 0,
-                    height: 0
-                };
+        else if (viewer.settings.layoutMethod == Enums.LayoutMethod.New) {
+            let graph = Graphs.newDagFromPrecedence(dag.levels, dag.precedence);
+            let vertexSizes = new Map();
+            for (const v of graph.vertices)
+                vertexSizes.set(v, { width: reprLengths[v], height: reprHeights[v] });
+            const [box, positions] = Graphs.embedDag(graph, vertexSizes, { x: Constants.GAP_LENGTH, y: Constants.FLOOR_HEIGHT - Constants.OCCURRENCE_SCALE }, Constants.LEFT_MARGIN, Constants.RIGHT_MARGIN, Constants.TOP_MARGIN, Constants.BOTTOM_MARGIN);
+            viewer.world = { x: -box.left, y: -box.top, width: box.right + box.left, height: box.bottom + box.top };
+            for (let iNode = 0; iNode < dag.nodes.length; iNode++) {
+                dag.nodes[iNode].visual = Dag.newNodeVisual();
+                if (dag.nodes[iNode].active) {
+                    const { x, y } = positions.get(iNode);
+                    const { width, height } = vertexSizes.get(iNode);
+                    dag.nodes[iNode].visual.rect = { x: x - width / 2, y: y - height / 2, width: width, height: height };
+                }
+                else { // put the inactive nodes somewhere, where they don't cause problems
+                    dag.nodes[iNode].visual.rect = { x: viewer.world.x, y: viewer.world.y, width: 0, height: 0 };
+                }
             }
         }
-        let totalLength = currentX - Constants.GAP_LENGTH;
-        let minFloor = Math.min(...floors);
-        let maxFloor = Math.max(...floors);
-        let minX = -Constants.LEFT_MARGIN;
-        let maxX = totalLength + Constants.RIGHT_MARGIN;
-        let minY = minFloor * Constants.FLOOR_HEIGHT - 0.5 * Constants.OCCURRENCE_SCALE - Constants.TOP_MARGIN;
-        let maxY = maxFloor * Constants.FLOOR_HEIGHT + 0.5 * Constants.OCCURRENCE_SCALE + Constants.BOTTOM_MARGIN;
-        viewer.world = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
         let initialZoomout = Geometry.zoomAllZoomout(viewer.world, viewer.screen);
         let minYZoomout = (Constants.OCCURRENCE_SCALE + Constants.TOP_MARGIN + Constants.BOTTOM_MARGIN) / viewer.screen.height;
         let maxYZoomout = viewer.world.height / viewer.screen.height;
@@ -298,7 +323,7 @@ export var OverProtViewerCore;
         viewer.zoom = Geometry.newZoomInfo(minXZoomout, maxXZoomout, minYZoomout, maxYZoomout, initialZoomout);
         viewer.visWorld = Geometry.centeredVisWorld(viewer.world, viewer.screen, viewer.zoom);
         dag.precedenceLines = [];
-        dag.precedence.forEach(edge => {
+        for (const edge of dag.precedence) {
             let u = dag.nodes[edge[0]].visual.rect;
             let v = dag.nodes[edge[1]].visual.rect;
             let xu = u.x + u.width;
@@ -308,7 +333,7 @@ export var OverProtViewerCore;
             dag.precedenceLines.push({ x1: xu, y1: yu, x2: xu + Constants.KNOB_LENGTH, y2: yu });
             dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
             dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
-        });
+        }
         let d3nodes = viewer.canvas
             .append('g').attr('class', 'nodes')
             .selectAll('g.node')

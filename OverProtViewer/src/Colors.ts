@@ -3,6 +3,7 @@ import { RGBColor } from 'd3';
 
 export namespace Colors {
     export const { neutral: NEUTRAL_COLOR, scheme: COLOR_SCHEME } = makeScheme();
+    export const NEUTRAL_DARK = d3.rgb(0, 0, 0);
 
     function makeScheme(): { neutral: RGBColor, scheme: RGBColor[] } {
         let scheme = d3.schemeCategory10.map(str => d3.rgb(str));

@@ -34,7 +34,7 @@ class Dag(object):
         slice_edges = [(u, v) for lev in slice_levels[1:] for v in lev for u in self.in_neighbors[v]]
         return Dag(slice_levels, slice_edges)
 
-    def slices(self) -> List['Dag']:
+    def slices_backup(self) -> List['Dag']:
         '''Find all n "slice-vertices" v[i] such that 
             Vertex v is a slice-vertex <==> foreach vertex u. exists path u->v or exists path v-> or u==v
         Find all n+1 "slices" S[i] such that
@@ -60,6 +60,42 @@ class Dag(object):
                 ancestors[slice_vertex] = set()
                 last_slice_vertex = i_level
             seen_vertices += len(level)
+        if len(self.levels) > last_slice_vertex+1:
+            slices.append(self._get_slice(last_slice_vertex+1, len(self.levels)))
+        assert {v for s in slices for v in s.vertices} == set(self.vertices)
+        return slices
+   
+    def slices(self) -> List['Dag']:
+        '''Find all n "slice-vertices" v[i] such that 
+            Vertex v is a slice-vertex <==> foreach vertex u. exists path u->v or exists path v-> or u==v
+        Find all n+1 "slices" S[i] such that
+            u in S[0] <==> exists path         u->v[0]
+            u in S[i] <==> exists path v[i-1]->u->v[i]
+            u in S[n] <==> exists path v[n-1]->u
+        Return list S[0], v[0], S[1], v[1], ... v[n-1], S[n]. (ommitting empty S[i])
+        '''
+        ancestors: Dict[int, Set[int]] = {}
+        seen_vertices = 0
+        slices = []
+        last_slice_vertex = -1
+        for i_level, level in enumerate(self.levels):
+            print('level', i_level, level)
+            for vertex in level:
+                ancestors[vertex] = set(self.in_neighbors[vertex]).union(*(ancestors[u] for u in self.in_neighbors[vertex]))
+            print('    ancestors', ancestors)
+            if len(level) == 1 and len(ancestors[level[0]]) == seen_vertices:
+                # This is a slice-vertex
+                slice_vertex = level[0]
+                print('    slice_vertex', slice_vertex)
+                if i_level > last_slice_vertex + 1:
+                    slices.append(self._get_slice(last_slice_vertex+1, i_level))
+                slices.append(Dag([[slice_vertex]], []))
+                ancestors.clear()
+                ancestors[slice_vertex] = set()
+                last_slice_vertex = i_level
+                seen_vertices = 1
+            else:
+                seen_vertices += len(level)
         if len(self.levels) > last_slice_vertex+1:
             slices.append(self._get_slice(last_slice_vertex+1, len(self.levels)))
         assert {v for s in slices for v in s.vertices} == set(self.vertices)
@@ -224,7 +260,7 @@ def embed_dag(dag: Dag, vertex_sizes: Dict[int, Size], *,
         positions: Dict[int, XY] = {}
     else:
         box, positions = _embed_dag(dag, vertex_sizes, x_padding=x_padding, y_padding=y_padding)
-    box = box.add_margins(left_margin, right_margin, top_margin, bottom_margin)  
+    box = box.add_margins(left_margin, right_margin, top_margin, bottom_margin)
     embedding = (box, positions)
     if align_top_left:
         embedding = _align_top_left(embedding)

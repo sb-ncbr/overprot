@@ -67,7 +67,7 @@ def format_domains_html(domains: List[dict], file: str):
             print('  <tr>', file=w)
             for header, field in DOMAIN_FIELDS:
                 value = dom[field]
-                print(f'    <td>{value}</td>', file=w)
+                print(f'    <td>{value or ""}</td>', file=w)
             print('  </tr>', file=w)
         print('</table>', file=w)
 
@@ -76,7 +76,7 @@ def format_domains_csv(domains: List[dict], file: str):
         header_line = ';'.join(field for header, field in DOMAIN_FIELDS)
         print(header_line, file=w)
         for dom in domains:
-            line = ';'.join(str(dom[field]) for header, field in DOMAIN_FIELDS)
+            line = ';'.join(str(dom[field] or "") for header, field in DOMAIN_FIELDS)
             print(line, file=w)
 
 def format_domains_json(domains: List[dict], file: str):

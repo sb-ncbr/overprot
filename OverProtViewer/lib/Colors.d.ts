@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 import { RGBColor } from 'd3';
 export declare namespace Colors {
     const NEUTRAL_COLOR: d3.RGBColor, COLOR_SCHEME: d3.RGBColor[];
+    const NEUTRAL_DARK: d3.RGBColor;
     function bySseType(type: string): RGBColor;
     function byIndex0(i: number): RGBColor;
     function byIndex1(i: number): RGBColor;

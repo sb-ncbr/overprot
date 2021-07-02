@@ -227,7 +227,6 @@ div.overprot-viewer div.slider div.slider-handle-ruler {
 div.overprot-viewer div.slider div.slider-handle {
     display: block;
     background: gray;
-    border-radius: 3px;
     /* opacity: 50%; */
     position: absolute;
     top: calc(-0.5 * var(--handle-height));

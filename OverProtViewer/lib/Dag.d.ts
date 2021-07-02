@@ -32,6 +32,6 @@ export declare namespace Dag {
     };
     function newNodeVisual(): NodeVisual;
     type Edge = number[];
-    function filterDagAndAddLevels(original: Dag, occurrence_threshold: number): void;
+    function filterDagAndAddLevels(dag: Dag, occurrence_threshold: number): void;
     function getNodeMinMaxLength(node: Dag.Node): [number, number];
 }

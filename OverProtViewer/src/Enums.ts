@@ -4,4 +4,5 @@ export namespace Enums {
 
     export enum ShapeMethod { Rectangle, SymCdf };
     
+    export enum LayoutMethod { Old, New };
 }

@@ -35,7 +35,8 @@ export namespace Constants {
 
     export const HEATMAP_MIDDLE_VALUE = 5;
     export const DEFAULT_OCCURRENCE_THRESHOLD = 0.2;
-    export const DEFAULT_BETA_CONNECTIVITY_VISIBILITY = true;//#debug //false; 
+    export const DEFAULT_BETA_CONNECTIVITY_VISIBILITY = true;
+    export const DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
 
     export const DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     export const DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
@@ -45,7 +46,7 @@ export namespace Constants {
     export const LENGTH_SCALE = 4;  // width of 1 residue in the world
     export const OCCURRENCE_SCALE = 100;  // height of occurrence 1.0 (100%) in the world
 
-    export const FLOOR_HEIGHT = 1.5 * OCCURRENCE_SCALE;
+    export const FLOOR_HEIGHT = 1.25 * OCCURRENCE_SCALE; // 1.5 * OCCURRENCE_SCALE;
     export const TOP_MARGIN = 0.25 * OCCURRENCE_SCALE;
     export const BOTTOM_MARGIN = 0.25 * OCCURRENCE_SCALE;
     export const LEFT_MARGIN = 4 * LENGTH_SCALE;

@@ -72,68 +72,39 @@ export namespace Dag {
     export type Edge = number[]; // [from: number, to: number, orientation?: number]
 
 
-    export function filterDagAndAddLevels(original: Dag, occurrence_threshold: number): void {
-        if (occurrence_threshold == 0.0) {
-            original.nodes.forEach(node => node.active = true);
-            original.activeNodes = d3.range(original.nodes.length);
-            original.precedence = original.origPrecedence;
-            original.beta_connectivity = original.origBetaConnectivity;
-            addLevels(original);
-            // return original;
-        } else {
-            let nNodes = original.nodes.length;
-            original.nodes.forEach(node => node.active = node.occurrence >= occurrence_threshold);
-            let selectedIndices = d3.range(nNodes).filter(i => original.nodes[i].active);
-            // let selectedIndices = d3.range(nNodes).filter(i => original.nodes[i].occurrence >= occurrence_threshold);
-            // let indexMap = new Array(nNodes).fill(-1);
-            // selectedIndices.forEach((iOld, iNew) => indexMap[iOld] = iNew);
-            let { ins: before, outs: after } = getInAndOutNeighbors(nNodes, original.origPrecedence);
-            // let { ins: before, outs: after } = getInAndOutNeighbors(nNodes, original.precedence);
-            for (let i = 0; i < nNodes; i++) {
-                if (!original.nodes[i].active) {  // removing node
-                    // if (indexMap[i] < 0) {  // removing node
-                    before[i].forEach(b => {
-                        after[i].forEach(a => {
-                            if (!(after[b].includes(a))) {
-                                after[b].push(a);
-                                before[a].push(b);
-                            }
-                        });
-                    });
+    export function filterDagAndAddLevels(dag: Dag, occurrence_threshold: number): void {
+        let nNodes = dag.nodes.length;
+        for (let node of dag.nodes) 
+            node.active = node.occurrence >= occurrence_threshold && node.avg_length > 0;
+        let selectedIndices = d3.range(nNodes).filter(i => dag.nodes[i].active);
+        let { ins: before, outs: after } = getInAndOutNeighbors(nNodes, dag.origPrecedence);
+        for (let i = 0; i < nNodes; i++) {
+            if (!dag.nodes[i].active) {  // removing node
+                for (let b of before[i]) {
+                    for (let a of after[i]) {
+                        if (!(after[b].includes(a))) {
+                            after[b].push(a);
+                            before[a].push(b);
+                        }
+                    }
                 }
             }
-            // let result = Dag.newDag();
-            // result.nodes = original.nodes;// selectedIndices.map(i => original.nodes[i]);
-            original.activeNodes = selectedIndices;
-            // result.activeNodes = selectedIndices;
-            original.precedence = [];
-            selectedIndices.forEach(b => {
-                after[b].forEach(a => {
-                    if (original.nodes[a].active)
-                        original.precedence.push([b, a]);
-                });
-            });
-            // result.precedence = [];
-            // selectedIndices.forEach(b => {
-            //     after[b].forEach(a => {
-            //         if (indexMap[a] >= 0)
-            //             result.precedence.push([indexMap[b], indexMap[a]]);
-            //     });
-            // });
-            addLevels(original);
-            removeRedundantPrecedenceEdges(original);
-            // return original;
-            // addLevels(result);
-            // removeRedundantPrecedenceEdges(result);
-            // console.log('precedence:', result.precedence);
-            // return result;
         }
+        dag.activeNodes = selectedIndices;
+        dag.precedence = [];
+        for (let b of selectedIndices) {
+            for (let a of after[b]) {
+                if (dag.nodes[a].active)
+                    dag.precedence.push([b, a]);
+            }
+        }
+        addLevels(dag);
+        removeRedundantPrecedenceEdges(dag);
     }
 
     function addLevels(dag: Dag.Dag): void {
         let levels: number[][] = [];
         let todoNodes = new Set(dag.activeNodes);
-        // let todoNodes = new Set(d3.range(dag.nodes.length));
         let todoEdges = dag.precedence;
         while (todoNodes.size > 0) {
             let minVertices = new Set(todoNodes);
