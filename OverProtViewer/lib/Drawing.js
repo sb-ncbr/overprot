@@ -118,6 +118,10 @@ export var Drawing;
             viewer.mainDiv.selectAll('[tooltip=pre-pinned]').attr('tooltip', 'pinned');
         });
     }
+    function unpinAllTooltips(viewer) {
+        viewer.mainDiv.selectAll('div.tooltip[type=pinned]').remove();
+        viewer.mainDiv.selectAll('[tooltip=pinned]').attr('tooltip', null);
+    }
     function setTooltips(viewer, selection, htmlContents, pinnable = false, delay = false) {
         if (htmlContents === null) {
             selection
@@ -145,23 +149,32 @@ export var Drawing;
         }
     }
     Drawing.setTooltips = setTooltips;
-    function addPointBehavior(selection, pointedElementSelector = (pointed) => d3.select(pointed)) {
+    function addPointBehavior(viewer, selection, pointedElementSelector = (pointed) => d3.select(pointed), callback = null) {
         selection.on('mouseenter.point', (d, i, g) => {
-            pointedElementSelector(g[i]).attr('pointed', 'true');
+            let pointed = pointedElementSelector(g[i]);
+            pointed.attr('pointed', 'pointed');
+            if (callback != null)
+                callback(pointed);
         });
         selection.on('mouseleave.point', (d, i, g) => {
             pointedElementSelector(g[i]).attr('pointed', null);
+            if (callback != null)
+                callback(d3.selectAll());
         });
     }
     Drawing.addPointBehavior = addPointBehavior;
-    function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked)) {
+    function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked), callback = null) {
         selection.on('click.pick', (d, i, g) => {
-            pickedElementSelector(g[i]).attr('picked', 'pre-picked');
+            let d3Elem = pickedElementSelector(g[i]);
+            d3Elem.attr('picked', 'pre-picked');
         });
         viewer.guiDiv
             .on('click.pick', () => {
             viewer.guiDiv.selectAll('[picked=picked]').attr('picked', null);
-            viewer.guiDiv.selectAll('[picked=pre-picked]').attr('picked', 'picked');
+            let picked = viewer.guiDiv.selectAll('[picked=pre-picked]');
+            picked.attr('picked', 'picked');
+            if (callback != null)
+                callback(picked);
         });
     }
     Drawing.addPickBehavior = addPickBehavior;
@@ -246,20 +259,33 @@ export var Drawing;
             .select('g.beta-connectivity')
             .selectAll('path')
             .transition().duration(duration)
-            .attr('d', edge => {
-            if (edge[3] == 0)
-                return '';
-            let [u, v, orientation] = edge;
-            let n1 = viewer.data.nodes[u].visual.rect;
-            let n2 = viewer.data.nodes[v].visual.rect;
-            let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
-            let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
-            // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-            return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
-            // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-        });
+            .attr('d', edge => calculateArcPath(viewer, edge));
+        // .attr('d', edge => {
+        //     if ((edge as Number[])[3] == 0) return '';
+        //     let [u, v, orientation] = edge as number[];
+        //     let n1 = viewer.data.nodes[u].visual.rect;
+        //     let n2 = viewer.data.nodes[v].visual.rect;
+        //     let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+        //     let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+        //     // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        //     return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+        //     // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        // });
     }
     Drawing.redraw = redraw;
+    function calculateArcPath(viewer, edge) {
+        if (edge[3] == 0)
+            return '';
+        let [u, v, orientation] = edge;
+        let n1 = viewer.data.nodes[u].visual.rect;
+        let n2 = viewer.data.nodes[v].visual.rect;
+        let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+        let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+        let arcMaxMinor = Constants.ARC_MAX_MINOR / viewer.zoom.yZoomout;
+        // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+        // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+    }
     function nodeBigEnoughForLabel(viewer, node) {
         return Geometry.rectToScreen(viewer.visWorld, viewer.screen, node.visual.rect).width >= Constants.MINIMAL_WIDTH_FOR_SSE_LABEL;
     }
@@ -360,7 +386,7 @@ export var Drawing;
                 .enter()
                 .append('path')
                 .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
-            addPointBehavior(betaConnectivityPaths);
+            addPointBehavior(viewer, betaConnectivityPaths);
             redraw(viewer, false);
             if (transition) {
                 fadeIn(betaConnectivityVis);
@@ -399,5 +425,76 @@ export var Drawing;
             viewer.visWorld.y = wy + 0.5 * wh - 0.5 * vh;
         }
     }
+    function dispatchSseEvent(viewer, eventType, sses) {
+        var _a;
+        if (!viewer.settings.dispatchEvents)
+            return;
+        let eventDetail = {
+            sourceType: (_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName,
+            sourceId: viewer.id,
+            sourceInternalId: viewer.uniqueId,
+            eventType: eventType,
+            targetType: 'sses',
+            sses: sses.map(sse => {
+                return {
+                    label: sse.label,
+                    type: sse.type,
+                    sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
+                };
+            }),
+        };
+        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
+    }
+    Drawing.dispatchSseEvent = dispatchSseEvent;
+    function handleEvent(viewer, event) {
+        var _a;
+        // console.log('Inbound event', event.type, event);
+        const detail = event.detail;
+        if (detail == null || detail == undefined) {
+            console.error(`Event ${event.type}: event.detail must be an object.`);
+            return;
+        }
+        if (detail.sourceType == ((_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName) && detail.sourceInternalId == viewer.uniqueId) {
+            console.log('Ignoring self', viewer.uniqueId);
+            return;
+        }
+        const sses = detail.sses;
+        if (sses == undefined) {
+            console.error(`Event ${event.type}: event.detail.sses must be an array.`);
+            return;
+        }
+        const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT;
+        const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER;
+        let attribute;
+        switch (event.type) {
+            case PDB_OVERPROT_DO_SELECT: // PDB.overprot.do.select
+                attribute = 'picked';
+                break;
+            case PDB_OVERPROT_DO_HOVER: // PDB.overprot.do.hover
+                attribute = 'pointed';
+                break;
+            default:
+                console.error('Unknown event type for OverProtViewer:', event.type);
+                return;
+        }
+        viewer.canvas.selectAll(`g.node[${attribute}]`).attr(attribute, null);
+        for (const sse of sses) {
+            if (sse.label == undefined) {
+                console.error(`Event ${event.type}: event.detail.sses[i].label must be a string.`);
+                return;
+            }
+            const g = viewer.nodeMap.get(sse.label);
+            if (g != undefined) {
+                d3.select(g).attr(attribute, attribute);
+            }
+            else {
+                console.warn(`Event ${event.type}: SSE with label "${sse.label}" is not present.`);
+            }
+        }
+        if (event.type == PDB_OVERPROT_DO_SELECT) {
+            unpinAllTooltips(viewer);
+        }
+    }
+    Drawing.handleEvent = handleEvent;
 })(Drawing || (Drawing = {}));
 //# sourceMappingURL=Drawing.js.map

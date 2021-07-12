@@ -31,6 +31,8 @@ export declare namespace Constants {
     const DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
     const DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     const DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
+    const DEFAULT_DISPATCH_EVENTS = false;
+    const DEFAULT_LISTEN_EVENTS = false;
     const LENGTH_SCALE = 4;
     const OCCURRENCE_SCALE = 100;
     const FLOOR_HEIGHT: number;
@@ -49,4 +51,9 @@ export declare namespace Constants {
     const HANGING_TEXT_OFFSET = 5;
     const RESET_SYMBOL = "&#x27F3;";
     const OPEN_POPUP_SYMBOL = " &#x25BE;";
+    const EVENT_PREFIX = "PDB.overprot.";
+    const EVENT_TYPE_SELECT = "select";
+    const EVENT_TYPE_HOVER = "hover";
+    const EVENT_TYPE_DO_SELECT = "do.select";
+    const EVENT_TYPE_DO_HOVER = "do.hover";
 }

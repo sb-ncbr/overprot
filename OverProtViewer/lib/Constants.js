@@ -30,6 +30,8 @@ export var Constants;
     Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
     Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
+    Constants.DEFAULT_DISPATCH_EVENTS = false;
+    Constants.DEFAULT_LISTEN_EVENTS = false;
     //#region measurements in the world
     Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
     Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
@@ -50,5 +52,12 @@ export var Constants;
     Constants.HANGING_TEXT_OFFSET = 5;
     Constants.RESET_SYMBOL = '&#x27F3;';
     Constants.OPEN_POPUP_SYMBOL = ' &#x25BE;';
+    Constants.EVENT_PREFIX = 'PDB.overprot.';
+    // Outbound events (dispatched by the viewer):
+    Constants.EVENT_TYPE_SELECT = 'select';
+    Constants.EVENT_TYPE_HOVER = 'hover';
+    // Inbound events (listened to by the viewer):
+    Constants.EVENT_TYPE_DO_SELECT = 'do.select';
+    Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
 })(Constants || (Constants = {}));
 //# sourceMappingURL=Constants.js.map

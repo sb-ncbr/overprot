@@ -1,0 +1,1108 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!-->
+<html class="no-js" lang="en">
+<!--<![endif]-->
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> -->
+  <!-- Not yet implemented -->
+  <title>Cytochrome P450 3A4 in PDB entry 1tqn &#8249; PDBe &#8249; EMBL-EBI</title>
+  <meta name="rating" content="general">
+  <meta name="description" content="1tqn: Cytochrome P450 3A4 in PDB entry 1tqn"><!-- Describe what this page is about -->
+  <meta name="author" content="Protein Data Bank in Europe">
+  <link rel="canonical" href="../../1tqn/protein/1">
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!--[if lt IE 8]> <meta http-equiv="x-ua-compatible" content="IE=8"/> <![endif]-->
+  <meta name="google-site-verification" content="q0FTPhAwLixFGuAtcZGekvzusnHiWOxjlMKAa5-rha8" />
+  <link rel="shortcut icon" type="image/x-icon" href="/pdbe/entry/static/LY0HfXAQGPkKDoFiR0fHWD98VGdOYHNjvBEYCRKqL7O.ico">
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <!-- CSS: implied media=all -->
+  <link href="https://www.ebi.ac.uk/pdbe/pdb-component-library/css/pdbe-molstar-1.1.1.css" type="text/css" rel="stylesheet" media="screen, projection" />
+  <link href="/pdbe/entry/static/3NAduThrzIQBle3JZIW8k1XLaQTpIgbnzAFnfQRmGnt.css" type="text/css" rel="stylesheet" media="screen, projection" />
+  <link href="/pdbe/entry/static/0wp1KlqjhTsLUUrs9fIgtMzSzDshnd2fOBJCLIrOvPN.css" type="text/css" rel="stylesheet" media="screen, projection" />
+
+  <link href="/pdbe/entry/static/pZR7lK9t3bkOEK9nfVcypDUditFL3gmBV3BO60DzDNC.css" type="text/css" rel="stylesheet" media="print" />
+  <link href="https://www.ebi.ac.uk/pdbe/pdb-component-library/css/pdb.component.library.min-1.0.0.css" type="text/css" rel="stylesheet" media="screen, projection" />
+  <script src="https://www.ebi.ac.uk/pdbe/pdb-component-library/libs/angular.1.4.7.min.js" type="text/javascript"></script>
+  <script src="https://www.ebi.ac.uk/pdbe/pdb-component-library/libs/d3.min.js" type="text/javascript"></script>
+  <script src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/pdb.component.library.min-1.2.0.js" type="text/javascript"></script>
+  <script src="/pdbe/entry/static/qg1AHwHZTBUKDNhieHRd5BzEIyHDYOR0Wy0moYQ6xZB.js" type="text/javascript"></script>
+
+  <!-- you can replace this with [projectname]-colours.css. See http://frontier.ebi.ac.uk/web/style/colour for details of how to do this -->
+  <!-- also inform ES so we can host your colour palette file -->
+
+
+
+  <!-- Check if url contains isChached param and set flag to for page caching environment -->
+  <script type="text/javascript">
+    var PDBePageConfig = {};
+    (function () {
+      //Chech Caching Environment
+      var appUrlParams = location.search;
+      var cacheParamPattern = new RegExp("isCacheEnv=true");
+      PDBePageConfig['isCacheEnv'] = cacheParamPattern.test(appUrlParams);
+
+      //check IE version
+      var iev = 0;
+      var ieold = (/MSIE (\d+\.\d+);/.test(navigator.userAgent));
+      var trident = !!navigator.userAgent.match(/Trident\/7.0/);
+      var rv = navigator.userAgent.indexOf("rv:11.0");
+
+      //if (ieold) iev = new Number(RegExp.$1);
+      if (ieold) iev = 8;
+      if (navigator.appVersion.indexOf("MSIE 10") != -1) iev = 10;
+      if (trident && rv != -1) iev = 11;
+      PDBePageConfig['ieVersion'] = iev;
+
+      //Check app environment
+      var grailsAppEnv = new RegExp('wwwdev').test(window.location.href) ? 'wwwdev' : new RegExp('wwwint').test(window.location.href) ? 'wwwint' : 'www';
+      PDBePageConfig['grailsAppEnv'] = grailsAppEnv;
+
+    })()
+  </script>
+  <style>
+    .atm a {
+      border: none;
+    }
+
+    .ui-menu .ui-menu-item {
+      margin: 0;
+      padding: 0;
+      zoom: 1;
+      float: left;
+      clear: left;
+      width: 100%;
+      list-style-image: none;
+    }
+
+    .ui-menu .ui-menu-item {
+      margin: 5px 0 0 0;
+      padding: 0;
+      zoom: 1;
+      float: left;
+      clear: left;
+      width: 100%;
+      border-bottom: 0px dotted #999 !important;
+    }
+
+    .ui-menu .ui-menu-item a {
+      /*text-decoration:none;display:block;padding:2px 4px;line-height:1.5;zoom:1;*/
+      display: inline-block;
+      font-size: 11.5px !important;
+      border-bottom: 1px dotted #999 !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      color: #232323 !important;
+      height: 20px;
+      line-height: 20px;
+      padding: 5px 5px 5px 8px;
+      width: 94%;
+    }
+
+    .ui-menu .ui-menu-item a:hover {
+      display: inline-block;
+      font-size: 11.5px !important;
+      border-top: 0px dotted #999 !important;
+      border-left: 0px dotted #999 !important;
+      border-right: 0px dotted #999 !important;
+      border-bottom: 1px dotted #999 !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      color: #232323 !important;
+      height: 20px;
+      line-height: 20px;
+      padding: 5px 5px 5px 8px !important;
+      background: rgba(115, 179, 96, 0.2) !important;
+      width: 94%;
+      margin: 0 0 0 0 !important;
+    }
+
+    .ui-widget-content {
+      color: #222;
+      border: 1px solid #AAA;
+      background: white;
+      color: #222;
+    }
+
+    .ui-tooltip {
+      border-width: 2px !important;
+      -moz-border-radius: 4px;
+      -webkit-border-radius: 4px;
+      border-radius: 4px;
+      background: white;
+      color: #222;
+      font-family: Verdana, Arial, sans-serif;
+      font-size: 1.1em;
+      padding: 8px;
+      position: absolute;
+      z-index: 9999;
+      max-width: 300px;
+      -webkit-box-shadow: 0 0 5px #AAA;
+      box-shadow: 0 0 5px #AAA;
+      word-wrap: break-word;
+    }
+
+    .ui-menu .ui-menu-item a.ui-state-focus,
+    .ui-menu .ui-menu-item a.ui-state-active {
+      /*font-weight:normal;margin:-1px 0 -1px 0 !important;*/
+      display: inline-block;
+      font-size: 11.5px !important;
+      border-top: 0px dotted #999 !important;
+      border-left: 0px dotted #999 !important;
+      border-right: 0px dotted #999 !important;
+      border-bottom: 1px dotted #999 !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      color: #232323 !important;
+      height: 20px;
+      line-height: 20px;
+      padding: 5px 5px 5px 8px !important;
+      background: rgba(115, 179, 96, 0.2) !important;
+      width: 94%;
+      margin: 0 0 0 0 !important;
+    }
+
+    .pdbe_search_autocomplete div[data-type="category"] div[data-type="column"]:last-child a {
+      border-bottom: 0px dotted #999 !important;
+    }
+
+    .ui-helper-hidden-accessible {
+      position: absolute !important;
+      clip: rect(1px, 1px, 1px, 1px);
+      border: 0;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      padding: 0;
+      position: absolute;
+      width: 1px;
+    }
+
+    .pdbe_search_autocomplete {
+      font-family: Helvetica, Arial, FreeSans, "Liberation Sans", sans-serif !important;
+      left: 19% !important;
+      z-index: 9999;
+      width: 70% !important;
+      max-width: 1600px;
+      margin: 0 auto !important;
+      -moz-border-radius: 0;
+      -webkit-border-radius: 0;
+      border-radius: 0;
+      list-style: none;
+      float: left;
+      display: block;
+      position: absolute;
+      cursor: default;
+      border: 1px solid #AAA;
+      background: white;
+      color: #222;
+      font-family: Verdana, Arial, sans-serif;
+      font-size: 85%;
+      outline: none;
+    }
+
+    .pdbe_search_autocomplete div[data-type="category"] {
+      margin-bottom: 10px;
+      border: 1px solid rgba(115, 179, 96, 5) !important;
+      margin: 5px;
+      padding: 5px;
+    }
+
+    .pdbe_search_autocomplete .categoryHeading {
+      font-size: 16px;
+      border: 1px solid rgb(115, 179, 96) !important;
+      background: rgba(115, 179, 96, 1);
+      color: #fff;
+      height: 20px;
+      padding: 5px 10px;
+      line-height: 20px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-align: left;
+    }
+
+    .pdbe_search_autocomplete .truncate-text {
+      width: 74%;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .pdbe_search_autocomplete .item_count {
+      float: right;
+    }
+
+    .pdbe_search_autocomplete .ui-widget {
+      font-size: 90%;
+      background: white;
+    }
+
+    .pdbe_search_autocomplete .item_count {
+      float: right;
+    }
+
+    .pdbe_search_autocomplete .truncate-text {
+      width: 74%;
+    }
+
+    .pdbe_search_autocomplete .ui-state-focus {
+      background-image: none;
+    }
+
+    .pdbe_search_autocomplete div[data-type='category'] {
+      margin-bottom: 10px;
+    }
+
+    .pdbe_search_autocomplete .hover,
+    .pdbe_search_autocomplete .ui-widget-content .ui-state-hover,
+    .pdbe_search_autocomplete .ui-widget-header .ui-state-hover,
+    .pdbe_search_autocomplete .ui-state-focus,
+    .pdbe_search_autocomplete .ui-widget-content .ui-state-focus,
+    .pdbe_search_autocomplete .ui-widget-header .ui-state-focus {
+      border: 1px solid #999;
+      background: #DADADA;
+      font-weight: normal;
+      color: #212121;
+      padding: .2em .3em;
+    }
+
+    /*.pdbe_search_autocomplete .ui-menu-item a.ui-state-focus,
+.pdbe_search_autocomplete .ui-menu-item a.ui-state-active{margin:-1px 0 0 0 !important;padding:2px 3px;}*/
+    .data-hidden {
+      display: none !important;
+    }
+
+    .pdbe_search_autocomplete .more_controller {
+      width: 95%;
+      text-align: right;
+      font-weight: bold;
+      padding: 5px 0;
+    }
+
+    .pdb50logo {
+      margin-top: 25px !important;
+      display: inline-block !important;
+    }
+
+    .pdb50logo>img {
+      height: 52px !important;
+    }
+
+    .pdb50logo-1 {
+      display: none !important;
+      width: 100px !important;
+      height: auto !important;
+      float: right !important;
+      margin-right: 20px !important;
+    }
+
+    @media only screen and (max-width: 639px) {
+
+      body.section-pdbe div#local-title.logo-title-strapline h1 {
+        font-size: 127% !important;
+      }
+
+      .pdb50logo-1 {
+        display: inline-block !important;
+      }
+
+      .pdb50logo-2 {
+        display: none !important;
+      }
+    }
+
+    @media only screen and (min-width: 640px) and (max-width: 959px) {
+
+      body.section-pdbe div#local-title.logo-title-strapline h1 {
+        font-size: 200% !important;
+      }
+
+      .pdb50logo-1 {
+        margin-top: -4px !important;
+        display: inline-block !important;
+      }
+
+      .pdb50logo-2 {
+        display: none !important;
+      }
+    }
+
+    @media only screen and (min-width: 960px) and (max-width: 1160px) {
+
+      body.section-pdbe div#local-title.logo-title-strapline h1 {
+        font-size: 200% !important;
+      }
+
+      .pdb50logo-1 {
+        margin-top: 13px !important;
+        display: inline-block !important;
+      }
+
+      .pdb50logo-2 {
+        display: none !important;
+      }
+    }
+  </style>
+  <!--[if gte IE 9]>
+<style type="text/css">
+.val-gradient {
+filter: none;
+}
+</style>
+<![endif]-->
+  <!-- custom build (lacks most of the "advanced" HTML5 support -->
+  <script type="text/javascript">!function () { function e(e, t, n) { e.addEventListener ? e.addEventListener(t, n, !1) : e.attachEvent && e.attachEvent("on" + t, n) } function t(e) { return window.localStorage && localStorage.pdbe_font_css_cache && localStorage.pdbe_font_css_cache_file === e } function n() { if (window.localStorage && window.XMLHttpRequest) if (t(o)) a(localStorage.pdbe_font_css_cache); else { var n = new XMLHttpRequest; n.open("GET", o, !0), e(n, "load", function () { 4 === n.readyState && (a(n.responseText), localStorage.pdbe_font_css_cache = n.responseText, localStorage.pdbe_font_css_cache_file = o) }), n.send() } else { var c = document.createElement("link"); c.href = o, c.rel = "stylesheet", c.type = "text/css", document.getElementsByTagName("head")[0].appendChild(c), document.cookie = "pdbe_font_css_cache" } } function a(e) { var t = document.createElement("style"); t.innerHTML = e, document.getElementsByTagName("head")[0].appendChild(t) } var o = "/pdbe/entry/static/ShXdjNfJWVxHthnispi1L6I7xVOwzDKb24vHpZr266M.css"; window.localStorage && localStorage.pdbe_font_css_cache || document.cookie.indexOf("pdbe_font_css_cache") > -1 ? n() : e(window, "load", n) }();</script>
+  <noscript>
+    <link href="/pdbe/entry/static/ShXdjNfJWVxHthnispi1L6I7xVOwzDKb24vHpZr266M.css" rel="stylesheet" media="all" type="text/css" />
+  </noscript>
+</head>
+
+<body class="level2 section-pdbe" data-applicationenv="">
+  <!-- add any of your classes or IDs -->
+  <div id="skip-to" class="hide_in_print">
+    <ul>
+      <li><a href="#content">Skip to main content</a></li>
+      <li><a href="#local-nav">Skip to local navigation</a></li>
+      <li><a href="#global-nav">Skip to EBI global navigation menu</a></li>
+      <li><a href="#global-nav-expanded">Skip to expanded EBI global navigation menu (includes all sub-sections)</a></li>
+    </ul>
+  </div>
+  <div id="wrapper" class="container_pdbe">
+    <header>
+      <div id="global-masthead" class="masthead grid_24">
+        <p id="ieSupportWarningMsg" class="warning" style="display:none;">
+          The latest features of this page are not supported in older IE browsers. Please update to IE11 or view this page in another browser (eg Chrome or Firefox) to access updated PDBe pages!
+          <span class="ieWarningClose" onclick="document.getElementById('ieSupportWarningMsg').style.display = 'none'">x</span>
+        </p>
+        <!--This has to be one line and no newline characters-->
+        <a href="//www.ebi.ac.uk/" title="Go to the EMBL-EBI homepage"><img src="//www.ebi.ac.uk/web_guidelines/images/logos/EMBL-EBI/EMBL_EBI_Logo_white.png" alt="EMBL European Bioinformatics Institute"></a>
+        <nav>
+          <ul id="global-nav">
+            <!-- set active class as appropriate -->
+            <li class="first active" id="services"><a href="//www.ebi.ac.uk/services">Services</a></li>
+            <li id="research"><a href="//www.ebi.ac.uk/research">Research</a></li>
+            <li id="training"><a href="//www.ebi.ac.uk/training">Training</a></li>
+            <li id="industry"><a href="//www.ebi.ac.uk/industry">Industry</a></li>
+            <li id="about" class="last"><a href="//www.ebi.ac.uk/about">About us</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div id="local-masthead" class="masthead grid_24 nomenu gradient">
+        <!-- local-title -->
+        <!-- NB: for additional title style patterns, see http://frontier.ebi.ac.uk/web/style/patterns -->
+        <!-- logo plus local-title -->
+        <div id="local-title" class="grid_12 alpha logo-title-strapline">
+          <a href="//www.ebi.ac.uk/pdbe" title="Back to PDBe homepage">
+            <img src="/pdbe/entry/static/bpayUPSIaIvDaUFP5VA2BXnIZxvHGRGxjvHrC9RCOGB.png" alt="PDBe logo" />
+          </a>
+          <div>
+            <h1>
+              <a href="//www.ebi.ac.uk/pdbe" title="Back to PDBe homepage">Protein Data Bank in Europe</a>
+            </h1>
+            <br class="hide_in_print">
+            <p>Bringing Structure to Biology</p>
+          </div>
+
+          <span class="pdb50logo pdb50logo-1">
+            <img src="/pdbe/entry/images/logos/wwPDB/PDB50-long.png" alt="PDB50" title="PDB50">
+          </span>
+
+        </div>
+        <!-- /local-title -->
+        <!-- local-search -->
+        <!-- NB: if you do not have a local-search, delete the following div, and drop the class="grid_12 alpha" class from local-title above -->
+        <div class="local-search-form grid_12 omega reset_100">
+          <span class="pdb50logo pdb50logo-2">
+            <img src="/pdbe/entry/images/logos/wwPDB/PDB50-long.png" alt="PDB50" title="PDB50">
+          </span>
+          <form id="local-search" name="local-search" action="/pdbe/entry/search/index" method="get" onkeypress="return event.keyCode != 13;" style="padding: 0 5px 0 0;">
+            <fieldset>
+              <div class="left">
+                <label id="search">
+                  <input type="text" id="local-searchbox" name="fq" autocomplete="off">
+                </label>
+                <span class="examples responsive_hide">
+                  Examples:
+                  <a href="/pdbe/entry/search/index?text:hemoglobin">hemoglobin</a>,
+                  <a href="/pdbe/entry/search/index?text:BRCA1_HUMAN">BRCA1_HUMAN</a>
+                </span>
+              </div>
+              <div class="right">
+                <span class="search-icon" data-icon="1" onclick="return handleSearchClick();"><input type="submit" name="submit" value="Search" class="submit" onclick="return handleSearchClick();"></span>
+                <!-- If your search is more complex than just a keyword search, you can link to an Advanced Search,
+with whatever features you want available -->
+                <span class="adv responsive_hide"><a href="/pdbe/entry/search/index?advancedSearch:true" id="adv-search" title="Advanced search">Advanced search</a></span>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+        <!-- /local-search -->
+        <!-- local-nav -->
+        <nav>
+          <ul class="grid_24" id="local-nav">
+            <li class="functional last"><a href="http://www.ebi.ac.uk/support/PDBe" target="_blank" class="icon icon-generic" data-icon="&#92;">Feedback</a></li>
+          </ul>
+        </nav>
+        <!-- /local-nav -->
+      </div>
+    </header>
+
+
+    <script type="application/ld+json">
+{
+    "@context": [
+        {
+            "@base": "http://schema.org"
+        },
+        {
+            "Gene": {
+                "@id": "http://purl.obolibrary.org/obo/SO_0000704"
+            },
+            "Protein": {
+                "@id": "http://purl.obolibrary.org/obo/PR_000000001"
+            },
+            "transcribedFrom": {
+                "@id": "http://semanticscience.org/resource/SIO_010081",
+                "@type": "@id"
+            },
+            "chain": {
+                "@id": "http://semanticscience.org/resource/SIO_010031",
+                "@type": "@id"
+            },
+            "region": ""
+        }
+    ],
+    "@type": "DataRecord",
+    "url": "http://www.ebi.ac.uk/pdbe/entry/pdb/1tqn/protein/1",
+    "mainEntity": {
+        "@type": [
+            "Protein",
+            "BioChemEntity"
+        ],
+        
+        "@id": "http://identifiers.org/uniprot:P08684",
+        "identifier": "P08684",
+        "name": "CP3A4_HUMAN",
+        
+        "additionalType": "http://semanticscience.org/resource/SIO_010043",
+        
+        "url": "http://www.ebi.ac.uk/pdbe/entry/pdb/1tqn/protein/1",
+        "transcribedFrom": [
+        
+            
+                
+                    {
+                        "@type": [
+                            "BioChemEntity",
+                            "Gene"
+                        ],
+                        "identifier": "CYP3A3",
+                        "name": "CYP3A3"
+                    }
+                
+                
+            
+                
+                    ,{
+                        "@type": [
+                            "BioChemEntity",
+                            "Gene"
+                        ],
+                        "identifier": "CYP3A4",
+                        "name": "CYP3A4"
+                    }
+                    
+                
+                
+            
+        
+                        
+        ],
+        
+        
+        "hasRepresentation": "MALYGTHSHGLFKKLGIPGPTPLPFLGNILSYHKGFCMFDMECHKKYGKVWGFYDGQQPVLAITDPDMIKTVLVKECYSVFTNRRPFGPVGFMKSAISIAEDEEWKRLRSLLSPTFTSGKLKEMVPIIAQYGDVLVRNLRREAETGKPVTLKDVFGAYSMDVITSTSFGVNIDSLNNPQDPFVENTKKLLRFDFLDPFFLSITVFPFLIPILEVLNICVFPREVTNFLRKSVKRMKESRLEDTQKHRVDFLQLMIDSQNSKETESHKALSDLELVAQSIIFIFAGYETTSSVLSFIMYELATHPDVQQKLQEEIDAVLPNKAPPTYDTVLQMEYLDMVVNETLRLFPIAMRLERVCKKDVEINGMFIPKGVVVMIPSYALHRDPKYWTEPEKFLPERFSKKNKDNIDPYIYTPFGSGPRNCIGMRFALMNMKLALIRVLQNFSFKPCKETQIPLKLSLGGLLQPEKPVVLKVESRDGTVSGAHHHH"
+    }
+}
+</script>
+    <div id="content" role="main" class="clearfix">
+
+      <!-- If you require a breadcrumb trail, its root should be your service.
+           You don't need a breadcrumb trail on the homepage of your service... -->
+      <!--
+    <nav id="breadcrumb">
+        <p>
+            <a href="//www.ebi.ac.uk/pdbe">PDBe</a> &gt;
+    1tqn
+        </p>
+    </nav>
+    -->
+      <style type="text/css">
+        .protvistaResetSectionIcon .icon,
+        .protvistaToolbarIcon .icon {
+          margin: 1px 0px 1px 3px;
+          display: inline-block;
+        }
+
+        .protvistaResetSectionIcon .icon:before,
+        .protvistaToolbarIcon .icon:before {
+          color: #fff !important
+        }
+
+        .protvista_checkbox_label {
+          display: flex;
+          flex-direction: column;
+          text-indent: 1em;
+          margin-left: 27px;
+        }
+
+        .topologyViewerWrapper {
+          border: 1px solid #999;
+          -webkit-border-radius: 0px;
+          border-radius: 0px;
+          position: relative;
+          -webkit-box-shadow: none;
+          box-shadow: none;
+        }
+      </style>
+      <div id="slider">
+        <div class="shortcuts pdbe_quick_links">
+        </div>
+      </div>
+
+      <!-- Example layout containers -->
+      <section>
+        <div class="pdbe-content grid_18">
+          <div class="entry-heading clearfix">
+            <div class="grid_24 entry-breadcrumb reset_100">
+              <h2>
+                <span style="display: none;">
+                  <span itemscope itemtype="http://data-vocabulary.org/Breadcrumb" class="hide_in_print">
+                    <a href="//www.ebi.ac.uk/pdbe" itemprop="url"><span itemprop="title">PDBe</span></a>
+                  </span>
+                  <span class="hide_in_print sp">&#8250;</span>
+                </span>
+                <span itemscope itemtype="http://data-vocabulary.org/Breadcrumb" class="hide_in_print">
+                  <a href="/pdbe/entry/pdb/1tqn" itemprop="url"><span itemprop="title">1tqn</span></a>
+                </span>
+                <span class="hide_in_print sp">&#8250;</span>
+                <span itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                  <span itemprop="title">Cytochrome P450 3A4</span>
+                </span>
+              </h2>
+            </div>
+          </div>
+          <div id="intro" class="grid_24" style="padding-top: 9px;">
+
+
+
+
+            <div class="grid_ reset_100" style="">
+              <div class="pdbe-intro-image grid_7 alpha reset_100">
+                <div class="pdbe-intro-image-wrapper reset_66">
+                  <div class="image-left">
+                    <div class="image-x">
+                      <a style="border: none;" href="../../1tqn/portfolio/1/?view=protein_index#ad-image-0" data-jkit="[lightbox:closer=Close;width=60%;height=90%;]">
+                        <img class="image-tooltip" src="https://www.ebi.ac.uk/pdbe/static/entry/1tqn_entity_1_front_image-200x200.png" alt="PDB 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the front." title="PDB entry 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the front.">
+                      </a>
+                    </div>
+                  </div>
+                  <div class="image-right">
+                    <div class="image-y">
+                      <a style="border: none;" href="../../1tqn/portfolio/1/?view=protein_index#ad-image-1" data-jkit="[lightbox:closer=Close;width=60%;height=90%;]">
+                        <img class="image-tooltip" src="https://www.ebi.ac.uk/pdbe/static/entry/1tqn_entity_1_side_image-200x200.png" alt="PDB 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the side." title="PDB entry 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the side.">
+                      </a>
+                    </div>
+                    <div class="image-z">
+                      <a style="border: none;" href="../../1tqn/portfolio/1/?view=protein_index#ad-image-2" data-jkit="[lightbox:closer=Close;width=60%;height=90%;]">
+                        <img class="image-tooltip" src="https://www.ebi.ac.uk/pdbe/static/entry/1tqn_entity_1_top_image-200x200.png" alt="PDB 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the top." title="PDB entry 1tqn contains 1 copy of Cytochrome P450 3A4 in assembly 1. This protein is highlighted and viewed from the top.">
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+
+
+
+            <div class="pdbe-intro-relevant grid_17 reset_100">
+              <strong>Chain:</strong> A<br>
+              <strong>Length:</strong> 486 amino acids<br>
+              <strong>Theoretical weight:</strong>
+              55.59 KDa<br>
+              <!--TODO: take account of molecule.sample_preparation ['Genetically manipulated'/'Synthetically obtained']-->
+
+
+              <strong>Source organism:</strong>
+              <a class='srch-2' href='/pdbe/entry/search/index?organism_scientific_name:%22Homo+sapiens%22'><i>Homo sapiens</i></a><br>
+
+              <strong>Expression system:</strong> <i>Escherichia coli</i><br>
+
+
+
+
+
+
+
+              <strong>UniProt:</strong>
+              <ul style="margin-bottom:0px;">
+                <li class="pfam_term">Canonical: <a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/P08684" target="_blank"><img src="https://www.ebi.ac.uk/pdbe/pdbe-kb/static/icon/favicon-32x32.png" title="Protein Data Bank in Europe - Knowledge Base" style="border:0;height:15px;width:15px;margin-top: 1px;"> P08684</a> <a class="ext active" style="text-decoration:none;border:0;outline: 0;margin-left:5px" data-icon="x" href="http://www.uniprot.org/uniprot/P08684" target="_blank" title="Go to UniProt"></a> (Residues: 22-503; Coverage: 96%)</li>
+
+              </ul>
+
+
+
+
+
+              <span class="data-label reset_auto alpha">Gene names:</span>
+              <span class="reset_auto"><a class="srch-2" href="/pdbe/entry/search/index?gene_name:CYP3A3">CYP3A3</a>, <a class="srch-2" href="/pdbe/entry/search/index?gene_name:CYP3A4">CYP3A4</a></span><br>
+
+              <!--FASTA sequence-->
+              <span class="data-label reset_auto ">FASTA Sequence</span>
+              <div class="grid_23" style="
+     margin-top: 5px;
+     border: 1px dotted darkgray;
+     padding: 2%;
+     background-color: #F2F2EC;
+     max-height: 9em;
+     overflow: auto;">
+                <code class="grid_24" style="word-wrap: break-word; ">
+    &gt;pdb|1tqn|A<br>
+MALYGTHSHGLFKKLGIPGPTPLPFLGNILSYHKGFCMFDMECHKKYGKVWGFYDGQQPVLAITDPDMIKTVLVKECYSVFTNRRPFGPVGFMKSAISIAEDEEWKRLRSLLSPTFTSGKLKEMVPIIAQYGDVLVRNLRREAETGKPVTLKDVFGAYSMDVITSTSFGVNIDSLNNPQDPFVENTKKLLRFDFLDPFFLSITVFPFLIPILEVLNICVFPREVTNFLRKSVKRMKESRLEDTQKHRVDFLQLMIDSQNSKETESHKALSDLELVAQSIIFIFAGYETTSSVLSFIMYELATHPDVQQKLQEEIDAVLPNKAPPTYDTVLQMEYLDMVVNETLRLFPIAMRLERVCKKDVEINGMFIPKGVVVMIPSYALHRDPKYWTEPEKFLPERFSKKNKDNIDPYIYTPFGSGPRNCIGMRFALMNMKLALIRVLQNFSFKPCKETQIPLKLSLGGLLQPEKPVVLKVESRDGTVSGAHHHH
+  </code>
+              </div>
+
+
+            </div>
+          </div>
+          <div class="entry-content">
+            <div class="grid_24" ng-controller="proteinPageAppController">
+
+              <section class="grid_24 pdbe-topic">
+
+                <div class="grid_24 reset_100">
+
+
+                  <div style="margin:5px 0 5px 0; text-align:right;">
+                    <img src="https://www.ebi.ac.uk/pdbe/pdbe-kb/static/icon/favicon-32x32.png" title="Protein Data Bank in Europe - Knowledge Base" style="border:0;height:13px;width:13px;margin-top: 2px;"><strong>PDBe-KB: UniProt Coverage View:</strong>
+
+                    <a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/P08684" target="_blank">P08684</a>&nbsp;&nbsp;
+
+                  </div>
+
+
+                  <div id="pdbViewer_1tqn" ng-show="visibleDivId == 'pdbViewer_1tqn'">
+                    <protvista-pdb id="pv1" entry-id="1tqn" entity-id="1" page-section="1" legends="false"></protvista-pdb>
+                  </div>
+
+                </div>
+                <div class="grid_24 reset_100" style="margin-top: 1em;">
+                  <div class="grid_12 topology_diagram_wrapper reset_100" style="margin-left:0px;margin-right:0px;height:400px;margin-bottom:1em;overflow:visible;">
+                    <pdb-topology-viewer entry-id="1tqn" entity-id="1"></pdb-topology-viewer>
+                  </div>
+
+                  <div class="grid_12 structure_view_wrapper reset_100" style="float:right;overflow:visible;margin-left:0px;margin-right:0px;">
+
+
+
+                    <div style="position:relative;width:100%;height:403px;z-index:9;">
+                      <div id="3dViewer"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid_24 reset_100" style="margin-top: 1em;">
+                  <protvista-pdb id="pv2" entry-id="1tqn" entity-id="1" page-section="2" legends="false"></protvista-pdb>
+                </div>
+
+              </section>
+            </div>
+          </div>
+        </div>
+        <div class="grid_6 pdbe-quick-info">
+          <div class="panel-separator" style="height: 18px;"></div>
+          <div class="shortcuts submenu pdbe_quick_links">
+            <div class="clearfix hide_in_print">
+
+              <h3 class="pane-title">Quick links</h3>
+
+              <ul>
+                <!--Entry overview link-->
+
+                <li class="expanded active-trail active">
+                  <a href="/pdbe/entry/pdb/1tqn/" class="icon icon-generic active-trail active" data-icon="H">
+                    <span>1tqn overview</span>
+                  </a>
+                </li>
+
+
+
+                <li>
+                  <ul class="menu">
+                    <li class="first leaf">
+                      <a href="/pdbe/entry/pdb/1tqn/citations">
+                        <span class="bullet"></span>
+                        <span>Citations</span>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+
+
+                <!--Structure analysis link-->
+
+                <li class="expanded active-trail active highlight">
+                  <a href="/pdbe/entry/pdb/1tqn/analysis" class="icon icon-generic" data-icon="L">
+                    <span>Structure analysis</span>
+                  </a>
+                </li>
+
+
+
+                <!--Function and Biology link-->
+
+                <li>
+                  <a href="/pdbe/entry/pdb/1tqn/biology" class="icon icon-generic" data-icon="L">
+                    <span>Function and Biology</span>
+                  </a>
+                </li>
+
+
+
+                <!--Ligands and Environments link-->
+
+                <li>
+                  <a href="/pdbe/entry/pdb/1tqn/ligands/" class="icon icon-generic" data-icon="L">
+                    <span>Ligands and Environments</span>
+                  </a>
+                </li>
+
+
+
+                <!--Experiments and Validation link-->
+
+                <li>
+                  <a href="/pdbe/entry/pdb/1tqn/experiment" class="icon icon-generic" data-icon="L">
+                    <span>Experiments and Validation</span>
+                  </a>
+                </li>
+
+
+              </ul>
+
+              <ul>
+                <li>
+                  <a href="" class="icon icon-functional menu_opener" data-icon="=">Downloads</a>
+                </li>
+
+                <div class='extraContentMenu'>
+                  <div class='extraContentMenuHeader menu_closer'> <span class='light-icon icon-functional' data-icon='x'>Close</span> </div>
+                  <div class='extraContentMenuBody'><a href='/pdbe/entry/pdb/1tqn/fasta?entity=1'>FASTA (Protein chains A)</a><br />
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/1tqn.cif">Archive mmCIF file</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/1tqn_updated.cif">Updated mmCIF file</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/pdb1tqn.ent">PDB file</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/static/entry/download/1tqn.header">PDB header</a><br>
+                    <a href="https://ftp.ebi.ac.uk/pub/databases/rcsb/pdb-remediated/data/structures/divided/pdb/tq/pdb1tqn.ent.gz">PDB file (gz)</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/1tqn.xml">PDBML</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/1tqn-extatom.xml">PDBML (ATOM lines)</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/1tqn-noatom.xml">PDBML (no atoms)</a><br>
+                    <a href="https://www.ebi.ac.uk/pdbe/entry-files/download/r1tqnsf.ent">Structure Factors</a><br>
+                    <a href="ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/split_xml/tq/1tqn.xml.gz">SIFTS XML file with residue-level mappings</a><br><br />
+                  </div>
+                </div>
+              </ul>
+            </div>
+          </div>
+
+          <div class="panel-separator" style="height: 18px;"></div>
+          <div class="shortcuts">
+            <div class="clearfix  hide_in_print">
+
+              <h3 class="pane-title">Search similar proteins</h3>
+
+              <div class="pane-content pdbe_quick_links">
+                <ul style="padding-right: 9px;">
+                  <li>
+                    <a href="http://www.ebi.ac.uk/msd-srv/ssm/cgi-bin/ssmserver?q=1tqn;a=PDB;c=A" target="_blank" style="display: inline;" class="icon icon-functional" data-icon="1">
+                      <span>Similar 3D structures</span>
+                    </a><span style="float: right;">(PDBeFold)</span>
+                  </li>
+                  <li>
+                    <a href="http://www.ebi.ac.uk/pdbe-srv/PDBeXplore/sequence/?seq=MALYGTHSHGLFKKLGIPGPTPLPFLGNILSYHKGFCMFDMECHKKYGKVWGFYDGQQPVLAITDPDMIKTVLVKECYSVFTNRRPFGPVGFMKSAISIAEDEEWKRLRSLLSPTFTSGKLKEMVPIIAQYGDVLVRNLRREAETGKPVTLKDVFGAYSMDVITSTSFGVNIDSLNNPQDPFVENTKKLLRFDFLDPFFLSITVFPFLIPILEVLNICVFPREVTNFLRKSVKRMKESRLEDTQKHRVDFLQLMIDSQNSKETESHKALSDLELVAQSIIFIFAGYETTSSVLSFIMYELATHPDVQQKLQEEIDAVLPNKAPPTYDTVLQMEYLDMVVNETLRLFPIAMRLERVCKKDVEINGMFIPKGVVVMIPSYALHRDPKYWTEPEKFLPERFSKKNKDNIDPYIYTPFGSGPRNCIGMRFALMNMKLALIRVLQNFSFKPCKETQIPLKLSLGGLLQPEKPVVLKVESRDGTVSGAHHHH&tab=PDB%20entries" target="_blank" style="display: inline;" class="icon icon-functional" data-icon="1">
+                      <span>Similar sequences</span>
+                    </a><span style="float: right;">(PDBeXplore)</span>
+                  </li>
+
+                  <br>
+
+                  <li>
+                    <form action="http://www.uniprot.org/blast/" method="post" target="_blank" id="blastForm_P08684A">
+                      <input value="yes" name="redirect" type="hidden">
+                      <input value="no" name="landingPage" type="hidden">
+                      <input value="uniprotkb" name="dataset" type="hidden">
+                      <input value="10" name="threshold" type="hidden">
+                      <input value="" name="matrix" type="hidden">
+                      <input value="false" name="filter" type="hidden">
+                      <input value="true" name="gapped" type="hidden">
+                      <input value="250" name="numal" type="hidden">
+                      <input value="P08684" id="blastQuery" name="blastQuery" type="hidden">
+                    </form>
+                    <a href="#" target="_blank" style="display: inline;" class="icon icon-generic" data-icon="(" onclick="javascript:document.getElementById('blastForm_P08684A').submit();return false;">
+                      <span>BLAST P08684</span>
+                    </a><span style="float: right;">(UniProt)</span>
+                  </li>
+
+
+
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="proteinPgResInteractions" style="display:none;">
+            <div class="panel-separator" style="height: 18px;"></div>
+            <div class="shortcuts">
+              <div class="clearfix  hide_in_print">
+                <h3 class="pane-title">Residue interactions</h3>
+                <div class="pane-content pdbe_quick_links">
+                  <pdb-residue-interactions pdb-id="1tqn" chain-id="A"></pdb-residue-interactions>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+
+      <!-- End example layout containers -->
+
+    </div>
+
+    <footer>
+
+      <div id="local-footer" class="grid_24 clearfix">
+        <div class="content">
+          <p>
+            <img src="/pdbe/entry/images/logos/PDBe/pdbe-logo-2013.png" alt="Protein Data Bank in Europe (PDBe)" style="width: 90px; bacground: #fff; margin 7px 0">&nbsp;<span style="line-height: 2;text-align: center;padding: 0 12px; font-size: 138.5%; color: #666;">is a member of</span>&nbsp;
+            <a title="Go to the wwPDB homepage" href="http://www.wwpdb.org" target="_wwpdb" class="no-underline" style="border:none;">
+              <img src="/pdbe/entry/images/logos/wwPDB/wwpdb.png" alt="wwPDB" style="width: 90px; background: #fff; padding: 9px">
+            </a>
+            <!--  <a title="Go to EMDataBank homepage" href="http://emdatabank.org/" target="_empdb" class="no-underline" style="border:none;">
+	    		<img src="/pdbe/entry/images/logos/EMDataBank/EMDataBank.png" alt="EMDataBank" style="width: 90px; background: #fff; padding: 9px">
+	    	</a> -->
+            <a title="Go to wwPDB Foundation homepage" href="http://foundation.wwpdb.org/" target="_wwpdb" class="no-underline" style="border:none;">
+              <img src="/pdbe/entry/images/logos/wwPDB/wwpdb-2016.png" alt="wwPDB Foundation" style="width: 90px; background: #fff; padding-left: 9px">
+            </a>
+          </p>
+        </div>
+        <!-- Elixir Banner Start Here -->
+        <style>
+          .elixir-ribbon h5 {
+            margin: .5rem 0 0;
+            display: inline-block;
+            padding-left: 0px;
+          }
+
+          .elixir-ribbon a {
+            border: none;
+          }
+        </style>
+        <div id="elixir-banner" style="border-top: 2px solid #eee;" data-color="none" data-use-cdr-logo="true" data-name="PDBe" data-description="PDBe is an Elixir Core Data Resource" data-more-information-link="https://www.elixir-europe.org/platforms/data/core-data-resources" data-use-basic-styles="true"></div>
+        <script defer="defer" src="https://ebi.emblstatic.net/web_guidelines/EBI-Framework/v1.3/js/elixirBanner.js"></script>
+        <!-- Elixir Banner End Here -->
+      </div>
+
+      <!-- End optional local footer -->
+      <div id="global-footer" class="grid_24">
+        <nav id="global-nav-expanded">
+          <div class="grid_4 alpha">
+            <h3 class="embl-ebi"><a href="//www.ebi.ac.uk/" title="EMBL-EBI">EMBL-EBI</a></h3>
+          </div>
+          <div class="grid_4">
+            <h3 class="services"><a href="//www.ebi.ac.uk/services">Services</a></h3>
+          </div>
+          <div class="grid_4">
+            <h3 class="research"><a href="//www.ebi.ac.uk/research">Research</a></h3>
+          </div>
+          <div class="grid_4">
+            <h3 class="training"><a href="//www.ebi.ac.uk/training">Training</a></h3>
+          </div>
+          <div class="grid_4">
+            <h3 class="industry"><a href="//www.ebi.ac.uk/industry">Industry</a></h3>
+          </div>
+          <div class="grid_4 omega">
+            <h3 class="about"><a href="//www.ebi.ac.uk/about">About us</a></h3>
+          </div>
+        </nav>
+        <section id="ebi-footer-meta">
+          <p class="address">EMBL-EBI, Wellcome Trust Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK &nbsp; &nbsp; +44 (0)1223 49 44 44</p>
+          <p class="legal">Copyright &copy; EMBL-EBI 2012 | EBI is an Outstation of the <a href="http://www.embl.org">European Molecular Biology Laboratory</a> | <a href="/about/privacy">Privacy</a> | <a href="/about/cookies">Cookies</a> | <a href="/about/terms-of-use">Terms of use</a></p>
+        </section>
+      </div>
+    </footer>
+  </div>
+
+  <script type="text/javascript">
+    /**
+     * Copyright (c) EMBL-EBI 2014
+     * Authors: Francis Rowland, Peter Walter, Glen van Ginkel, Nicola Buso
+     */
+    ; window.Modernizr = function (a, b, c) { function A(a) { j.cssText = a } function B(a, b) { return A(n.join(a + ";") + (b || "")) } function C(a, b) { return typeof a === b } function D(a, b) { return !!~("" + a).indexOf(b) } function E(a, b) { for (var d in a) { var e = a[d]; if (!D(e, "-") && j[e] !== c) return b == "pfx" ? e : !0 } return !1 } function F(a, b, d) { for (var e in a) { var f = b[a[e]]; if (f !== c) return d === !1 ? a[e] : C(f, "function") ? f.bind(d || b) : f } return !1 } function G(a, b, c) { var d = a.charAt(0).toUpperCase() + a.slice(1), e = (a + " " + p.join(d + " ") + d).split(" "); return C(b, "string") || C(b, "undefined") ? E(e, b) : (e = (a + " " + q.join(d + " ") + d).split(" "), F(e, b, c)) } var d = "2.6.1", e = {}, f = !0, g = b.documentElement, h = "modernizr", i = b.createElement(h), j = i.style, k, l = ":)", m = {}.toString, n = " -webkit- -moz- -o- -ms- ".split(" "), o = "Webkit Moz O ms", p = o.split(" "), q = o.toLowerCase().split(" "), r = {}, s = {}, t = {}, u = [], v = u.slice, w, x = function (a, c, d, e) { var f, i, j, k = b.createElement("div"), l = b.body, m = l ? l : b.createElement("body"); if (parseInt(d, 10)) while (d--) j = b.createElement("div"), j.id = e ? e[d] : h + (d + 1), k.appendChild(j); return f = ["&#173;", '<style id="s', h, '">', a, "</style>"].join(""), k.id = h, (l ? k : m).innerHTML += f, m.appendChild(k), l || (m.style.background = "", g.appendChild(m)), i = c(k, a), l ? k.parentNode.removeChild(k) : m.parentNode.removeChild(m), !!i }, y = {}.hasOwnProperty, z; !C(y, "undefined") && !C(y.call, "undefined") ? z = function (a, b) { return y.call(a, b) } : z = function (a, b) { return b in a && C(a.constructor.prototype[b], "undefined") }, Function.prototype.bind || (Function.prototype.bind = function (b) { var c = this; if (typeof c != "function") throw new TypeError; var d = v.call(arguments, 1), e = function () { if (this instanceof e) { var a = function () { }; a.prototype = c.prototype; var f = new a, g = c.apply(f, d.concat(v.call(arguments))); return Object(g) === g ? g : f } return c.apply(b, d.concat(v.call(arguments))) }; return e }), r.flexbox = function () { return G("flexWrap") }, r.canvas = function () { var a = b.createElement("canvas"); return !!a.getContext && !!a.getContext("2d") }, r.canvastext = function () { return !!e.canvas && !!C(b.createElement("canvas").getContext("2d").fillText, "function") }, r.touch = function () { var c; return "ontouchstart" in a || a.DocumentTouch && b instanceof DocumentTouch ? c = !0 : x(["@media (", n.join("touch-enabled),("), h, ")", "{#modernizr{top:9px;position:absolute}}"].join(""), function (a) { c = a.offsetTop === 9 }), c }, r.rgba = function () { return A("background-color:rgba(150,255,150,.5)"), D(j.backgroundColor, "rgba") }, r.hsla = function () { return A("background-color:hsla(120,40%,100%,.5)"), D(j.backgroundColor, "rgba") || D(j.backgroundColor, "hsla") }, r.multiplebgs = function () { return A("background:url(https://),url(https://),red url(https://)"), /(url\s*\(.*?){3}/.test(j.background) }, r.backgroundsize = function () { return G("backgroundSize") }, r.borderimage = function () { return G("borderImage") }, r.borderradius = function () { return G("borderRadius") }, r.boxshadow = function () { return G("boxShadow") }, r.textshadow = function () { return b.createElement("div").style.textShadow === "" }, r.opacity = function () { return B("opacity:.55"), /^0.55$/.test(j.opacity) }, r.cssanimations = function () { return G("animationName") }, r.csscolumns = function () { return G("columnCount") }, r.cssgradients = function () { var a = "background-image:", b = "gradient(linear,left top,right bottom,from(#9f9),to(white));", c = "linear-gradient(left top,#9f9, white);"; return A((a + "-webkit- ".split(" ").join(b + a) + n.join(c + a)).slice(0, -a.length)), D(j.backgroundImage, "gradient") }, r.cssreflections = function () { return G("boxReflect") }, r.csstransforms = function () { return !!G("transform") }, r.csstransforms3d = function () { var a = !!G("perspective"); return a && "webkitPerspective" in g.style && x("@media (transform-3d),(-webkit-transform-3d){#modernizr{left:9px;position:absolute;height:3px;}}", function (b, c) { a = b.offsetLeft === 9 && b.offsetHeight === 3 }), a }, r.csstransitions = function () { return G("transition") }, r.fontface = function () { var a; return x('@font-face {font-family:"font";src:url("https://")}', function (c, d) { var e = b.getElementById("smodernizr"), f = e.sheet || e.styleSheet, g = f ? f.cssRules && f.cssRules[0] ? f.cssRules[0].cssText : f.cssText || "" : ""; a = /src/i.test(g) && g.indexOf(d.split(" ")[0]) === 0 }), a }, r.generatedcontent = function () { var a; return x(['#modernizr:after{content:"', l, '";visibility:hidden}'].join(""), function (b) { a = b.offsetHeight >= 1 }), a }, r.applicationcache = function () { return !!a.applicationCache }; for (var H in r) z(r, H) && (w = H.toLowerCase(), e[w] = r[H](), u.push((e[w] ? "" : "no-") + w)); return e.addTest = function (a, b) { if (typeof a == "object") for (var d in a) z(a, d) && e.addTest(d, a[d]); else { a = a.toLowerCase(); if (e[a] !== c) return e; b = typeof b == "function" ? b() : b, f && (g.className += " " + (b ? "" : "no-") + a), e[a] = b } return e }, A(""), i = k = null, function (a, b) { function k(a, b) { var c = a.createElement("p"), d = a.getElementsByTagName("head")[0] || a.documentElement; return c.innerHTML = "x<style>" + b + "</style>", d.insertBefore(c.lastChild, d.firstChild) } function l() { var a = r.elements; return typeof a == "string" ? a.split(" ") : a } function m(a) { var b = i[a[g]]; return b || (b = {}, h++, a[g] = h, i[h] = b), b } function n(a, c, f) { c || (c = b); if (j) return c.createElement(a); f || (f = m(c)); var g; return f.cache[a] ? g = f.cache[a].cloneNode() : e.test(a) ? g = (f.cache[a] = f.createElem(a)).cloneNode() : g = f.createElem(a), g.canHaveChildren && !d.test(a) ? f.frag.appendChild(g) : g } function o(a, c) { a || (a = b); if (j) return a.createDocumentFragment(); c = c || m(a); var d = c.frag.cloneNode(), e = 0, f = l(), g = f.length; for (; e < g; e++)d.createElement(f[e]); return d } function p(a, b) { b.cache || (b.cache = {}, b.createElem = a.createElement, b.createFrag = a.createDocumentFragment, b.frag = b.createFrag()), a.createElement = function (c) { return r.shivMethods ? n(c, a, b) : b.createElem(c) }, a.createDocumentFragment = Function("h,f", "return function(){var n=f.cloneNode(),c=n.createElement;h.shivMethods&&(" + l().join().replace(/\w+/g, function (a) { return b.createElem(a), b.frag.createElement(a), 'c("' + a + '")' }) + ");return n}")(r, b.frag) } function q(a) { a || (a = b); var c = m(a); return r.shivCSS && !f && !c.hasCSS && (c.hasCSS = !!k(a, "article,aside,figcaption,figure,footer,header,hgroup,nav,section{display:block}mark{background:#FF0;color:#000}")), j || p(a, c), a } var c = a.html5 || {}, d = /^<|^(?:button|map|select|textarea|object|iframe|option|optgroup)$/i, e = /^<|^(?:a|b|button|code|div|fieldset|form|h1|h2|h3|h4|h5|h6|i|iframe|img|input|label|li|link|ol|option|p|param|q|script|select|span|strong|style|table|tbody|td|textarea|tfoot|th|thead|tr|ul)$/i, f, g = "_html5shiv", h = 0, i = {}, j; (function () { try { var a = b.createElement("a"); a.innerHTML = "<xyz></xyz>", f = "hidden" in a, j = a.childNodes.length == 1 || function () { b.createElement("a"); var a = b.createDocumentFragment(); return typeof a.cloneNode == "undefined" || typeof a.createDocumentFragment == "undefined" || typeof a.createElement == "undefined" }() } catch (c) { f = !0, j = !0 } })(); var r = { elements: c.elements || "abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video", shivCSS: c.shivCSS !== !1, supportsUnknownElements: j, shivMethods: c.shivMethods !== !1, type: "default", shivDocument: q, createElement: n, createDocumentFragment: o }; a.html5 = r, q(b) }(this, b), e._version = d, e._prefixes = n, e._domPrefixes = q, e._cssomPrefixes = p, e.testProp = function (a) { return E([a]) }, e.testAllProps = G, e.testStyles = x, g.className = g.className.replace(/(^|\s)no-js(\s|$)/, "$1$2") + (f ? " js " + u.join(" ") : ""), e }(this, this.document), function (a, b, c) { function d(a) { return "[object Function]" == o.call(a) } function e(a) { return "string" == typeof a } function f() { } function g(a) { return !a || "loaded" == a || "complete" == a || "uninitialized" == a } function h() { var a = p.shift(); q = 1, a ? a.t ? m(function () { ("c" == a.t ? B.injectCss : B.injectJs)(a.s, 0, a.a, a.x, a.e, 1) }, 0) : (a(), h()) : q = 0 } function i(a, c, d, e, f, i, j) { function k(b) { if (!o && g(l.readyState) && (u.r = o = 1, !q && h(), l.onload = l.onreadystatechange = null, b)) { "img" != a && m(function () { t.removeChild(l) }, 50); for (var d in y[c]) y[c].hasOwnProperty(d) && y[c][d].onload() } } var j = j || B.errorTimeout, l = b.createElement(a), o = 0, r = 0, u = { t: d, s: c, e: f, a: i, x: j }; 1 === y[c] && (r = 1, y[c] = []), "object" == a ? l.data = c : (l.src = c, l.type = a), l.width = l.height = "0", l.onerror = l.onload = l.onreadystatechange = function () { k.call(this, r) }, p.splice(e, 0, u), "img" != a && (r || 2 === y[c] ? (t.insertBefore(l, s ? null : n), m(k, j)) : y[c].push(l)) } function j(a, b, c, d, f) { return q = 0, b = b || "j", e(a) ? i("c" == b ? v : u, a, b, this.i++, c, d, f) : (p.splice(this.i++, 0, a), 1 == p.length && h()), this } function k() { var a = B; return a.loader = { load: j, i: 0 }, a } var l = b.documentElement, m = a.setTimeout, n = b.getElementsByTagName("script")[0], o = {}.toString, p = [], q = 0, r = "MozAppearance" in l.style, s = r && !!b.createRange().compareNode, t = s ? l : n.parentNode, l = a.opera && "[object Opera]" == o.call(a.opera), l = !!b.attachEvent && !l, u = r ? "object" : l ? "script" : "img", v = l ? "script" : u, w = Array.isArray || function (a) { return "[object Array]" == o.call(a) }, x = [], y = {}, z = { timeout: function (a, b) { return b.length && (a.timeout = b[0]), a } }, A, B; B = function (a) { function b(a) { var a = a.split("!"), b = x.length, c = a.pop(), d = a.length, c = { url: c, origUrl: c, prefixes: a }, e, f, g; for (f = 0; f < d; f++)g = a[f].split("="), (e = z[g.shift()]) && (c = e(c, g)); for (f = 0; f < b; f++)c = x[f](c); return c } function g(a, e, f, g, h) { var i = b(a), j = i.autoCallback; i.url.split(".").pop().split("?").shift(), i.bypass || (e && (e = d(e) ? e : e[a] || e[g] || e[a.split("/").pop().split("?")[0]]), i.instead ? i.instead(a, e, f, g, h) : (y[i.url] ? i.noexec = !0 : y[i.url] = 1, f.load(i.url, i.forceCSS || !i.forceJS && "css" == i.url.split(".").pop().split("?").shift() ? "c" : c, i.noexec, i.attrs, i.timeout), (d(e) || d(j)) && f.load(function () { k(), e && e(i.origUrl, h, g), j && j(i.origUrl, h, g), y[i.url] = 2 }))) } function h(a, b) { function c(a, c) { if (a) { if (e(a)) c || (j = function () { var a = [].slice.call(arguments); k.apply(this, a), l() }), g(a, j, b, 0, h); else if (Object(a) === a) for (n in m = function () { var b = 0, c; for (c in a) a.hasOwnProperty(c) && b++; return b }(), a) a.hasOwnProperty(n) && (!c && !--m && (d(j) ? j = function () { var a = [].slice.call(arguments); k.apply(this, a), l() } : j[n] = function (a) { return function () { var b = [].slice.call(arguments); a && a.apply(this, b), l() } }(k[n])), g(a[n], j, b, n, h)) } else !c && l() } var h = !!a.test, i = a.load || a.both, j = a.callback || f, k = j, l = a.complete || f, m, n; c(h ? a.yep : a.nope, !!i), i && c(i) } var i, j, l = this.yepnope.loader; if (e(a)) g(a, 0, l, 0); else if (w(a)) for (i = 0; i < a.length; i++)j = a[i], e(j) ? g(j, 0, l, 0) : w(j) ? B(j) : Object(j) === j && h(j, l); else Object(a) === a && h(a, l) }, B.addPrefix = function (a, b) { z[a] = b }, B.addFilter = function (a) { x.push(a) }, B.errorTimeout = 1e4, null == b.readyState && b.addEventListener && (b.readyState = "loading", b.addEventListener("DOMContentLoaded", A = function () { b.removeEventListener("DOMContentLoaded", A, 0), b.readyState = "complete" }, 0)), a.yepnope = k(), a.yepnope.executeStack = h, a.yepnope.injectJs = function (a, c, d, e, i, j) { var k = b.createElement("script"), l, o, e = e || B.errorTimeout; k.src = a; for (o in d) k.setAttribute(o, d[o]); c = j ? h : c || f, k.onreadystatechange = k.onload = function () { !l && g(k.readyState) && (l = 1, c(), k.onload = k.onreadystatechange = null) }, m(function () { l || (l = 1, c(1)) }, e), i ? k.onload() : n.parentNode.insertBefore(k, n) }, a.yepnope.injectCss = function (a, c, d, e, g, i) { var e = b.createElement("link"), j, c = i ? h : c || f; e.href = a, e.rel = "stylesheet", e.type = "text/css"; for (j in d) e.setAttribute(j, d[j]); g || (n.parentNode.insertBefore(e, n), m(c, 0)) } }(this, document), Modernizr.load = function () { yepnope.apply(window, [].slice.call(arguments, 0)) };
+  </script>
+  <script type="text/javascript">
+    var localFrameworkVersion = 'compliance'; // 1.1 or 1.2 or compliance or other
+    // if you select compliance or other we will add some helpful
+    // CSS styling, but you may need to add some CSS yourself
+    var newDataProtectionNotificationBanner = document.createElement('script');
+    newDataProtectionNotificationBanner.src = 'https://dev.ebi.emblstatic.net/web_guidelines/EBI-Framework/v1.3/js/ebi-global-includes/script/5_ebiFrameworkNotificationBanner.js?legacyRequest=' + localFrameworkVersion;
+    document.head.appendChild(newDataProtectionNotificationBanner);
+    newDataProtectionNotificationBanner.onload = function () {
+      ebiFrameworkRunDataProtectionBanner(); // invoke the banner
+    };
+  </script>
+
+  <script src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/pdbe-molstar-plugin-1.1.1.js" type="text/javascript"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" type="text/javascript"></script>
+  <script src="/pdbe/entry/static/K2FgK57rzFdG6xeICtMz1LRS6NzkFiLOd3oKqBxvCck.js" type="text/javascript"></script>
+
+
+
+
+
+
+
+
+  <script src="/pdbe/entry/static/d5BQNSdnyuK6kJJ0ZzKSg1Lt5P0JChAqvmn1K3bs6Zu.js" type="text/javascript"></script>
+
+
+
+  <script src="https://d3js.org/d3.v4.min.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/babel-polyfill/dist/polyfill.min.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@webcomponents/webcomponentsjs/webcomponents-lite.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js" type="text/javascript"></script>
+  <script src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/protvista-pdb-2.0.1.js" type="text/javascript"></script>
+
+  <!-- <script src="/pdbe/entry/js/libs/helper.js" type="text/javascript"></script>
+-->
+  <!--
+<script defer="defer" src="//www.ebi.ac.uk/web_guidelines/js/plugins.js"></script>
+-->
+
+  <!--<script defer="defer" src="//www.ebi.ac.uk/web_guidelines/js/cookiebanner.js"></script>-->
+  <!--<script defer="defer" src="//www.ebi.ac.uk/web_guidelines/js/foot.js"></script>-->
+  <!-- end scripts-->
+
+
+  <script type="text/javascript">
+    (function (i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date(); a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-47784041-1', 'ebi.ac.uk');
+    ga('send', 'pageview');
+  </script>
+
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+<script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+<script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+<![endif]-->
+  <!-- http://www.feedthebot.com/pagespeed/defer-loading-javascript.html -->
+</body>
+
+</html>
+
+
+<script type="text/javascript">
+  var proteinPageApp = angular.module('proteinPageApp', ['pdb.component.library']);
+  proteinPageApp.controller('proteinPageAppController', ['$scope', '$compile', function ($scope, $compile) {
+    $scope.pdbViewerLink = false;
+    $scope.viewerOption = 'pdbViewer_1tqn';
+    $scope.visibleDivId = $scope.viewerOption;
+  }]);
+
+  //Listen pdbResidueInteractions load completed event to display the component in the siderbar
+  document.addEventListener('PDB.pdbResidueInteractions.loaded', function (e) {
+    $('.proteinPgResInteractions').show();
+  });
+
+  var pvInstance1 = document.getElementById('pv1');
+  var pvInstance2 = document.getElementById('pv2');
+
+  document.addEventListener("PDB.molstar.click", function (e) {
+    if (!pvInstance1 && !pvInstance2) return;
+    var pvParam = {
+      eventData: { residueNumber: e.eventData.seq_id }
+    };
+    pvInstance1.layoutHelper.handleExtEvents(pvParam);
+    pvInstance2.layoutHelper.handleExtEvents(pvParam);
+  });
+
+  document.addEventListener("PDB.molstar.mouseover", function (e) {
+    if (!pvInstance1 && !pvInstance2) return;
+    var pvParam = {
+      eventData: { residueNumber: e.eventData.seq_id }
+    };
+    pvInstance1.layoutHelper.handleExtEvents(pvParam);
+    pvInstance2.layoutHelper.handleExtEvents(pvParam);
+  });
+
+  jQuery(document).ready(function () {
+
+    //check IE version
+    if (PDBePageConfig.ieVersion > 0 && PDBePageConfig.ieVersion < 11) {
+      $('#ieSupportWarningMsg').show();
+    } else {
+
+      if (document.getElementById('3dViewer') && !PDBePageConfig.isCacheEnv) {
+
+        //Instantiate Component Library
+        angular.bootstrap(document, ['proteinPageApp']);
+
+        var urlEnv = 'www';
+        if (typeof PDBePageConfig != 'undefined' && typeof PDBePageConfig['grailsAppEnv'] != 'undefined') urlEnv = PDBePageConfig['grailsAppEnv'];
+
+        //Instantiate LiteMol2Component
+        var initParams = {
+          moleculeId: '1tqn',
+          pdbeUrl: 'https://' + urlEnv + '.ebi.ac.uk/pdbe/',
+          loadMaps: true,
+          validationAnnotation: true,
+          domainAnnotation: true,
+          hideControls: true,
+          pdbeLink: false,
+          subscribeEvents: true
+        }
+
+        var PluginWrapper = new PDBeMolstarPlugin();
+        PluginWrapper.render(document.getElementById('3dViewer'), initParams);
+
+        PluginWrapper.events.loadComplete.subscribe(function (e) {
+          var libColor = pdbComponentLibraryColors.colorGradients.darkStack[0];
+          var bestChainColor = { r: libColor[0], g: libColor[1], b: libColor[2] };
+          var defaultChainColor = { r: 231, g: 200, b: 200 };
+          PluginWrapper.visual.select({ data: [{ struct_asym_id: 'A', color: bestChainColor }], nonSelectedColor: defaultChainColor });
+        });
+
+      }
+    }
+
+  });
+
+</script>

@@ -1,33 +1,37 @@
 <html>
-    <head>	
-        <meta charset='UTF-8'>
-        <base href='..'>
-        <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.css'>
-        <script type='text/javascript' src='dist/d3.v5.min.js'></script>
-        <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
-        <script type='text/javascript' src='dist/overprot-viewer.js'></script>
-    </head>
-    <body>
-        <h2>OverProtViewer Demo Page (dev)</h2>
 
-        <p>Our tool <strong>OverProt</strong> produces a secondary structure consensus for a given protein structural family. 
-        Such consensus consists of several <em>consensus SSEs</em> (secondary structure elements). 
-        Each consensus SSE represents a group of SSEs from the proteins in the family (0 or 1 SSE from each protein).<br> 
-        More information is provided in 
+<head>
+    <meta charset='UTF-8'>
+    <base href='..'>
+    <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.css'>
+    <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+    <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+    <script type='text/javascript' src='dist/overprot-viewer.js'></script>
+    <!-- <script type='text/javascript' src='web/jquery-3.6.0.min.js'></script> -->
+</head>
+
+<body>
+    <h2>OverProtViewer Demo Page (dev)</h2>
+
+    <p>Our tool <strong>OverProt</strong> produces a secondary structure consensus for a given protein structural family.
+        Such consensus consists of several <em>consensus SSEs</em> (secondary structure elements).
+        Each consensus SSE represents a group of SSEs from the proteins in the family (0 or 1 SSE from each protein).<br>
+        More information is provided in
         <a href='https://is.muni.cz/www/midlik/pv251_visualization/Elixir2019-Midlik.pdf' target='_blank'>this poster</a>
-        presented at ELIXIR CZ Annual Conference 2019.</p>
+        presented at ELIXIR CZ Annual Conference 2019.
+    </p>
 
-        <p><strong>OverProtViewer</strong> allows interactive visualization of consensus produced by OverProt. 
-        Each consensus SSE is shown as a rectangle – &beta;-strands from the same &beta;-sheet have the same color, while all helices are gray. 
-        The height of the rectangle indicates the <em>occurrence</em> (what percentage of protein structures contain this SSE), 
+    <p><strong>OverProtViewer</strong> allows interactive visualization of consensus produced by OverProt.
+        Each consensus SSE is shown as a rectangle – &beta;-strands from the same &beta;-sheet have the same color, while all helices are gray.
+        The height of the rectangle indicates the <em>occurrence</em> (what percentage of protein structures contain this SSE),
         while the width indicates the <em>average length</em> (measured as the number of amino acid residues).
-        Only consensus SSEs with occurrence above the <em>occurrence threshold</em> are shown (default: 20%). 
-        Alternative visualization modes include different coloring methods, showing length distribution instead of the average length, 
-        and visualization of beta-connectivity.</p>        
+        Only consensus SSEs with occurrence above the <em>occurrence threshold</em> are shown (default: 20%).
+        Alternative visualization modes include different coloring methods, showing length distribution instead of the average length,
+        and visualization of beta-connectivity.</p>
 
-        <p>This page demonstrates OverProtViewer on several selected protein families.</p>
+    <p>This page demonstrates OverProtViewer on several selected protein families.</p>
 
-        <!-- <hr>
+    <!-- <hr>
         <style>
             div.test-root{
                 width: 500px;
@@ -49,7 +53,7 @@
             <div class='greenbox'></div>
         </div> -->
 
-        <!-- <hr>
+    <!-- <hr>
         <h4>Rossman fold (CATH 3.40.50.2300) - sample of 4 domains</h4>
         <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-A.json'></overprot-viewer>
         <hr>
@@ -69,59 +73,88 @@
         <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-whole-family.json' layout-method='old'></overprot-viewer>
         <br>
         <overprot-viewer id='rossmann' file='./sample_data/rossmann_3-40-50-2300_sample4/diagram-whole-family.json' layout-method='new'></overprot-viewer> -->
-        <hr>
-        <br>
-        <overprot-viewer id='rossmann-old' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='old'></overprot-viewer>
-        <br>
-        <overprot-viewer id='rossmann-new' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='new'></overprot-viewer>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <hr>
-        <hr>
-        <h4>Rossman fold (CATH 3.40.50.2300)</h4>
-        <overprot-viewer id='rossmann2' file='./sample_data/rossmann_3-40-50-2300/diagram.json' width=1800 height=300
-            color-method='variability' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%'></overprot-viewer>
-        <hr>
-        <h4>Aldolase class I (CATH 3.20.20.70)</h4>
-        <overprot-viewer id='aldolase' file='sample_data/aldolase_class1_3-20-20-70/diagram.json'></overprot-viewer>
-        <hr>
-        <h4>Cytochrome P450 (CATH 1.10.630.10)</h4>
-        <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='old'></overprot-viewer>
-        <br>
-        <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='new'></overprot-viewer>
-        <hr>
-        <h4>Immunoglobulin (CATH 2.60.40.10)</h4>
-        <overprot-viewer id='immunoglobulin' file='sample_data/immunoglobulin_2-60-40-10/diagram.json' beta-connectivity='on'></overprot-viewer>
-        <hr>
-        <h4>Immunoglobulin (CATH 2.60.40.10)</h4>
-        <overprot-viewer id='immunoglobulin2' file='sample_data/immunoglobulin_2-60-40-10/diagram-new.json'></overprot-viewer>
-        <hr>
-        <h4>Phosphotransferase (CATH 1.10.510.10)</h4>
-        <overprot-viewer id='phosphotransferase' file='sample_data/phosphotransferase_1-10-510-10/diagram.json'></overprot-viewer>
-        <hr>
-        <h4>Globin (CATH 1.10.490.10)</h4>
-        <overprot-viewer id='globin' file='sample_data/globin_1-10-490-10/diagram.json'></overprot-viewer>
-        <hr>
-        <h4>Lipocalin (CATH 2.40.128.20)</h4>
-        <overprot-viewer id='lipocalin' file='sample_data/lipocalin_2-40-128-20/diagram.json'></overprot-viewer>
-        <hr>
-        <h4>Cytochrome P450 BM3, <i>Bacillus megaterium</i> (UniProt P14779)</h4>
-        <overprot-viewer id='cyp-bm3' file='sample_data/per_uniprot/diagram_P14779.json'></overprot-viewer>
-        <hr>
-        <h4>Cellular retinoic acid-binding protein 2, <i>Homo sapiens</i> (1cbs) (UniProt P29373)</h4>
-        <overprot-viewer id='1cbs' file='sample_data/per_uniprot/diagram_P29373.json'></overprot-viewer>
-        <hr>
-        <h4>Rossman fold (CATH 3.40.50.2300) - 404</h4>
-        <overprot-viewer id='testing-404' file='sample_data/not_here.json'></overprot-viewer>
-        <br>
-        <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTP</h4>
-        <overprot-viewer id='testing-cors' file='http://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
-        <br>
-        <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTPS</h4>
-        <overprot-viewer id='testing-cors-https' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
-        <br>
-    </body>
+    <hr>
+    <br>
+    <!-- <overprot-viewer id='rossmann-old' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='old'></overprot-viewer> -->
+    <br>
+    <overprot-viewer id='rossmann-new-1' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='new'
+        dispatch-events='true' listen-events='true'></overprot-viewer>
+    <overprot-viewer id='rossmann-new-2' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='new'
+        dispatch-events='true' listen-events='true'></overprot-viewer>
+    <overprot-viewer id='rossmann-new-3' file='./sample_data/rossmann_3-40-50-2300_layout_debugging/diagram.json' occurrence-threshold="0" layout-method='new'
+        dispatch-events='true' listen-events='true'></overprot-viewer>
+    <!-- <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <hr>
+    <hr>
+    <h4>Rossman fold (CATH 3.40.50.2300)</h4>
+    <overprot-viewer id='rossmann2' file='./sample_data/rossmann_3-40-50-2300/diagram.json' width=1800 height=300 color-method='variability' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%'></overprot-viewer>
+    <hr>
+    <h4>Aldolase class I (CATH 3.20.20.70)</h4>
+    <overprot-viewer id='aldolase' file='sample_data/aldolase_class1_3-20-20-70/diagram.json'></overprot-viewer>
+    <hr>
+    <h4>Cytochrome P450 (CATH 1.10.630.10)</h4>
+    <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='old'></overprot-viewer>
+    <br>
+    <overprot-viewer id='cyp' file='sample_data/cyp_1-10-630-10/diagram.json' layout-method='new'></overprot-viewer>
+    <hr>
+    <h4>Immunoglobulin (CATH 2.60.40.10)</h4>
+    <overprot-viewer id='immunoglobulin' file='sample_data/immunoglobulin_2-60-40-10/diagram.json' beta-connectivity='on'></overprot-viewer>
+    <hr>
+    <h4>Immunoglobulin (CATH 2.60.40.10)</h4>
+    <overprot-viewer id='immunoglobulin2' file='sample_data/immunoglobulin_2-60-40-10/diagram-new.json'></overprot-viewer>
+    <hr>
+    <h4>Phosphotransferase (CATH 1.10.510.10)</h4>
+    <overprot-viewer id='phosphotransferase' file='sample_data/phosphotransferase_1-10-510-10/diagram.json'></overprot-viewer>
+    <hr>
+    <h4>Globin (CATH 1.10.490.10)</h4>
+    <overprot-viewer id='globin' file='sample_data/globin_1-10-490-10/diagram.json'></overprot-viewer>
+    <hr>
+    <h4>Lipocalin (CATH 2.40.128.20)</h4>
+    <overprot-viewer id='lipocalin' file='sample_data/lipocalin_2-40-128-20/diagram.json'></overprot-viewer>
+    <hr>
+    <h4>Cytochrome P450 BM3, <i>Bacillus megaterium</i> (UniProt P14779)</h4>
+    <overprot-viewer id='cyp-bm3' file='sample_data/per_uniprot/diagram_P14779.json'></overprot-viewer>
+    <hr>
+    <h4>Cellular retinoic acid-binding protein 2, <i>Homo sapiens</i> (1cbs) (UniProt P29373)</h4>
+    <overprot-viewer id='1cbs' file='sample_data/per_uniprot/diagram_P29373.json'></overprot-viewer>
+    <hr>
+    <h4>Rossman fold (CATH 3.40.50.2300) - 404</h4>
+    <overprot-viewer id='testing-404' file='sample_data/not_here.json'></overprot-viewer>
+    <br>
+    <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTP</h4>
+    <overprot-viewer id='testing-cors' file='http://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
+    <br>
+    <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTPS</h4>
+    <overprot-viewer id='testing-cors-https' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
+    <br>
+    <div style="display: flex">
+        <div class="colordiv" id="reddiv" style="background-color: red; width: 100px; height: 100px; margin: 5px;"></div>
+        <div class="colordiv" id="greendiv" style="background-color: green; width: 100px; height: 100px; margin: 5px;"></div>
+        <div class="colordiv" id="bluediv" style="background-color: blue; width: 100px; height: 100px; margin: 5px;"></div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br> -->
+
+    <script>
+        document.addEventListener('PDB.overprot.select', (e) => {
+            console.log('PDB.overprot.select', e.detail.sses.map(sse=>sse.label), e);
+            for (const viewer of document.querySelectorAll('overprot-viewer')) {
+                viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.select', {detail: e.detail}));
+            }
+        });
+        document.addEventListener('PDB.overprot.hover', (e) => {
+            console.log('PDB.overprot.hover', e.detail.sses.map(sse=>sse.label), e);
+            for (const viewer of document.querySelectorAll('overprot-viewer')) {
+                viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {detail: e.detail}));
+            }
+        });
+    </script>
+</body>
+
 </html>

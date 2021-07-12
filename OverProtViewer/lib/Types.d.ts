@@ -8,6 +8,7 @@ export declare namespace Types {
     type Viewer = {
         id: string;
         uniqueId: string;
+        d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>;
         mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>;
         guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>;
         canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>;
@@ -17,8 +18,9 @@ export declare namespace Types {
         screen: Geometry.Rectangle;
         zoom: Geometry.ZoomInfo;
         settings: Settings;
+        nodeMap: Map<string, SVGElement>;
     };
-    function newViewer(id: string, uniqueId: string, d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, settings?: Settings | null): Viewer;
+    function newViewer(id: string, uniqueId: string, d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>, d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, settings?: Settings | null): Viewer;
     type Settings = {
         file: string;
         width: number;
@@ -28,6 +30,8 @@ export declare namespace Types {
         layoutMethod: Enums.LayoutMethod;
         betaConnectivityVisibility: boolean;
         occurrenceThreshold: number;
+        dispatchEvents: boolean;
+        listenEvents: boolean;
     };
     function newSettings(): Settings;
     function newSettingsFromHTMLElement(element: HTMLElement): Settings;

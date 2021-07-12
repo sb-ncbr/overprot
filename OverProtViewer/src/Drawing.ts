@@ -13,8 +13,8 @@ export namespace Drawing {
 
     export function zoomOut(viewer: Types.Viewer, ratio = Constants.ZOOM_STEP_RATIO, mouseXY?: number[]): void {
         Geometry.zoomInfoZoomOut(viewer.zoom, ratio);
-        let [relPivotX, relPivotY] = mouseXY != undefined ? 
-            [mouseXY[0] / viewer.screen.width, mouseXY[1] / viewer.screen.height] 
+        let [relPivotX, relPivotY] = mouseXY != undefined ?
+            [mouseXY[0] / viewer.screen.width, mouseXY[1] / viewer.screen.height]
             : [0.5, 0.5];
         let newWidth = viewer.screen.width * viewer.zoom.xZoomout;
         let newHeight = viewer.screen.height * viewer.zoom.yZoomout;
@@ -45,8 +45,8 @@ export namespace Drawing {
         let visWidth = viewer.screen.width * viewer.zoom.xZoomout;
         let visHeight = viewer.screen.height * viewer.zoom.yZoomout;
         viewer.visWorld = {
-            x: centerX - 0.5*visWidth,
-            y: centerY - 0.5*visHeight,
+            x: centerX - 0.5 * visWidth,
+            y: centerY - 0.5 * visHeight,
             width: visWidth,
             height: visHeight,
         };
@@ -87,7 +87,7 @@ export namespace Drawing {
 
     function tooltipMouseEnter(viewer: Types.Viewer, targetElement: HTMLElement, htmlContent: string, delay = false): void {
         let hasPinnedTooltip = d3.select(targetElement).attr('tooltip') == 'pinned';
-        if (!hasPinnedTooltip){
+        if (!hasPinnedTooltip) {
             let tooltip = viewer.mainDiv.append('div').attr('class', 'tooltip').attr('type', 'hover').html(htmlContent);
             placeTooltip(viewer, tooltip as any);
             d3.select(targetElement)?.attr('tooltip', 'hover');
@@ -115,10 +115,14 @@ export namespace Drawing {
             viewer.mainDiv.selectAll('[tooltip=pre-pinned]').attr('tooltip', 'pinned');
         });
     }
+    function unpinAllTooltips(viewer: Types.Viewer): void {
+        viewer.mainDiv.selectAll('div.tooltip[type=pinned]').remove();
+        viewer.mainDiv.selectAll('[tooltip=pinned]').attr('tooltip', null);
+    }
 
 
-    export function setTooltips(viewer: Types.Viewer, selection: Types.D3Selection, htmlContents: (string|null)[]|null, pinnable = false, delay = false) {
-        if (htmlContents === null){
+    export function setTooltips(viewer: Types.Viewer, selection: Types.D3Selection, htmlContents: (string | null)[] | null, pinnable = false, delay = false) {
+        if (htmlContents === null) {
             selection
                 .on('mouseenter.tooltip', null)
                 .on('mousemove.tooltip', null)
@@ -143,33 +147,43 @@ export namespace Drawing {
         }
     }
 
-    export function addPointBehavior(selection: Types.D3Selection, pointedElementSelector = (pointed: HTMLElement) => (d3.select(pointed) as any as Types.D3Selection)){
+    export function addPointBehavior(viewer: Types.Viewer, selection: Types.D3Selection,
+        pointedElementSelector = (pointed: HTMLElement) => (d3.select(pointed) as any as Types.D3Selection),
+        callback: ((sel: Types.D3Selection) => any) | null = null) {
         selection.on('mouseenter.point', (d, i, g) => {
-            pointedElementSelector(g[i] as HTMLElement).attr('pointed', 'true');
+            let pointed = pointedElementSelector(g[i] as HTMLElement)
+            pointed.attr('pointed', 'pointed');
+            if (callback != null) callback(pointed);
         });
         selection.on('mouseleave.point', (d, i, g) => {
             pointedElementSelector(g[i] as HTMLElement).attr('pointed', null);
+            if (callback != null) callback(d3.selectAll() as any);
         });
     }
 
-    export function addPickBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pickedElementSelector = (clicked: HTMLElement) => (d3.select(clicked) as any as Types.D3Selection)){
+    export function addPickBehavior(viewer: Types.Viewer, selection: Types.D3Selection,
+        pickedElementSelector = (clicked: HTMLElement) => (d3.select(clicked) as any as Types.D3Selection),
+        callback: ((sel: Types.D3Selection) => any) | null = null) {
         selection.on('click.pick', (d, i, g) => {
-            pickedElementSelector(g[i] as HTMLElement).attr('picked', 'pre-picked');
+            let d3Elem = pickedElementSelector(g[i] as HTMLElement);
+            d3Elem.attr('picked', 'pre-picked');
         });
         viewer.guiDiv
             .on('click.pick', () => {
                 viewer.guiDiv.selectAll('[picked=picked]').attr('picked', null);
-                viewer.guiDiv.selectAll('[picked=pre-picked]').attr('picked', 'picked');
+                let picked = viewer.guiDiv.selectAll('[picked=pre-picked]');
+                picked.attr('picked', 'picked');
+                if (callback != null) callback(picked);
             });
     }
 
-    export function addMouseHoldBehavior(selection: Types.D3Selection, onDown: ()=>any, onHold: ()=>any, onUp: ()=>any) {
+    export function addMouseHoldBehavior(selection: Types.D3Selection, onDown: () => any, onHold: () => any, onUp: () => any) {
         selection.on('mousedown', async () => {
             if (d3.event.which == 1 || d3.event.which == undefined) { // d3.event.which: 1=left, 2=middle, 3=right mouse button
                 let thisClickId = Math.random().toString(36).slice(2);
                 onDown();
                 selection.attr('pressed', thisClickId);
-                await sleep(Constants.MOUSE_HOLD_BEHAVIOR_INITIAL_SLEEP_TIME);            
+                await sleep(Constants.MOUSE_HOLD_BEHAVIOR_INITIAL_SLEEP_TIME);
                 while (selection.attr('pressed') == thisClickId) {
                     onHold();
                     await sleep(Constants.MOUSE_HOLD_BEHAVIOR_STEP_SLEEP_TIME);
@@ -201,7 +215,7 @@ export namespace Drawing {
         let betaArcs = viewer.canvas
             .select('g.beta-connectivity')
             .selectAll('path');
-        if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev){
+        if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
             betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
         } else {
             let arcColor = Colors.NEUTRAL_DARK.hex();
@@ -244,17 +258,20 @@ export namespace Drawing {
             .select('g.beta-connectivity')
             .selectAll('path')
             .transition().duration(duration)
-            .attr('d', edge => {
-                if ((edge as Number[])[3] == 0) return '';
-                let [u, v, orientation] = edge as number[];
-                let n1 = viewer.data.nodes[u].visual.rect;
-                let n2 = viewer.data.nodes[v].visual.rect;
-                let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
-                let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
-                // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-                return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
-                // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-            });
+            .attr('d', edge => calculateArcPath(viewer, edge as Dag.Edge));
+    }
+
+    function calculateArcPath(viewer: Types.Viewer, edge: Dag.Edge): string {
+        if ((edge as Number[])[3] == 0) return '';
+        let [u, v, orientation] = edge as number[];
+        let n1 = viewer.data.nodes[u].visual.rect;
+        let n2 = viewer.data.nodes[v].visual.rect;
+        let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+        let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+        let arcMaxMinor = Constants.ARC_MAX_MINOR / viewer.zoom.yZoomout;
+        // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+        // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
     }
 
     export function nodeBigEnoughForLabel(viewer: Types.Viewer, node: Dag.Node) {
@@ -283,8 +300,8 @@ export namespace Drawing {
     function gradientBarExp(canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, rect: Geometry.Rectangle,
         maxValue: number, middle: number, ticksDistance: number, legend = ''): Types.D3Selection {
         let bar = canvas.append('g').attr('class', 'heatmap-bar')
-        .attr('transform', `translate(${rect.x},${rect.y})`);                
-        
+            .attr('transform', `translate(${rect.x},${rect.y})`);
+
         let barLabel = bar.append('text').attr('class', 'heatmap-bar-label')
             .attrs({ x: -5, y: 0.5 * rect.height })
             .text(legend);
@@ -301,12 +318,12 @@ export namespace Drawing {
             .attrs(i => { return { x: 0, y: 0, width: rect.width, height: rect.height, fill: 'none' } });
         let barTicks = bar.append('g').attr('class', 'heatmap-bar-ticks');
         let barTickTexts = barTicks.selectAll('text')
-        .data(d3.range(Math.floor(maxValue / ticksDistance) + 1))
-        .enter()
-        .append('text')
-        .attr('x', i => i*ticksDistance / maxValue * rect.width)
-        .attr('y', rect.height + Constants.HANGING_TEXT_OFFSET)
-        .text(i => i * ticksDistance);
+            .data(d3.range(Math.floor(maxValue / ticksDistance) + 1))
+            .enter()
+            .append('text')
+            .attr('x', i => i * ticksDistance / maxValue * rect.width)
+            .attr('y', rect.height + Constants.HANGING_TEXT_OFFSET)
+            .text(i => i * ticksDistance);
         return bar as unknown as Types.D3Selection;
     }
 
@@ -330,14 +347,14 @@ export namespace Drawing {
         let BAR_HMARGIN = 15;
         let BAR_VMARGIN = 5;
         if (on) {
-            let bar = gradientBarExp(viewer.canvas, { x: viewer.screen.width - BAR_WIDTH - BAR_HMARGIN, y: BAR_VMARGIN, width: BAR_WIDTH, height: BAR_HEIGHT }, 
+            let bar = gradientBarExp(viewer.canvas, { x: viewer.screen.width - BAR_WIDTH - BAR_HMARGIN, y: BAR_VMARGIN, width: BAR_WIDTH, height: BAR_HEIGHT },
                 15, 5, 5, '3D variability [\u212B]');
-            let controlsRight = (viewer.mainDiv.select('div.control-panel#main-panel').node() as Element|null)?.getBoundingClientRect()?.right;
-            let barLeft = (bar.node() as Element|null)?.getBoundingClientRect()?.left;
-            if (controlsRight !== undefined && barLeft !== undefined && controlsRight > barLeft){
+            let controlsRight = (viewer.mainDiv.select('div.control-panel#main-panel').node() as Element | null)?.getBoundingClientRect()?.right;
+            let barLeft = (bar.node() as Element | null)?.getBoundingClientRect()?.left;
+            if (controlsRight !== undefined && barLeft !== undefined && controlsRight > barLeft) {
                 moveGradientBarExp(bar, viewer.screen.width - BAR_WIDTH - BAR_HMARGIN, viewer.screen.height - BAR_VMARGIN - BAR_HEIGHT, true);
             }
-            if (transition){
+            if (transition) {
                 fadeIn(bar);
             }
         }
@@ -359,7 +376,7 @@ export namespace Drawing {
                 .enter()
                 .append('path')
                 .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
-            addPointBehavior(betaConnectivityPaths as any);
+            addPointBehavior(viewer, betaConnectivityPaths as any);
             redraw(viewer, false);
             if (transition) {
                 fadeIn(betaConnectivityVis as unknown as Types.D3Selection);
@@ -372,7 +389,7 @@ export namespace Drawing {
     }
 
     export function fadeIn(selection: Types.D3Selection, delay = 0): Types.D3Transition {
-        if (selection.size() == 0){
+        if (selection.size() == 0) {
             return selection.transition();
         }
         let op = selection.style('opacity');
@@ -391,7 +408,7 @@ export namespace Drawing {
                 wx - Constants.MAX_EMPTY_X_MARGIN * vw,
                 wx + ww + Constants.MAX_EMPTY_X_MARGIN * vw - vw);
         } else {
-            viewer.visWorld.x = wx + 0.5*ww - 0.5*vw;
+            viewer.visWorld.x = wx + 0.5 * ww - 0.5 * vw;
         }
         if (vh < wh * Constants.MAX_Y_ZOOMOUT) {
             viewer.visWorld.y = Geometry.constrain(
@@ -399,8 +416,77 @@ export namespace Drawing {
                 wy - Constants.MAX_EMPTY_Y_MARGIN * vh,
                 wy + wh + Constants.MAX_EMPTY_Y_MARGIN * vh - vh);
         } else {
-            viewer.visWorld.y = wy + 0.5*wh  - 0.5*vh;
+            viewer.visWorld.y = wy + 0.5 * wh - 0.5 * vh;
         }
+    }
+
+    export function dispatchSseEvent(viewer: Types.Viewer, eventType: string, sses: Dag.Node[]): void {
+        if (!viewer.settings.dispatchEvents) return;
+        let eventDetail = { 
+            sourceType: viewer.d3viewer.node()?.tagName,
+            sourceId: viewer.id,
+            sourceInternalId: viewer.uniqueId,
+            eventType: eventType,
+            targetType: 'sses',
+            sses: sses.map(sse => { return {
+                label: sse.label,
+                type: sse.type,
+                sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
+            }}),                 
+            // pickedData: sses,
+        };
+        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX+eventType, { detail: eventDetail, bubbles: true } as any);
+    }
+
+    export function handleEvent(viewer: Types.Viewer, event: CustomEvent): void {
+        // console.log('Inbound event', event.type, event);
+        const detail = event.detail;
+        if (detail == null || detail == undefined){
+            console.error(`Event ${event.type}: event.detail must be an object.`);
+            return;
+        }
+        if (detail.sourceType == viewer.d3viewer.node()?.tagName && detail.sourceInternalId == viewer.uniqueId) {
+            console.log('Ignoring self', viewer.uniqueId);
+            return;
+        }
+        const sses = detail!.sses;
+        if (sses == undefined){
+            console.error(`Event ${event.type}: event.detail.sses must be an array.`);
+            return;
+        }
+        const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_SELECT;
+        const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_HOVER;
+        let attribute: string;
+        switch (event.type){
+            case PDB_OVERPROT_DO_SELECT:  // PDB.overprot.do.select
+                attribute = 'picked';
+                break;
+            case PDB_OVERPROT_DO_HOVER:  // PDB.overprot.do.hover
+                attribute = 'pointed';
+                break;
+            default:
+                console.error('Unknown event type for OverProtViewer:', event.type);
+                return;
+        }
+
+        viewer.canvas.selectAll(`g.node[${attribute}]`).attr(attribute, null);
+        for (const sse of sses) {
+            if (sse.label == undefined){
+                console.error(`Event ${event.type}: event.detail.sses[i].label must be a string.`);
+                return;
+            }
+            const g = viewer.nodeMap.get(sse.label);
+            if (g != undefined){
+                d3.select(g).attr(attribute, attribute);
+            } else {
+                console.warn(`Event ${event.type}: SSE with label "${sse.label}" is not present.`);
+            }
+        }
+
+        if (event.type == PDB_OVERPROT_DO_SELECT){
+            unpinAllTooltips(viewer);
+        }
+
     }
 
 }

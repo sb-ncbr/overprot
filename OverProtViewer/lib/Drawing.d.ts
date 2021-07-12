@@ -8,8 +8,8 @@ export declare namespace Drawing {
     function shift(viewer: Types.Viewer, rightRelative: number, downRelative: number): void;
     function shiftByMouse(viewer: Types.Viewer, rightPixels: number, downPixels: number): void;
     function setTooltips(viewer: Types.Viewer, selection: Types.D3Selection, htmlContents: (string | null)[] | null, pinnable?: boolean, delay?: boolean): void;
-    function addPointBehavior(selection: Types.D3Selection, pointedElementSelector?: (pointed: HTMLElement) => Types.D3Selection): void;
-    function addPickBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pickedElementSelector?: (clicked: HTMLElement) => Types.D3Selection): void;
+    function addPointBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pointedElementSelector?: (pointed: HTMLElement) => Types.D3Selection, callback?: ((sel: Types.D3Selection) => any) | null): void;
+    function addPickBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pickedElementSelector?: (clicked: HTMLElement) => Types.D3Selection, callback?: ((sel: Types.D3Selection) => any) | null): void;
     function addMouseHoldBehavior(selection: Types.D3Selection, onDown: () => any, onHold: () => any, onUp: () => any): void;
     function recolor(viewer: Types.Viewer, transition?: boolean): void;
     function redraw(viewer: Types.Viewer, transition?: boolean): void;
@@ -17,4 +17,6 @@ export declare namespace Drawing {
     function showBetaConnectivity(viewer: Types.Viewer, on: boolean, transition?: boolean): void;
     function fadeOutRemove(selection: Types.D3Selection, delay?: number): Types.D3Transition;
     function fadeIn(selection: Types.D3Selection, delay?: number): Types.D3Transition;
+    function dispatchSseEvent(viewer: Types.Viewer, eventType: string, sses: Dag.Node[]): void;
+    function handleEvent(viewer: Types.Viewer, event: CustomEvent): void;
 }

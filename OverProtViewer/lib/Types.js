@@ -5,10 +5,11 @@ import { Enums } from './Enums';
 import { Constants } from './Constants';
 export var Types;
 (function (Types) {
-    function newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
+    function newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
         return {
             id: id,
             uniqueId: uniqueId,
+            d3viewer: d3viewer,
             mainDiv: d3mainDiv,
             guiDiv: d3guiDiv,
             canvas: d3canvas,
@@ -17,7 +18,8 @@ export var Types;
             visWorld: Geometry.newRectangle(),
             screen: Geometry.rectangleFromCanvas(d3canvas),
             zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
-            settings: settings !== null && settings !== void 0 ? settings : newSettings()
+            settings: settings !== null && settings !== void 0 ? settings : newSettings(),
+            nodeMap: new Map(),
         };
     }
     Types.newViewer = newViewer;
@@ -31,14 +33,18 @@ export var Types;
             shapeMethod: Constants.DEFAULT_SHAPE_METHOD,
             layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
             betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
-            occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD
+            occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD,
+            dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
+            listenEvents: Constants.DEFAULT_LISTEN_EVENTS
         };
     }
     Types.newSettings = newSettings;
     function newSettingsFromHTMLElement(element) {
         var _a;
         let MANDATORY_ATTRIBUTES = ['file'];
-        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold'];
+        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
+            'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
+            'dispatch-events', 'listen-events'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)) {
                 console.error(`Missing attribute: "${attributeName}".`);
@@ -52,23 +58,27 @@ export var Types;
             }
         }
         let d3element = d3.select(element);
-        let colorMethodDictionary = {
+        const colorMethodDictionary = {
             'uniform': Enums.ColorMethod.Uniform,
             'type': Enums.ColorMethod.Type,
             'sheet': Enums.ColorMethod.Sheet,
             'variability': Enums.ColorMethod.Stdev,
         };
-        let shapeMethodDictionary = {
+        const shapeMethodDictionary = {
             'rectangle': Enums.ShapeMethod.Rectangle,
             'symcdf': Enums.ShapeMethod.SymCdf,
         };
-        let layoutMethodDictionary = {
+        const layoutMethodDictionary = {
             'old': Enums.LayoutMethod.Old,
             'new': Enums.LayoutMethod.New,
         };
-        let betaConnectivityDictionary = {
+        const booleanDictionary = {
             'on': true,
             'off': false,
+            'true': true,
+            'false': false,
+            '1': true,
+            '0': false,
         };
         return {
             file: (_a = d3element.attr('file')) !== null && _a !== void 0 ? _a : '',
@@ -77,8 +87,10 @@ export var Types;
             colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
             shapeMethod: parseEnumAttribute('shape-method', d3element.attr('shape-method'), shapeMethodDictionary, Constants.DEFAULT_SHAPE_METHOD),
             layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
-            betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), betaConnectivityDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
-            occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true)
+            betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), booleanDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
+            occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true),
+            dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
+            listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
         };
     }
     Types.newSettingsFromHTMLElement = newSettingsFromHTMLElement;

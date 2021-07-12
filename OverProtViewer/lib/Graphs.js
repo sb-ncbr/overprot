@@ -97,7 +97,7 @@ export var Graphs;
         if (nLevels > lastSliceVertex + 1) {
             slices.push(getSlice(dag, lastSliceVertex + 1, nLevels));
         }
-        // debug check:
+        // debug check, TODO remove
         let checkVertices = new Set();
         for (const slice of slices)
             for (const v of slice.vertices)

@@ -24,10 +24,11 @@ export var OverProtViewerCore;
         let settings = Types.newSettingsFromHTMLElement(htmlElement);
         const id = htmlElement.id || '';
         const uniqueId = `${id}-${Math.random().toString(36).slice(2)}`;
-        console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`);
+        console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`, settings);
+        const d3viewer = d3.select(htmlElement);
         // d3.select(htmlElement).selectAll(()=>htmlElement.childNodes as any).remove();
-        d3.select(htmlElement).selectAll(':scope > *').remove(); // clear all children
-        let d3mainDiv = d3.select(htmlElement).append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
+        d3viewer.selectAll(':scope > *').remove(); // clear all children
+        let d3mainDiv = d3viewer.append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
         let d3guiDiv = d3mainDiv.append('div').attr('class', 'gui')
             .styles({ width: settings.width, height: settings.height });
         let realSize = (_a = d3guiDiv.node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect();
@@ -39,7 +40,7 @@ export var OverProtViewerCore;
         let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
         let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
             .attrs({ width: settings.width, height: settings.height });
-        let viewer = Types.newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings);
+        let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
         // initializeExternalControls(viewer);
         initializeInternalControls(viewer);
         d3mainDiv.append('br');
@@ -71,6 +72,10 @@ export var OverProtViewerCore;
             let newSize = d3guiDiv.node().getBoundingClientRect();
             resizeVisualization(viewer, newSize.width, newSize.height);
         });
+        if (settings.listenEvents) {
+            htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT, (e) => Drawing.handleEvent(viewer, e)); // does not work with d3 .on() because of special meaning of dots in event type
+            htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER, (e) => Drawing.handleEvent(viewer, e));
+        }
         viewer.canvas.append('text').attr('class', 'central-message')
             .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
             .text('Loading...');
@@ -108,6 +113,9 @@ export var OverProtViewerCore;
         }
     }
     OverProtViewerCore.initializeViewer = initializeViewer;
+    function setkv(obj, key, value) {
+        obj[key] = value;
+    }
     function initializeExternalControls(viewer) {
         let d3controlsDiv = viewer.mainDiv.append('div').attr('id', 'controls');
         // ZOOM CONTROLS
@@ -334,13 +342,17 @@ export var OverProtViewerCore;
             dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
             dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
         }
+        let nodeMap = new Map();
         let d3nodes = viewer.canvas
             .append('g').attr('class', 'nodes')
             .selectAll('g.node')
             .data(dag.nodes)
             .enter()
             .append('g').attr('class', 'node')
-            .attr('opacity', n => n.active ? 1 : 0);
+            .attr('opacity', n => n.active ? 1 : 0)
+            .each((d, i, nodes) => nodeMap.set(d.label, nodes[i]));
+        viewer.nodeMap = nodeMap;
+        console.log('viewer.nodeMap:', viewer.nodeMap);
         let d3nodeShapes;
         if (viewer.settings.shapeMethod == Enums.ShapeMethod.SymCdf) {
             d3nodeShapes = d3nodes
@@ -351,8 +363,10 @@ export var OverProtViewerCore;
                 .append('rect');
         }
         let d3activeShapes = d3nodeShapes.filter(n => n.active);
-        Drawing.addPointBehavior(d3nodeShapes, shape => d3.select(shape.parentElement));
-        Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement));
+        // Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement) as any);
+        Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+        // Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement as any));
+        Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_SELECT, nodes.data()));
         Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
         d3nodes
             .append('text').attr('class', 'node-label')

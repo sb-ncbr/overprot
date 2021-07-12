@@ -96,6 +96,8 @@
         Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
         Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
         Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
+        Constants.DEFAULT_DISPATCH_EVENTS = false;
+        Constants.DEFAULT_LISTEN_EVENTS = false;
         //#region measurements in the world
         Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
         Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
@@ -116,6 +118,13 @@
         Constants.HANGING_TEXT_OFFSET = 5;
         Constants.RESET_SYMBOL = '&#x27F3;';
         Constants.OPEN_POPUP_SYMBOL = ' &#x25BE;';
+        Constants.EVENT_PREFIX = 'PDB.overprot.';
+        // Outbound events (dispatched by the viewer):
+        Constants.EVENT_TYPE_SELECT = 'select';
+        Constants.EVENT_TYPE_HOVER = 'hover';
+        // Inbound events (listened to by the viewer):
+        Constants.EVENT_TYPE_DO_SELECT = 'do.select';
+        Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
     })(Constants || (Constants = {}));
 
     var Geometry;
@@ -467,10 +476,11 @@
 
     var Types;
     (function (Types) {
-        function newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
+        function newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
             return {
                 id: id,
                 uniqueId: uniqueId,
+                d3viewer: d3viewer,
                 mainDiv: d3mainDiv,
                 guiDiv: d3guiDiv,
                 canvas: d3canvas,
@@ -479,7 +489,8 @@
                 visWorld: Geometry.newRectangle(),
                 screen: Geometry.rectangleFromCanvas(d3canvas),
                 zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
-                settings: settings !== null && settings !== void 0 ? settings : newSettings()
+                settings: settings !== null && settings !== void 0 ? settings : newSettings(),
+                nodeMap: new Map(),
             };
         }
         Types.newViewer = newViewer;
@@ -492,14 +503,18 @@
                 shapeMethod: Constants.DEFAULT_SHAPE_METHOD,
                 layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
                 betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
-                occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD
+                occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD,
+                dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
+                listenEvents: Constants.DEFAULT_LISTEN_EVENTS
             };
         }
         Types.newSettings = newSettings;
         function newSettingsFromHTMLElement(element) {
             var _a;
             let MANDATORY_ATTRIBUTES = ['file'];
-            let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold'];
+            let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
+                'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
+                'dispatch-events', 'listen-events'];
             MANDATORY_ATTRIBUTES.forEach(attributeName => {
                 if (!element.hasAttribute(attributeName)) {
                     console.error(`Missing attribute: "${attributeName}".`);
@@ -513,23 +528,27 @@
                 }
             }
             let d3element = d3.select(element);
-            let colorMethodDictionary = {
+            const colorMethodDictionary = {
                 'uniform': Enums.ColorMethod.Uniform,
                 'type': Enums.ColorMethod.Type,
                 'sheet': Enums.ColorMethod.Sheet,
                 'variability': Enums.ColorMethod.Stdev,
             };
-            let shapeMethodDictionary = {
+            const shapeMethodDictionary = {
                 'rectangle': Enums.ShapeMethod.Rectangle,
                 'symcdf': Enums.ShapeMethod.SymCdf,
             };
-            let layoutMethodDictionary = {
+            const layoutMethodDictionary = {
                 'old': Enums.LayoutMethod.Old,
                 'new': Enums.LayoutMethod.New,
             };
-            let betaConnectivityDictionary = {
+            const booleanDictionary = {
                 'on': true,
                 'off': false,
+                'true': true,
+                'false': false,
+                '1': true,
+                '0': false,
             };
             return {
                 file: (_a = d3element.attr('file')) !== null && _a !== void 0 ? _a : '',
@@ -538,8 +557,10 @@
                 colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
                 shapeMethod: parseEnumAttribute('shape-method', d3element.attr('shape-method'), shapeMethodDictionary, Constants.DEFAULT_SHAPE_METHOD),
                 layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
-                betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), betaConnectivityDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
-                occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true)
+                betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), booleanDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
+                occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true),
+                dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
+                listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
             };
         }
         Types.newSettingsFromHTMLElement = newSettingsFromHTMLElement;
@@ -697,7 +718,7 @@
             if (nLevels > lastSliceVertex + 1) {
                 slices.push(getSlice(dag, lastSliceVertex + 1, nLevels));
             }
-            // debug check:
+            // debug check, TODO remove
             let checkVertices = new Set();
             for (const slice of slices)
                 for (const v of slice.vertices)
@@ -1149,6 +1170,10 @@
                 viewer.mainDiv.selectAll('[tooltip=pre-pinned]').attr('tooltip', 'pinned');
             });
         }
+        function unpinAllTooltips(viewer) {
+            viewer.mainDiv.selectAll('div.tooltip[type=pinned]').remove();
+            viewer.mainDiv.selectAll('[tooltip=pinned]').attr('tooltip', null);
+        }
         function setTooltips(viewer, selection, htmlContents, pinnable = false, delay = false) {
             if (htmlContents === null) {
                 selection
@@ -1176,23 +1201,32 @@
             }
         }
         Drawing.setTooltips = setTooltips;
-        function addPointBehavior(selection, pointedElementSelector = (pointed) => d3.select(pointed)) {
+        function addPointBehavior(viewer, selection, pointedElementSelector = (pointed) => d3.select(pointed), callback = null) {
             selection.on('mouseenter.point', (d, i, g) => {
-                pointedElementSelector(g[i]).attr('pointed', 'true');
+                let pointed = pointedElementSelector(g[i]);
+                pointed.attr('pointed', 'pointed');
+                if (callback != null)
+                    callback(pointed);
             });
             selection.on('mouseleave.point', (d, i, g) => {
                 pointedElementSelector(g[i]).attr('pointed', null);
+                if (callback != null)
+                    callback(d3.selectAll());
             });
         }
         Drawing.addPointBehavior = addPointBehavior;
-        function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked)) {
+        function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked), callback = null) {
             selection.on('click.pick', (d, i, g) => {
-                pickedElementSelector(g[i]).attr('picked', 'pre-picked');
+                let d3Elem = pickedElementSelector(g[i]);
+                d3Elem.attr('picked', 'pre-picked');
             });
             viewer.guiDiv
                 .on('click.pick', () => {
                 viewer.guiDiv.selectAll('[picked=picked]').attr('picked', null);
-                viewer.guiDiv.selectAll('[picked=pre-picked]').attr('picked', 'picked');
+                let picked = viewer.guiDiv.selectAll('[picked=pre-picked]');
+                picked.attr('picked', 'picked');
+                if (callback != null)
+                    callback(picked);
             });
         }
         Drawing.addPickBehavior = addPickBehavior;
@@ -1277,20 +1311,33 @@
                 .select('g.beta-connectivity')
                 .selectAll('path')
                 .transition().duration(duration)
-                .attr('d', edge => {
-                if (edge[3] == 0)
-                    return '';
-                let [u, v, orientation] = edge;
-                let n1 = viewer.data.nodes[u].visual.rect;
-                let n2 = viewer.data.nodes[v].visual.rect;
-                let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
-                let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
-                // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-                return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
-                // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-            });
+                .attr('d', edge => calculateArcPath(viewer, edge));
+            // .attr('d', edge => {
+            //     if ((edge as Number[])[3] == 0) return '';
+            //     let [u, v, orientation] = edge as number[];
+            //     let n1 = viewer.data.nodes[u].visual.rect;
+            //     let n2 = viewer.data.nodes[v].visual.rect;
+            //     let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+            //     let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+            //     // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+            //     return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+            //     // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+            // });
         }
         Drawing.redraw = redraw;
+        function calculateArcPath(viewer, edge) {
+            if (edge[3] == 0)
+                return '';
+            let [u, v, orientation] = edge;
+            let n1 = viewer.data.nodes[u].visual.rect;
+            let n2 = viewer.data.nodes[v].visual.rect;
+            let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+            let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+            let arcMaxMinor = Constants.ARC_MAX_MINOR / viewer.zoom.yZoomout;
+            // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+            return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+            // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        }
         function nodeBigEnoughForLabel(viewer, node) {
             return Geometry.rectToScreen(viewer.visWorld, viewer.screen, node.visual.rect).width >= Constants.MINIMAL_WIDTH_FOR_SSE_LABEL;
         }
@@ -1373,7 +1420,7 @@
                     .enter()
                     .append('path')
                     .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
-                addPointBehavior(betaConnectivityPaths);
+                addPointBehavior(viewer, betaConnectivityPaths);
                 redraw(viewer, false);
                 if (transition) {
                     fadeIn(betaConnectivityVis);
@@ -1412,6 +1459,77 @@
                 viewer.visWorld.y = wy + 0.5 * wh - 0.5 * vh;
             }
         }
+        function dispatchSseEvent(viewer, eventType, sses) {
+            var _a;
+            if (!viewer.settings.dispatchEvents)
+                return;
+            let eventDetail = {
+                sourceType: (_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName,
+                sourceId: viewer.id,
+                sourceInternalId: viewer.uniqueId,
+                eventType: eventType,
+                targetType: 'sses',
+                sses: sses.map(sse => {
+                    return {
+                        label: sse.label,
+                        type: sse.type,
+                        sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
+                    };
+                }),
+            };
+            viewer.mainDiv.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
+        }
+        Drawing.dispatchSseEvent = dispatchSseEvent;
+        function handleEvent(viewer, event) {
+            var _a;
+            // console.log('Inbound event', event.type, event);
+            const detail = event.detail;
+            if (detail == null || detail == undefined) {
+                console.error(`Event ${event.type}: event.detail must be an object.`);
+                return;
+            }
+            if (detail.sourceType == ((_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName) && detail.sourceInternalId == viewer.uniqueId) {
+                console.log('Ignoring self', viewer.uniqueId);
+                return;
+            }
+            const sses = detail.sses;
+            if (sses == undefined) {
+                console.error(`Event ${event.type}: event.detail.sses must be an array.`);
+                return;
+            }
+            const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT;
+            const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER;
+            let attribute;
+            switch (event.type) {
+                case PDB_OVERPROT_DO_SELECT: // PDB.overprot.do.select
+                    attribute = 'picked';
+                    break;
+                case PDB_OVERPROT_DO_HOVER: // PDB.overprot.do.hover
+                    attribute = 'pointed';
+                    break;
+                default:
+                    console.error('Unknown event type for OverProtViewer:', event.type);
+                    return;
+            }
+            viewer.canvas.selectAll(`g.node[${attribute}]`).attr(attribute, null);
+            for (const sse of sses) {
+                if (sse.label == undefined) {
+                    console.error(`Event ${event.type}: event.detail.sses[i].label must be a string.`);
+                    return;
+                }
+                const g = viewer.nodeMap.get(sse.label);
+                if (g != undefined) {
+                    d3.select(g).attr(attribute, attribute);
+                }
+                else {
+                    console.warn(`Event ${event.type}: SSE with label "${sse.label}" is not present.`);
+                }
+            }
+            if (event.type == PDB_OVERPROT_DO_SELECT) {
+                unpinAllTooltips(viewer);
+            }
+        }
+        Drawing.handleEvent = handleEvent;
     })(Drawing || (Drawing = {}));
 
     var Controls;
@@ -1671,10 +1789,11 @@
             let settings = Types.newSettingsFromHTMLElement(htmlElement);
             const id = htmlElement.id || '';
             const uniqueId = `${id}-${Math.random().toString(36).slice(2)}`;
-            console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`);
+            console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`, settings);
+            const d3viewer = d3.select(htmlElement);
             // d3.select(htmlElement).selectAll(()=>htmlElement.childNodes as any).remove();
-            d3.select(htmlElement).selectAll(':scope > *').remove(); // clear all children
-            let d3mainDiv = d3.select(htmlElement).append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
+            d3viewer.selectAll(':scope > *').remove(); // clear all children
+            let d3mainDiv = d3viewer.append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
             let d3guiDiv = d3mainDiv.append('div').attr('class', 'gui')
                 .styles({ width: settings.width, height: settings.height });
             let realSize = (_a = d3guiDiv.node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect();
@@ -1686,7 +1805,7 @@
             let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
             let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
                 .attrs({ width: settings.width, height: settings.height });
-            let viewer = Types.newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings);
+            let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
             // initializeExternalControls(viewer);
             initializeInternalControls(viewer);
             d3mainDiv.append('br');
@@ -1718,6 +1837,10 @@
                 let newSize = d3guiDiv.node().getBoundingClientRect();
                 resizeVisualization(viewer, newSize.width, newSize.height);
             });
+            if (settings.listenEvents) {
+                htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT, (e) => Drawing.handleEvent(viewer, e)); // does not work with d3 .on() because of special meaning of dots in event type
+                htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER, (e) => Drawing.handleEvent(viewer, e));
+            }
             viewer.canvas.append('text').attr('class', 'central-message')
                 .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
                 .text('Loading...');
@@ -1904,13 +2027,17 @@
                 dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
                 dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
             }
+            let nodeMap = new Map();
             let d3nodes = viewer.canvas
                 .append('g').attr('class', 'nodes')
                 .selectAll('g.node')
                 .data(dag.nodes)
                 .enter()
                 .append('g').attr('class', 'node')
-                .attr('opacity', n => n.active ? 1 : 0);
+                .attr('opacity', n => n.active ? 1 : 0)
+                .each((d, i, nodes) => nodeMap.set(d.label, nodes[i]));
+            viewer.nodeMap = nodeMap;
+            console.log('viewer.nodeMap:', viewer.nodeMap);
             let d3nodeShapes;
             if (viewer.settings.shapeMethod == Enums.ShapeMethod.SymCdf) {
                 d3nodeShapes = d3nodes
@@ -1921,8 +2048,10 @@
                     .append('rect');
             }
             let d3activeShapes = d3nodeShapes.filter(n => n.active);
-            Drawing.addPointBehavior(d3nodeShapes, shape => d3.select(shape.parentElement));
-            Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement));
+            // Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement) as any);
+            Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            // Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement as any));
+            Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_SELECT, nodes.data()));
             Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
             d3nodes
                 .append('text').attr('class', 'node-label')

@@ -41,6 +41,9 @@ export namespace Constants {
     export const DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     export const DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
 
+    export const DEFAULT_DISPATCH_EVENTS = false;
+    export const DEFAULT_LISTEN_EVENTS = false;
+
 
     //#region measurements in the world
     export const LENGTH_SCALE = 4;  // width of 1 residue in the world
@@ -66,9 +69,15 @@ export namespace Constants {
 
     export const HANGING_TEXT_OFFSET = 5;
 
-    export const RESET_SYMBOL = '&#x27F3;'
+    export const RESET_SYMBOL = '&#x27F3;';
     
-    export const OPEN_POPUP_SYMBOL = ' &#x25BE;'
+    export const OPEN_POPUP_SYMBOL = ' &#x25BE;';
 
-
+    export const EVENT_PREFIX = 'PDB.overprot.'
+    // Outbound events (dispatched by the viewer):
+    export const EVENT_TYPE_SELECT = 'select';
+    export const EVENT_TYPE_HOVER = 'hover';
+    // Inbound events (listened to by the viewer):
+    export const EVENT_TYPE_DO_SELECT = 'do.select';
+    export const EVENT_TYPE_DO_HOVER = 'do.hover';
 }
