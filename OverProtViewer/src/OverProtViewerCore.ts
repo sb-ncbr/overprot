@@ -43,7 +43,7 @@ export namespace OverProtViewerCore {
             .attrs({ width: settings.width, height: settings.height });
 
         let viewer: Types.Viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
-        
+
         // initializeExternalControls(viewer);
         initializeInternalControls(viewer);
 
@@ -80,9 +80,9 @@ export namespace OverProtViewerCore {
             resizeVisualization(viewer, newSize.width, newSize.height);
         });
 
-        if (settings.listenEvents){
-            htmlElement.addEventListener(Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_SELECT, (e) => Drawing.handleEvent(viewer, e as CustomEvent));  // does not work with d3 .on() because of special meaning of dots in event type
-            htmlElement.addEventListener(Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_HOVER, (e) => Drawing.handleEvent(viewer, e as CustomEvent));
+        if (settings.listenEvents) {
+            htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT, (e) => Drawing.handleEvent(viewer, e as CustomEvent));  // does not work with d3 .on() because of special meaning of dots in event type
+            htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER, (e) => Drawing.handleEvent(viewer, e as CustomEvent));
         }
         viewer.canvas.append('text').attr('class', 'central-message')
             .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
@@ -93,7 +93,7 @@ export namespace OverProtViewerCore {
             // console.log(`Fetching ${absoluteFilePath}`);
             fetch(absoluteFilePath)
                 .catch(async error => {
-                    console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath, 
+                    console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath,
                         'failed (this might be caused by CORS policy). Original error:', error);
                     let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
                     setDataToViewer(viewer, data);
@@ -103,8 +103,8 @@ export namespace OverProtViewerCore {
                         let text = await response.text();
                         let data = Dag.dagFromJson(text);
                         setDataToViewer(viewer, data);
-                    } else if (response && !response.ok){
-                        console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath, 
+                    } else if (response && !response.ok) {
+                        console.error(`OverProt Viewer with id="${viewer.id}" failed to initialize because the request for`, absoluteFilePath,
                             'returned status code', response.status, response.statusText);
                         let data = Dag.newDagWithError(`Failed to fetch data from "${absoluteFilePath}"`);
                         setDataToViewer(viewer, data);
@@ -122,7 +122,7 @@ export namespace OverProtViewerCore {
         }
 
     }
-    function setkv(obj: any, key: string, value: any): void{
+    function setkv(obj: any, key: string, value: any): void {
         obj[key] = value;
     }
 
@@ -217,7 +217,8 @@ export namespace OverProtViewerCore {
             ['Uniform', Enums.ColorMethod.Uniform, 'Show all SSEs in the same color.'],
             ['Type', Enums.ColorMethod.Type, 'Show &beta;-strands in blue, helices in gray.'],
             ['Sheet', Enums.ColorMethod.Sheet, 'Assign the same color to &beta;-strands from the same &beta;-sheet, <br>show helices in gray.'],
-            ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.']
+            ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.'],
+            ['Rainbow', Enums.ColorMethod.Rainbow, 'Rainbow coloring from N-terminus (blue) to C-terminus (red).'],
         ];
         let shapeOptions: Controls.NameValueTooltip<Enums.ShapeMethod>[] = [
             ['Rectangle', Enums.ShapeMethod.Rectangle, 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).'],
@@ -494,6 +495,9 @@ export namespace OverProtViewerCore {
                     break;
                 case Enums.ColorMethod.Stdev:
                     col = Colors.byExpHeatmap(n.stdev3d, Constants.HEATMAP_MIDDLE_VALUE);
+                    break;
+                case Enums.ColorMethod.Rainbow:
+                    col = (n.rainbow_hex != undefined) ? d3.rgb(n.rainbow_hex) : Colors.NEUTRAL_COLOR;
                     break;
             }
             n.visual.fill = col.hex();

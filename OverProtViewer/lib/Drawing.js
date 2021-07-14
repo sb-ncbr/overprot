@@ -218,16 +218,23 @@ export var Drawing;
             .select('g.beta-connectivity')
             .selectAll('g.ladder')
             .selectAll('path.vis');
-        if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
-            betaArcs.style('stroke', ladder => viewer.data.nodes[ladder[0]].visual.stroke);
-        }
-        else {
-            let arcColor = Colors.NEUTRAL_DARK.hex();
-            betaArcs.style('stroke', arcColor);
-        }
+        // if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+        //     betaArcs.style('stroke', Colors.NEUTRAL_DARK.hex());
+        // } else {
+        //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
+        // }
+        betaArcs.style('stroke', ladder => arcColor(viewer, ladder));
         show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
     }
     Drawing.recolor = recolor;
+    function arcColor(viewer, ladder) {
+        if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+            return Colors.NEUTRAL_DARK.hex();
+        }
+        else {
+            return viewer.data.nodes[ladder[0]].visual.stroke;
+        }
+    }
     function redraw(viewer, transition = true) {
         let duration = transition ? Constants.TRANSITION_DURATION : 0;
         let d3nodes = viewer.canvas
@@ -372,11 +379,6 @@ export var Drawing;
             dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
             let betaConnectivityVis = viewer.canvas
                 .append('g').attr('class', 'beta-connectivity');
-            // let betaConnectivityPaths = betaConnectivityVis.selectAll()
-            //     .data(dag.beta_connectivity)
-            //     .enter()
-            //     .append('path')
-            //     .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
             let betaConnectivityLadders = betaConnectivityVis.selectAll()
                 .data(dag.beta_connectivity)
                 .enter()
@@ -391,7 +393,7 @@ export var Drawing;
             // console.log('ladderMap', viewer.ladderMap.entries());
             let betaPaths = betaConnectivityLadders
                 .append('path').attr('class', 'vis')
-                .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
+                .style('stroke', ladder => arcColor(viewer, ladder));
             let betaGhostPaths = betaConnectivityLadders
                 .append('path').attr('class', 'ghost');
             // addPointBehavior(viewer, betaConnectivityPaths as any);

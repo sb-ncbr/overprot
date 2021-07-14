@@ -3,7 +3,8 @@ export declare namespace Enums {
         Uniform = 0,
         Type = 1,
         Sheet = 2,
-        Stdev = 3
+        Stdev = 3,
+        Rainbow = 4
     }
     enum ShapeMethod {
         Rectangle = 0,

@@ -6,6 +6,7 @@ export var Enums;
         ColorMethod[ColorMethod["Type"] = 1] = "Type";
         ColorMethod[ColorMethod["Sheet"] = 2] = "Sheet";
         ColorMethod[ColorMethod["Stdev"] = 3] = "Stdev";
+        ColorMethod[ColorMethod["Rainbow"] = 4] = "Rainbow";
     })(ColorMethod = Enums.ColorMethod || (Enums.ColorMethod = {}));
     ;
     let ShapeMethod;

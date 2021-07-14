@@ -54,6 +54,7 @@
             ColorMethod[ColorMethod["Type"] = 1] = "Type";
             ColorMethod[ColorMethod["Sheet"] = 2] = "Sheet";
             ColorMethod[ColorMethod["Stdev"] = 3] = "Stdev";
+            ColorMethod[ColorMethod["Rainbow"] = 4] = "Rainbow";
         })(ColorMethod = Enums.ColorMethod || (Enums.ColorMethod = {}));
         let ShapeMethod;
         (function (ShapeMethod) {
@@ -549,6 +550,7 @@
                 'type': Enums.ColorMethod.Type,
                 'sheet': Enums.ColorMethod.Sheet,
                 'variability': Enums.ColorMethod.Stdev,
+                'rainbow': Enums.ColorMethod.Rainbow,
             };
             const shapeMethodDictionary = {
                 'rectangle': Enums.ShapeMethod.Rectangle,
@@ -1321,16 +1323,23 @@
                 .select('g.beta-connectivity')
                 .selectAll('g.ladder')
                 .selectAll('path.vis');
-            if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
-                betaArcs.style('stroke', ladder => viewer.data.nodes[ladder[0]].visual.stroke);
-            }
-            else {
-                let arcColor = Colors.NEUTRAL_DARK.hex();
-                betaArcs.style('stroke', arcColor);
-            }
+            // if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+            //     betaArcs.style('stroke', Colors.NEUTRAL_DARK.hex());
+            // } else {
+            //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
+            // }
+            betaArcs.style('stroke', ladder => arcColor(viewer, ladder));
             show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
         }
         Drawing.recolor = recolor;
+        function arcColor(viewer, ladder) {
+            if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+                return Colors.NEUTRAL_DARK.hex();
+            }
+            else {
+                return viewer.data.nodes[ladder[0]].visual.stroke;
+            }
+        }
         function redraw(viewer, transition = true) {
             let duration = transition ? Constants.TRANSITION_DURATION : 0;
             let d3nodes = viewer.canvas
@@ -1457,11 +1466,6 @@
                 dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
                 let betaConnectivityVis = viewer.canvas
                     .append('g').attr('class', 'beta-connectivity');
-                // let betaConnectivityPaths = betaConnectivityVis.selectAll()
-                //     .data(dag.beta_connectivity)
-                //     .enter()
-                //     .append('path')
-                //     .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
                 let betaConnectivityLadders = betaConnectivityVis.selectAll()
                     .data(dag.beta_connectivity)
                     .enter()
@@ -1476,7 +1480,7 @@
                 // console.log('ladderMap', viewer.ladderMap.entries());
                 let betaPaths = betaConnectivityLadders
                     .append('path').attr('class', 'vis')
-                    .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
+                    .style('stroke', ladder => arcColor(viewer, ladder));
                 let betaGhostPaths = betaConnectivityLadders
                     .append('path').attr('class', 'ghost');
                 // addPointBehavior(viewer, betaConnectivityPaths as any);
@@ -1996,7 +2000,8 @@
                 ['Uniform', Enums.ColorMethod.Uniform, 'Show all SSEs in the same color.'],
                 ['Type', Enums.ColorMethod.Type, 'Show &beta;-strands in blue, helices in gray.'],
                 ['Sheet', Enums.ColorMethod.Sheet, 'Assign the same color to &beta;-strands from the same &beta;-sheet, <br>show helices in gray.'],
-                ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.']
+                ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.'],
+                ['Rainbow', Enums.ColorMethod.Rainbow, 'Rainbow coloring from N-terminus (blue) to C-terminus (red).'],
             ];
             let shapeOptions = [
                 ['Rectangle', Enums.ShapeMethod.Rectangle, 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).'],
@@ -2230,6 +2235,9 @@
                         break;
                     case Enums.ColorMethod.Stdev:
                         col = Colors.byExpHeatmap(n.stdev3d, Constants.HEATMAP_MIDDLE_VALUE);
+                        break;
+                    case Enums.ColorMethod.Rainbow:
+                        col = (n.rainbow_hex != undefined) ? d3.rgb(n.rainbow_hex) : Colors.NEUTRAL_COLOR;
                         break;
                 }
                 n.visual.fill = col.hex();

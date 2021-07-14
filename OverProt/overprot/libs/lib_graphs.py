@@ -79,14 +79,14 @@ class Dag(object):
         slices = []
         last_slice_vertex = -1
         for i_level, level in enumerate(self.levels):
-            print('level', i_level, level)
+            # print('level', i_level, level)
             for vertex in level:
                 ancestors[vertex] = set(self.in_neighbors[vertex]).union(*(ancestors[u] for u in self.in_neighbors[vertex]))
-            print('    ancestors', ancestors)
+            # print('    ancestors', ancestors)
             if len(level) == 1 and len(ancestors[level[0]]) == seen_vertices:
                 # This is a slice-vertex
                 slice_vertex = level[0]
-                print('    slice_vertex', slice_vertex)
+                # print('    slice_vertex', slice_vertex)
                 if i_level > last_slice_vertex + 1:
                     slices.append(self._get_slice(last_slice_vertex+1, i_level))
                 slices.append(Dag([[slice_vertex]], []))

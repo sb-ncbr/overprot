@@ -542,7 +542,8 @@ def print_json(filename: FilePath, n_structures, labels, occurrences, avg_length
         sheet_ids=None,
         cdfs=None,
         variances=None,
-        label2manual_label={}):
+        label2manual_label={},
+        color_index={}):
     sses = []
     if sheet_ids is not None:
         sheet_ids = renumber_sheets_by_importance(sheet_ids, occurrences, avg_lengths)
@@ -555,6 +556,8 @@ def print_json(filename: FilePath, n_structures, labels, occurrences, avg_length
             sse['manual_label'] = label2manual_label[label]
         if variances is not None:
             sse['stdev3d'] = round(variances[i] ** (1/2), ndigits=3)
+        if label in color_index:
+            sse['rainbow_hex'] = color_index[label]
         if cdfs is not None:
             cdf = [(int(x), float(y)) for (x, y) in cdfs[i]]
             sse['cdf'] = cdf
@@ -638,10 +641,12 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
             annot = json.load(r)['consensus']
         beta_connectivity = annot['beta_connectivity']
         label2manual_label = get_label2manual_label(annot)
+        color_index = {sse['label']: sse['rainbow_hex'] for sse in annot['secondary_structure_elements']}
     except Exception as ex:
         sys.stderr.write(f'WARNING: Could not read beta-connectivity ({type(ex).__name__}: {ex})\n')
         beta_connectivity = []
         label2manual_label = {}
+        color_index = {}
     beta_connectivity = remove_self_connections(beta_connectivity, print_warnings=True)
 
     if json_output is not None:
@@ -654,7 +659,8 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
             sheet_ids=sheet_ids,
             cdfs=cdfs,
             variances=coord_variances,
-            label2manual_label=label2manual_label)
+            label2manual_label=label2manual_label,
+            color_index=color_index)
 
     drawing = make_diagram(labels, occurrences, avg_lengths, 
         precedence=precedence,

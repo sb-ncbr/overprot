@@ -22,6 +22,7 @@ export declare namespace Dag {
         sheet_id: number;
         stdev3d: number;
         cdf: number[][];
+        rainbow_hex: string | undefined;
         active: boolean;
         visual: NodeVisual;
         ladders: number[] | undefined;

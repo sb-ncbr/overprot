@@ -199,7 +199,8 @@ export var OverProtViewerCore;
             ['Uniform', Enums.ColorMethod.Uniform, 'Show all SSEs in the same color.'],
             ['Type', Enums.ColorMethod.Type, 'Show &beta;-strands in blue, helices in gray.'],
             ['Sheet', Enums.ColorMethod.Sheet, 'Assign the same color to &beta;-strands from the same &beta;-sheet, <br>show helices in gray.'],
-            ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.']
+            ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.'],
+            ['Rainbow', Enums.ColorMethod.Rainbow, 'Rainbow coloring from N-terminus (blue) to C-terminus (red).'],
         ];
         let shapeOptions = [
             ['Rectangle', Enums.ShapeMethod.Rectangle, 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).'],
@@ -437,6 +438,9 @@ export var OverProtViewerCore;
                     break;
                 case Enums.ColorMethod.Stdev:
                     col = Colors.byExpHeatmap(n.stdev3d, Constants.HEATMAP_MIDDLE_VALUE);
+                    break;
+                case Enums.ColorMethod.Rainbow:
+                    col = (n.rainbow_hex != undefined) ? d3.rgb(n.rainbow_hex) : Colors.NEUTRAL_COLOR;
                     break;
             }
             n.visual.fill = col.hex();

@@ -104,6 +104,7 @@ export namespace Types {
             'type': Enums.ColorMethod.Type,
             'sheet': Enums.ColorMethod.Sheet,
             'variability': Enums.ColorMethod.Stdev,
+            'rainbow': Enums.ColorMethod.Rainbow,
         }
         const shapeMethodDictionary = {
             'rectangle': Enums.ShapeMethod.Rectangle,
