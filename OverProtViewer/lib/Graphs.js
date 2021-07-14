@@ -182,8 +182,8 @@ export var Graphs;
         for (const level of levels) {
             const vertexEmbeddings = [];
             for (const vertex of level) {
-                const { width, height } = vertexSizes.get(vertex);
-                const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: width * height };
+                const { width, height, weight } = vertexSizes.get(vertex);
+                const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: weight };
                 const positions = new Map([[vertex, { x: 0.0, y: 0.0 }]]);
                 vertexEmbeddings.push([box, positions]);
             }

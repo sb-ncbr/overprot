@@ -7,7 +7,7 @@ export namespace Graphs {
         return { x: xy1.x + xy2.x, y: xy1.y + xy2.y };
     }
 
-    type Size = { width: number, height: number };
+    type Size = { width: number, height: number, weight: number };
 
     type Box = { left: number, right: number, top: number, bottom: number, weight: number }
     /* Boundaries of a box with center in [0,0]. All dimensions are positive. Center means geometrical center along x, center of gravity along y. */
@@ -189,8 +189,8 @@ export namespace Graphs {
         for (const level of levels) {
             const vertexEmbeddings: [Box, Map<number, XY>][] = [];
             for (const vertex of level) {
-                const { width, height } = vertexSizes.get(vertex)!;
-                const box: Box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: width * height };
+                const { width, height, weight } = vertexSizes.get(vertex)!;
+                const box: Box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: weight };
                 const positions = new Map([[vertex, { x: 0.0, y: 0.0 } as XY]]);
                 vertexEmbeddings.push([box, positions]);
             }

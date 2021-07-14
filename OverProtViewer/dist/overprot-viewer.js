@@ -859,8 +859,8 @@
             for (const level of levels) {
                 const vertexEmbeddings = [];
                 for (const vertex of level) {
-                    const { width, height } = vertexSizes.get(vertex);
-                    const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: width * height };
+                    const { width, height, weight } = vertexSizes.get(vertex);
+                    const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: weight };
                     const positions = new Map([[vertex, { x: 0.0, y: 0.0 }]]);
                     vertexEmbeddings.push([box, positions]);
                 }
@@ -2060,6 +2060,7 @@
                 dag.nodes.map(node => node.cdf[node.cdf.length - 1][0] * Constants.LENGTH_SCALE)
                 : dag.nodes.map(node => node.avg_length * Constants.LENGTH_SCALE);
             let reprHeights = dag.nodes.map(node => node.occurrence * Constants.OCCURRENCE_SCALE);
+            let reprWeights = dag.nodes.map(node => node.occurrence * node.avg_length);
             if (viewer.settings.layoutMethod == Enums.LayoutMethod.Old) {
                 let nNodes = dag.nodes.length;
                 let nLevels = dag.levels.length;
@@ -2110,7 +2111,7 @@
                 let graph = Graphs.newDagFromPrecedence(dag.levels, dag.precedence);
                 let vertexSizes = new Map();
                 for (const v of graph.vertices)
-                    vertexSizes.set(v, { width: reprLengths[v], height: reprHeights[v] });
+                    vertexSizes.set(v, { width: reprLengths[v], height: reprHeights[v], weight: reprWeights[v] });
                 const [box, positions] = Graphs.embedDag(graph, vertexSizes, { x: Constants.GAP_LENGTH, y: Constants.FLOOR_HEIGHT - Constants.OCCURRENCE_SCALE }, Constants.LEFT_MARGIN, Constants.RIGHT_MARGIN, Constants.TOP_MARGIN, Constants.BOTTOM_MARGIN);
                 viewer.world = { x: -box.left, y: -box.top, width: box.right + box.left, height: box.bottom + box.top };
                 for (let iNode = 0; iNode < dag.nodes.length; iNode++) {

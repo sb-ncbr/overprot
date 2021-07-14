@@ -6,6 +6,7 @@ export declare namespace Graphs {
     type Size = {
         width: number;
         height: number;
+        weight: number;
     };
     type Box = {
         left: number;
