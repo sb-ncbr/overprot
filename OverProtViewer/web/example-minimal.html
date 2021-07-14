@@ -1,0 +1,17 @@
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+    <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+    <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+    <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+</head>
+<body>
+    <overprot-viewer id="rossmann"
+        file="sample_data/rossmann_3-40-50-2300/diagram.json"
+        width="1200" height="300"
+        color-method="sheet" shape-method="rectangle" beta-connectivity="true" occurrence-threshold="0.2"
+        dispatch-events="false" listen-events="false">
+    </overprot-viewer>
+</body>
+</html>

@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { Enums } from './Enums';
 export declare namespace Constants {
     const CANVAS_HEIGHT = 300;
-    const CANVAS_WIDTH = 1500;
+    const CANVAS_WIDTH = 1200;
     const ZOOM_STEP_RATIO = 1.25;
     const ZOOM_STEP_RATIO_MOUSE = 1.25;
     const SHIFT_STEP_RELATIVE = 0.2;

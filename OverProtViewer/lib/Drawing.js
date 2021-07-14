@@ -499,7 +499,7 @@ export var Drawing;
             sses: sses,
             ladders: edges,
         };
-        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
+        viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
     }
     Drawing.dispatchMixedEvent = dispatchMixedEvent;
     function handleEvent(viewer, event) {

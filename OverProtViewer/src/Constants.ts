@@ -6,7 +6,7 @@ import { Enums } from './Enums';
 export namespace Constants {
 
     export const CANVAS_HEIGHT = 300;
-    export const CANVAS_WIDTH = 1500;
+    export const CANVAS_WIDTH = 1200;
 
     export const ZOOM_STEP_RATIO = 1.25;
     export const ZOOM_STEP_RATIO_MOUSE = ZOOM_STEP_RATIO;

@@ -4,7 +4,7 @@ import { Enums } from './Enums';
 export var Constants;
 (function (Constants) {
     Constants.CANVAS_HEIGHT = 300;
-    Constants.CANVAS_WIDTH = 1500;
+    Constants.CANVAS_WIDTH = 1200;
     Constants.ZOOM_STEP_RATIO = 1.25;
     Constants.ZOOM_STEP_RATIO_MOUSE = Constants.ZOOM_STEP_RATIO;
     Constants.SHIFT_STEP_RELATIVE = 0.2;

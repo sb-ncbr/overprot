@@ -54,6 +54,7 @@
             ColorMethod[ColorMethod["Type"] = 1] = "Type";
             ColorMethod[ColorMethod["Sheet"] = 2] = "Sheet";
             ColorMethod[ColorMethod["Stdev"] = 3] = "Stdev";
+            ColorMethod[ColorMethod["Rainbow"] = 4] = "Rainbow";
         })(ColorMethod = Enums.ColorMethod || (Enums.ColorMethod = {}));
         let ShapeMethod;
         (function (ShapeMethod) {
@@ -96,6 +97,8 @@
         Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
         Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
         Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
+        Constants.DEFAULT_DISPATCH_EVENTS = false;
+        Constants.DEFAULT_LISTEN_EVENTS = false;
         //#region measurements in the world
         Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
         Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
@@ -116,6 +119,13 @@
         Constants.HANGING_TEXT_OFFSET = 5;
         Constants.RESET_SYMBOL = '&#x27F3;';
         Constants.OPEN_POPUP_SYMBOL = ' &#x25BE;';
+        Constants.EVENT_PREFIX = 'PDB.overprot.';
+        // Outbound events (dispatched by the viewer):
+        Constants.EVENT_TYPE_SELECT = 'select';
+        Constants.EVENT_TYPE_HOVER = 'hover';
+        // Inbound events (listened to by the viewer):
+        Constants.EVENT_TYPE_DO_SELECT = 'do.select';
+        Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
     })(Constants || (Constants = {}));
 
     var Geometry;
@@ -346,6 +356,7 @@
                 dag.activeNodes = d3.range(dag.nodes.length);
                 dag.origPrecedence = dag.precedence;
                 dag.origBetaConnectivity = dag.beta_connectivity;
+                addLaddersToNodes(dag);
                 return dag;
             }
             catch (ex) {
@@ -453,6 +464,20 @@
             });
             return { ins: ins, outs: outs };
         }
+        function addLaddersToNodes(dag) {
+            var _a, _b;
+            for (let iLadder = 0; iLadder < dag.beta_connectivity.length; iLadder++) {
+                const ladder = dag.beta_connectivity[iLadder];
+                const u = ladder[0];
+                const v = ladder[1];
+                if (dag.nodes[u].ladders == undefined)
+                    dag.nodes[u].ladders = [];
+                (_a = dag.nodes[u].ladders) === null || _a === void 0 ? void 0 : _a.push(iLadder);
+                if (dag.nodes[v].ladders == undefined)
+                    dag.nodes[v].ladders = [];
+                (_b = dag.nodes[v].ladders) === null || _b === void 0 ? void 0 : _b.push(iLadder);
+            }
+        }
         function getNodeMinMaxLength(node) {
             let lengthLevels = node.cdf.map(lp => lp[0]).filter(l => l > 0);
             if (lengthLevels.length == 0) {
@@ -467,10 +492,11 @@
 
     var Types;
     (function (Types) {
-        function newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
+        function newViewer(id, internalId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
             return {
                 id: id,
-                uniqueId: uniqueId,
+                internalId: internalId,
+                d3viewer: d3viewer,
                 mainDiv: d3mainDiv,
                 guiDiv: d3guiDiv,
                 canvas: d3canvas,
@@ -479,7 +505,9 @@
                 visWorld: Geometry.newRectangle(),
                 screen: Geometry.rectangleFromCanvas(d3canvas),
                 zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
-                settings: settings !== null && settings !== void 0 ? settings : newSettings()
+                settings: settings !== null && settings !== void 0 ? settings : newSettings(),
+                nodeMap: new Map(),
+                ladderMap: new TupleMap(),
             };
         }
         Types.newViewer = newViewer;
@@ -492,14 +520,18 @@
                 shapeMethod: Constants.DEFAULT_SHAPE_METHOD,
                 layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
                 betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
-                occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD
+                occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD,
+                dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
+                listenEvents: Constants.DEFAULT_LISTEN_EVENTS
             };
         }
         Types.newSettings = newSettings;
         function newSettingsFromHTMLElement(element) {
             var _a;
             let MANDATORY_ATTRIBUTES = ['file'];
-            let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold'];
+            let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
+                'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
+                'dispatch-events', 'listen-events'];
             MANDATORY_ATTRIBUTES.forEach(attributeName => {
                 if (!element.hasAttribute(attributeName)) {
                     console.error(`Missing attribute: "${attributeName}".`);
@@ -513,23 +545,28 @@
                 }
             }
             let d3element = d3.select(element);
-            let colorMethodDictionary = {
+            const colorMethodDictionary = {
                 'uniform': Enums.ColorMethod.Uniform,
                 'type': Enums.ColorMethod.Type,
                 'sheet': Enums.ColorMethod.Sheet,
                 'variability': Enums.ColorMethod.Stdev,
+                'rainbow': Enums.ColorMethod.Rainbow,
             };
-            let shapeMethodDictionary = {
+            const shapeMethodDictionary = {
                 'rectangle': Enums.ShapeMethod.Rectangle,
                 'symcdf': Enums.ShapeMethod.SymCdf,
             };
-            let layoutMethodDictionary = {
+            const layoutMethodDictionary = {
                 'old': Enums.LayoutMethod.Old,
                 'new': Enums.LayoutMethod.New,
             };
-            let betaConnectivityDictionary = {
+            const booleanDictionary = {
                 'on': true,
                 'off': false,
+                'true': true,
+                'false': false,
+                '1': true,
+                '0': false,
             };
             return {
                 file: (_a = d3element.attr('file')) !== null && _a !== void 0 ? _a : '',
@@ -538,8 +575,10 @@
                 colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
                 shapeMethod: parseEnumAttribute('shape-method', d3element.attr('shape-method'), shapeMethodDictionary, Constants.DEFAULT_SHAPE_METHOD),
                 layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
-                betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), betaConnectivityDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
-                occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true)
+                betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), booleanDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
+                occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true),
+                dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
+                listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
             };
         }
         Types.newSettingsFromHTMLElement = newSettingsFromHTMLElement;
@@ -596,6 +635,53 @@
                 }
             }
         }
+        class TupleMap {
+            constructor() {
+                this.map = undefined;
+                this.value = undefined;
+            }
+            get(key) {
+                var _a;
+                let currentTM = this;
+                for (const k of key) {
+                    currentTM = (_a = currentTM.map) === null || _a === void 0 ? void 0 : _a.get(k);
+                    if (currentTM == undefined)
+                        return undefined;
+                }
+                return currentTM.value;
+            }
+            set(key, value) {
+                let currentTM = this;
+                for (const k of key) {
+                    if (!currentTM.map) {
+                        currentTM.map = new Map();
+                    }
+                    if (!currentTM.map.has(k)) {
+                        currentTM.map.set(k, new TupleMap());
+                    }
+                    currentTM = currentTM.map.get(k);
+                }
+                currentTM.value = value;
+            }
+            entries() {
+                let outList = [];
+                this.collectEntries([], outList);
+                return outList;
+            }
+            collectEntries(prefix, outList) {
+                if (this.value != undefined) {
+                    outList.push([[...prefix], this.value]);
+                }
+                if (this.map != undefined) {
+                    for (const [k, sub] of this.map.entries()) {
+                        prefix.push(k);
+                        sub.collectEntries(prefix, outList);
+                        prefix.pop();
+                    }
+                }
+            }
+        }
+        Types.TupleMap = TupleMap;
     })(Types || (Types = {}));
 
     var Graphs;
@@ -648,11 +734,11 @@
                 }
             }
             let result = newDagFromPrecedence(sliceLevels, sliceEdges);
-            // debug check, TODO remove
-            for (const [u, v] of result.edges) {
-                assert(result.vertices.includes(u), u, 'not in vertices');
-                assert(result.vertices.includes(v), v, 'not in vertices');
-            }
+            // Debug check:
+            // for (const [u, v] of result.edges) {
+            //     assert(result.vertices.includes(u), u, 'not in vertices');
+            //     assert(result.vertices.includes(v), v, 'not in vertices');
+            // }
             return result;
         }
         function getSlices(dag) {
@@ -697,22 +783,11 @@
             if (nLevels > lastSliceVertex + 1) {
                 slices.push(getSlice(dag, lastSliceVertex + 1, nLevels));
             }
-            // debug check:
-            let checkVertices = new Set();
-            for (const slice of slices)
-                for (const v of slice.vertices)
-                    checkVertices.add(v);
-            assert(setsEqual(checkVertices, new Set(dag.vertices)), 'checkVertices', checkVertices, '!= dag.vertices', dag.vertices);
+            // Debug check:
+            // let checkVertices = new Set();
+            // for (const slice of slices) for (const v of slice.vertices) checkVertices.add(v);
+            // assert(setsEqual(checkVertices, new Set(dag.vertices)), 'checkVertices', checkVertices, '!= dag.vertices', dag.vertices);
             return slices;
-        }
-        function setsEqual(a, b) {
-            if (a.size != b.size)
-                return false;
-            for (const x of a) {
-                if (!b.has(x))
-                    return false;
-            }
-            return true;
         }
         function embedDag(dag, vertexSizes, padding = { x: 0.0, y: 0.0 }, leftMargin = 0.0, rightMargin = 0.0, topMargin = 0.0, bottomMargin = 0.0) {
             /* Place vertices in a plane so that all edges go from left to right, use heuristics to make it look nice.
@@ -784,8 +859,8 @@
             for (const level of levels) {
                 const vertexEmbeddings = [];
                 for (const vertex of level) {
-                    const { width, height } = vertexSizes.get(vertex);
-                    const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: width * height };
+                    const { width, height, weight } = vertexSizes.get(vertex);
+                    const box = { left: width / 2, right: width / 2, top: height / 2, bottom: height / 2, weight: weight };
                     const positions = new Map([[vertex, { x: 0.0, y: 0.0 }]]);
                     vertexEmbeddings.push([box, positions]);
                 }
@@ -966,7 +1041,7 @@
                     const levs = dags[iComp].levels;
                     if (levs.length <= iLevel)
                         levs.push([]);
-                    assert(levs.length == iLevel + 1, 'levs.length != iLevel + 1'); // debug
+                    assert(levs.length == iLevel + 1, 'levs.length != iLevel + 1'); // Debug
                     levs[iLevel].push(vertex);
                     dags[iComp].vertices.push(vertex);
                     dags[iComp].in_neighbors.set(vertex, []);
@@ -975,7 +1050,7 @@
             for (const edge of dag.edges) {
                 const [u, v] = edge;
                 const iComp = vertex2component.get(u);
-                assert(vertex2component.get(v) == iComp, 'vertex2component.get(v) != iComp'); // debug
+                assert(vertex2component.get(v) == iComp, 'vertex2component.get(v) != iComp'); // Debug
                 dags[iComp].edges.push(edge);
                 dags[iComp].in_neighbors.get(v).push(u);
             }
@@ -1149,6 +1224,10 @@
                 viewer.mainDiv.selectAll('[tooltip=pre-pinned]').attr('tooltip', 'pinned');
             });
         }
+        function unpinAllTooltips(viewer) {
+            viewer.mainDiv.selectAll('div.tooltip[type=pinned]').remove();
+            viewer.mainDiv.selectAll('[tooltip=pinned]').attr('tooltip', null);
+        }
         function setTooltips(viewer, selection, htmlContents, pinnable = false, delay = false) {
             if (htmlContents === null) {
                 selection
@@ -1176,23 +1255,32 @@
             }
         }
         Drawing.setTooltips = setTooltips;
-        function addPointBehavior(selection, pointedElementSelector = (pointed) => d3.select(pointed)) {
+        function addPointBehavior(viewer, selection, pointedElementSelector = (pointed) => d3.select(pointed), callback = null) {
             selection.on('mouseenter.point', (d, i, g) => {
-                pointedElementSelector(g[i]).attr('pointed', 'true');
+                let pointed = pointedElementSelector(g[i]);
+                pointed.attr('pointed', 'pointed');
+                if (callback != null)
+                    callback(pointed);
             });
             selection.on('mouseleave.point', (d, i, g) => {
                 pointedElementSelector(g[i]).attr('pointed', null);
+                if (callback != null)
+                    callback(d3.selectAll());
             });
         }
         Drawing.addPointBehavior = addPointBehavior;
-        function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked)) {
+        function addPickBehavior(viewer, selection, pickedElementSelector = (clicked) => d3.select(clicked), callback = null) {
             selection.on('click.pick', (d, i, g) => {
-                pickedElementSelector(g[i]).attr('picked', 'pre-picked');
+                let d3Elem = pickedElementSelector(g[i]);
+                d3Elem.attr('picked', 'pre-picked');
             });
             viewer.guiDiv
                 .on('click.pick', () => {
                 viewer.guiDiv.selectAll('[picked=picked]').attr('picked', null);
-                viewer.guiDiv.selectAll('[picked=pre-picked]').attr('picked', 'picked');
+                let picked = viewer.guiDiv.selectAll('[picked=pre-picked]');
+                picked.attr('picked', 'picked');
+                if (callback != null)
+                    callback(picked);
             });
         }
         Drawing.addPickBehavior = addPickBehavior;
@@ -1233,17 +1321,25 @@
                 .style('stroke', n => n.visual.stroke);
             let betaArcs = viewer.canvas
                 .select('g.beta-connectivity')
-                .selectAll('path');
-            if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
-                betaArcs.style('stroke', ladder => viewer.data.nodes[ladder[0]].visual.stroke);
-            }
-            else {
-                let arcColor = Colors.NEUTRAL_DARK.hex();
-                betaArcs.style('stroke', arcColor);
-            }
+                .selectAll('g.ladder')
+                .selectAll('path.vis');
+            // if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+            //     betaArcs.style('stroke', Colors.NEUTRAL_DARK.hex());
+            // } else {
+            //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
+            // }
+            betaArcs.style('stroke', ladder => arcColor(viewer, ladder));
             show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
         }
         Drawing.recolor = recolor;
+        function arcColor(viewer, ladder) {
+            if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
+                return Colors.NEUTRAL_DARK.hex();
+            }
+            else {
+                return viewer.data.nodes[ladder[0]].visual.stroke;
+            }
+        }
         function redraw(viewer, transition = true) {
             let duration = transition ? Constants.TRANSITION_DURATION : 0;
             let d3nodes = viewer.canvas
@@ -1277,20 +1373,22 @@
                 .select('g.beta-connectivity')
                 .selectAll('path')
                 .transition().duration(duration)
-                .attr('d', edge => {
-                if (edge[3] == 0)
-                    return '';
-                let [u, v, orientation] = edge;
-                let n1 = viewer.data.nodes[u].visual.rect;
-                let n2 = viewer.data.nodes[v].visual.rect;
-                let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
-                let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
-                // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-                return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
-                // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
-            });
+                .attr('d', edge => calculateArcPath(viewer, edge));
         }
         Drawing.redraw = redraw;
+        function calculateArcPath(viewer, edge) {
+            if (edge[3] == 0)
+                return '';
+            let [u, v, orientation] = edge;
+            let n1 = viewer.data.nodes[u].visual.rect;
+            let n2 = viewer.data.nodes[v].visual.rect;
+            let endpoints = Geometry.lineToScreen(viewer.visWorld, viewer.screen, { x1: n1.x + 0.5 * n1.width, y1: n1.y + 0.5 * n1.height, x2: n2.x + 0.5 * n2.width, y2: n2.y + 0.5 * n2.height });
+            let x2yZoomRatio = viewer.zoom.yZoomout / viewer.zoom.xZoomout;
+            let arcMaxMinor = Constants.ARC_MAX_MINOR / viewer.zoom.yZoomout;
+            // return Geometry.arcPathD_circle(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+            return Geometry.arcPathD_ellipse(endpoints, viewer.world.width / viewer.zoom.xZoomout, arcMaxMinor, orientation == 1, x2yZoomRatio);
+            // return Geometry.arcPathD_bezier(endpoints, arcMaxDeviation, arcSmartDeviationParam, orientation == 1, x2yZoomRatio);
+        }
         function nodeBigEnoughForLabel(viewer, node) {
             return Geometry.rectToScreen(viewer.visWorld, viewer.screen, node.visual.rect).width >= Constants.MINIMAL_WIDTH_FOR_SSE_LABEL;
         }
@@ -1368,12 +1466,25 @@
                 dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
                 let betaConnectivityVis = viewer.canvas
                     .append('g').attr('class', 'beta-connectivity');
-                let betaConnectivityPaths = betaConnectivityVis.selectAll()
+                let betaConnectivityLadders = betaConnectivityVis.selectAll()
                     .data(dag.beta_connectivity)
                     .enter()
-                    .append('path')
-                    .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
-                addPointBehavior(betaConnectivityPaths);
+                    .append('g').attr('class', 'ladder');
+                viewer.ladderMap = new Types.TupleMap();
+                betaConnectivityLadders.each((d, i, elems) => {
+                    const strand1 = viewer.data.nodes[d[0]].label;
+                    const strand2 = viewer.data.nodes[d[1]].label;
+                    const dir = d[2] > 0 ? 'parallel' : 'antiparallel';
+                    viewer.ladderMap.set([strand1, strand2, dir], elems[i]);
+                });
+                // console.log('ladderMap', viewer.ladderMap.entries());
+                let betaPaths = betaConnectivityLadders
+                    .append('path').attr('class', 'vis')
+                    .style('stroke', ladder => arcColor(viewer, ladder));
+                let betaGhostPaths = betaConnectivityLadders
+                    .append('path').attr('class', 'ghost');
+                // addPointBehavior(viewer, betaConnectivityPaths as any);
+                addPointBehavior(viewer, betaGhostPaths, path => selectLadderFromGhostPath(viewer, path, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
                 redraw(viewer, false);
                 if (transition) {
                     fadeIn(betaConnectivityVis);
@@ -1381,6 +1492,31 @@
             }
         }
         Drawing.showBetaConnectivity = showBetaConnectivity;
+        function selectLadderFromGhostPath(viewer, path, includeStrands) {
+            let ladder = d3.select(path.parentElement);
+            if (!includeStrands) {
+                return ladder;
+            }
+            const edge = ladder.data()[0];
+            let nodes = viewer.canvas.selectAll('g.node').nodes();
+            const m = d3.selectAll([ladder.node(), nodes[edge[0]], nodes[edge[1]]]);
+            return m;
+        }
+        function selectNodeFromShape(viewer, shape, includeLadders) {
+            let gnode = d3.select(shape.parentElement);
+            if (!includeLadders) {
+                return gnode;
+            }
+            let result = [gnode.node()];
+            const node = gnode.data()[0];
+            if (node.ladders != undefined && node.ladders.length > 0) {
+                let gladders = viewer.canvas.selectAll('g.ladder').nodes();
+                for (const i of node.ladders)
+                    result.push(gladders[i]);
+            }
+            return d3.selectAll(result);
+        }
+        Drawing.selectNodeFromShape = selectNodeFromShape;
         function fadeOutRemove(selection, delay = 0) {
             return selection.transition().delay(delay).duration(Constants.TRANSITION_DURATION).style('opacity', 0).remove();
         }
@@ -1412,6 +1548,104 @@
                 viewer.visWorld.y = wy + 0.5 * wh - 0.5 * vh;
             }
         }
+        function dispatchMixedEvent(viewer, eventType, targets) {
+            var _a;
+            if (!viewer.settings.dispatchEvents)
+                return;
+            let sses = [];
+            let edges = [];
+            for (const target of targets) {
+                if (target.label != undefined) { // is SSE
+                    const sse = target;
+                    sses.push({
+                        label: sse.label,
+                        type: sse.type,
+                        sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
+                    });
+                }
+                else { // is ladder
+                    const edge = target;
+                    edges.push([
+                        viewer.data.nodes[edge[0]].label,
+                        viewer.data.nodes[edge[1]].label,
+                        edge[2] > 0 ? 'parallel' : 'antiparallel',
+                    ]);
+                }
+            }
+            let eventDetail = {
+                sourceType: (_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName.toLowerCase(),
+                sourceId: viewer.id,
+                sourceInternalId: viewer.internalId,
+                eventType: eventType,
+                sses: sses,
+                ladders: edges,
+            };
+            viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
+        }
+        Drawing.dispatchMixedEvent = dispatchMixedEvent;
+        function handleEvent(viewer, event) {
+            var _a, _b, _c, _d;
+            // console.log('Inbound event', event.type, event);
+            const detail = event.detail;
+            if (detail == null || detail == undefined) {
+                console.error(`Event ${event.type}: event.detail must be an object.`);
+                return;
+            }
+            if (detail.sourceType == ((_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName.toLowerCase()) && detail.sourceInternalId == viewer.internalId) {
+                // console.log('Ignoring self', viewer.uniqueId);
+                return;
+            }
+            const sses = (_b = detail.sses) !== null && _b !== void 0 ? _b : [];
+            const ladders = (_c = detail.ladders) !== null && _c !== void 0 ? _c : [];
+            const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT;
+            const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER;
+            let attribute;
+            switch (event.type) {
+                case PDB_OVERPROT_DO_SELECT: // PDB.overprot.do.select
+                    attribute = 'picked';
+                    break;
+                case PDB_OVERPROT_DO_HOVER: // PDB.overprot.do.hover
+                    attribute = 'pointed';
+                    break;
+                default:
+                    console.error('Unknown event type for OverProtViewer:', event.type);
+                    return;
+            }
+            viewer.canvas.selectAll(`g.node[${attribute}],g.ladder[${attribute}]`).attr(attribute, null);
+            for (const sse of sses) {
+                if (sse.label == undefined) {
+                    console.error(`Event ${event.type}: event.detail.sses[i].label must be a string.`);
+                    return;
+                }
+                const g = viewer.nodeMap.get(sse.label);
+                if (g != undefined) {
+                    d3.select(g).attr(attribute, attribute);
+                }
+                else {
+                    console.warn(`Event ${event.type}: SSE with label "${sse.label}" is not present.`);
+                }
+            }
+            for (const ladder of ladders) {
+                if (ladder.length < 3) {
+                    console.error(`Event ${event.type}: event.detail.ladders[i] must be an array of length 3 ([strand1, strand2, "parallel"|"antiparallel"]).`, ladder);
+                    return;
+                }
+                const u = ladder[0];
+                const v = ladder[1];
+                const dir = ladder[2];
+                const g = (_d = viewer.ladderMap.get([u, v, dir])) !== null && _d !== void 0 ? _d : viewer.ladderMap.get([v, u, dir]);
+                if (g != undefined) {
+                    d3.select(g).attr(attribute, attribute);
+                }
+                else {
+                    console.warn(`Event ${event.type}: Beta-ladder ${ladder} is not present.`);
+                }
+            }
+            if (event.type == PDB_OVERPROT_DO_SELECT) {
+                unpinAllTooltips(viewer);
+            }
+        }
+        Drawing.handleEvent = handleEvent;
     })(Drawing || (Drawing = {}));
 
     var Controls;
@@ -1671,10 +1905,11 @@
             let settings = Types.newSettingsFromHTMLElement(htmlElement);
             const id = htmlElement.id || '';
             const uniqueId = `${id}-${Math.random().toString(36).slice(2)}`;
-            console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`);
+            console.log(`Initializing OverProt viewer with id="${id}", file="${settings.file}"`, settings);
+            const d3viewer = d3.select(htmlElement);
             // d3.select(htmlElement).selectAll(()=>htmlElement.childNodes as any).remove();
-            d3.select(htmlElement).selectAll(':scope > *').remove(); // clear all children
-            let d3mainDiv = d3.select(htmlElement).append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
+            d3viewer.selectAll(':scope > *').remove(); // clear all children
+            let d3mainDiv = d3viewer.append('div').attr('class', 'overprot-viewer').attr('id', 'overprot-viewer-' + uniqueId);
             let d3guiDiv = d3mainDiv.append('div').attr('class', 'gui')
                 .styles({ width: settings.width, height: settings.height });
             let realSize = (_a = d3guiDiv.node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect();
@@ -1686,7 +1921,7 @@
             let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
             let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
                 .attrs({ width: settings.width, height: settings.height });
-            let viewer = Types.newViewer(id, uniqueId, d3mainDiv, d3guiDiv, d3canvas, settings);
+            let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
             // initializeExternalControls(viewer);
             initializeInternalControls(viewer);
             d3mainDiv.append('br');
@@ -1718,6 +1953,10 @@
                 let newSize = d3guiDiv.node().getBoundingClientRect();
                 resizeVisualization(viewer, newSize.width, newSize.height);
             });
+            if (settings.listenEvents) {
+                htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT, (e) => Drawing.handleEvent(viewer, e)); // does not work with d3 .on() because of special meaning of dots in event type
+                htmlElement.addEventListener(Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER, (e) => Drawing.handleEvent(viewer, e));
+            }
             viewer.canvas.append('text').attr('class', 'central-message')
                 .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
                 .text('Loading...');
@@ -1761,7 +2000,8 @@
                 ['Uniform', Enums.ColorMethod.Uniform, 'Show all SSEs in the same color.'],
                 ['Type', Enums.ColorMethod.Type, 'Show &beta;-strands in blue, helices in gray.'],
                 ['Sheet', Enums.ColorMethod.Sheet, 'Assign the same color to &beta;-strands from the same &beta;-sheet, <br>show helices in gray.'],
-                ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.']
+                ['Variability', Enums.ColorMethod.Stdev, '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.'],
+                ['Rainbow', Enums.ColorMethod.Rainbow, 'Rainbow coloring from N-terminus (blue) to C-terminus (red).'],
             ];
             let shapeOptions = [
                 ['Rectangle', Enums.ShapeMethod.Rectangle, 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).'],
@@ -1820,6 +2060,7 @@
                 dag.nodes.map(node => node.cdf[node.cdf.length - 1][0] * Constants.LENGTH_SCALE)
                 : dag.nodes.map(node => node.avg_length * Constants.LENGTH_SCALE);
             let reprHeights = dag.nodes.map(node => node.occurrence * Constants.OCCURRENCE_SCALE);
+            let reprWeights = dag.nodes.map(node => node.occurrence * node.avg_length);
             if (viewer.settings.layoutMethod == Enums.LayoutMethod.Old) {
                 let nNodes = dag.nodes.length;
                 let nLevels = dag.levels.length;
@@ -1870,7 +2111,7 @@
                 let graph = Graphs.newDagFromPrecedence(dag.levels, dag.precedence);
                 let vertexSizes = new Map();
                 for (const v of graph.vertices)
-                    vertexSizes.set(v, { width: reprLengths[v], height: reprHeights[v] });
+                    vertexSizes.set(v, { width: reprLengths[v], height: reprHeights[v], weight: reprWeights[v] });
                 const [box, positions] = Graphs.embedDag(graph, vertexSizes, { x: Constants.GAP_LENGTH, y: Constants.FLOOR_HEIGHT - Constants.OCCURRENCE_SCALE }, Constants.LEFT_MARGIN, Constants.RIGHT_MARGIN, Constants.TOP_MARGIN, Constants.BOTTOM_MARGIN);
                 viewer.world = { x: -box.left, y: -box.top, width: box.right + box.left, height: box.bottom + box.top };
                 for (let iNode = 0; iNode < dag.nodes.length; iNode++) {
@@ -1911,18 +2152,18 @@
                 .enter()
                 .append('g').attr('class', 'node')
                 .attr('opacity', n => n.active ? 1 : 0);
+            viewer.nodeMap = new Map();
+            d3nodes.each((d, i, nodes) => viewer.nodeMap.set(d.label, nodes[i]));
             let d3nodeShapes;
             if (viewer.settings.shapeMethod == Enums.ShapeMethod.SymCdf) {
-                d3nodeShapes = d3nodes
-                    .append('polygon');
+                d3nodeShapes = d3nodes.append('polygon');
             }
             else {
-                d3nodeShapes = d3nodes
-                    .append('rect');
+                d3nodeShapes = d3nodes.append('rect');
             }
             let d3activeShapes = d3nodeShapes.filter(n => n.active);
-            Drawing.addPointBehavior(d3nodeShapes, shape => d3.select(shape.parentElement));
-            Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement));
+            Drawing.addPointBehavior(viewer, d3nodeShapes, shape => Drawing.selectNodeFromShape(viewer, shape, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            Drawing.addPickBehavior(viewer, d3nodeShapes, shape => Drawing.selectNodeFromShape(viewer, shape, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_SELECT, nodes.data()));
             Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
             d3nodes
                 .append('text').attr('class', 'node-label')
@@ -1995,6 +2236,9 @@
                         break;
                     case Enums.ColorMethod.Stdev:
                         col = Colors.byExpHeatmap(n.stdev3d, Constants.HEATMAP_MIDDLE_VALUE);
+                        break;
+                    case Enums.ColorMethod.Rainbow:
+                        col = (n.rainbow_hex != undefined) ? d3.rgb(n.rainbow_hex) : Colors.NEUTRAL_COLOR;
                         break;
                 }
                 n.visual.fill = col.hex();

@@ -1,0 +1,50 @@
+<html>
+
+<head>
+    <meta charset='UTF-8'>
+    <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.css'>
+    <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+    <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+    <script type='text/javascript' src='dist/overprot-viewer.js'></script>
+</head>
+
+<body>
+    <h2>Demonstration of interactivity using events</h2>
+
+    <p>
+        This example shows multiple viewers communicating through events.
+    </p>
+    <p>
+        Attributes <code>dispatch-events</code> and <code>listen-events</code> must be set to <code>true</code>. When an element is hovered over or clicked, the viewer dispatches an event (<code>PDB.overprot.hover</code> or <code>PDB.overprot.select</code>). 
+        The information about the selected elements is included in <code>event.detail</code>.
+    </p>
+    <p>
+        The script in the HTML body listens for these events and passes them to each viewer as a <code>PDB.overprot.do.hover</code> or <code>PDB.overprot.do.select</code> event. 
+        The receiving viewer handles the incoming events by highlighting the selected elements. The viewer ignores the events originating from itself (judged by <code>event.detail.sourceInternalId</code>).
+    </p>
+
+    <overprot-viewer id='rossmann-1' file='sample_data/rossmann_3-40-50-2300/diagram.json' occurrence-threshold="0.0"
+        dispatch-events='true' listen-events='true'></overprot-viewer><br>
+    <overprot-viewer id='rossmann-2' file='sample_data/rossmann_3-40-50-2300/diagram.json' occurrence-threshold="0.0"
+        dispatch-events='true' listen-events='true' color-method='rainbow'></overprot-viewer><br>
+    <overprot-viewer id='rossmann-3' file='sample_data/rossmann_3-40-50-2300/diagram.json' occurrence-threshold="0.2"
+        dispatch-events='true' listen-events='true' color-method='variability' shape-method='symcdf'></overprot-viewer><br>
+
+    <script>
+        document.addEventListener('PDB.overprot.select', (event) => {
+            console.log('PDB.overprot.select', event);
+            for (const viewer of document.querySelectorAll('overprot-viewer')) {
+                viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.select', {detail: event.detail}));
+            }
+        });
+        document.addEventListener('PDB.overprot.hover', (event) => {
+            console.log('PDB.overprot.hover', event);
+            for (const viewer of document.querySelectorAll('overprot-viewer')) {
+                viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {detail: event.detail}));
+            }
+        });
+    </script>
+
+</body>
+
+</html>

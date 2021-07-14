@@ -35,7 +35,10 @@
         <h3>
             Job: &nbsp; {{job_name}}
         </h3>
-        <overprot-viewer id='main-viewer' file='{{file}}' shape-method='symcdf' color-method='sheet'></overprot-viewer>
+        <overprot-viewer id="main-viewer" file="{{file}}" height="300" width="1200" 
+            color-method="sheet" shape-method="symcdf" beta-connectivity="true" occurrence-threshold="0.2" 
+            dispatch-events="false" listen-events="false">
+        </overprot-viewer>
     </div>
 </div>
 

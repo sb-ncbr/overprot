@@ -12,7 +12,10 @@
             Family: &nbsp; <span class='family-id'>{{family}}</span> &nbsp;
             <span class='family-name' style='font-style: italic;'>&nbsp;</span>
         </h3>
-        <overprot-viewer id='main-viewer' file='/data/db/diagrams/diagram-{{family}}.json' shape-method='symcdf' color-method='sheet'></overprot-viewer>
+        <overprot-viewer id="main-viewer" file="/data/db/diagrams/diagram-{{family}}.json" height="300" width="1200" 
+            color-method="sheet" shape-method="symcdf" beta-connectivity="true" occurrence-threshold="0.2" 
+            dispatch-events="false" listen-events="false">
+        </overprot-viewer>
     </div>
 </div>
 <hr>
@@ -97,7 +100,7 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modallabel-pdbs">PDB list for family {{family}}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -118,7 +121,7 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modallabel-domains">Domain list for family {{family}}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -140,7 +143,7 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modallabel-included-domains">Included domains for family {{family}}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -150,41 +153,41 @@
                     &emsp;<a href="/data/db/families/{{family}}/sample.json" download="sample-{{family}}.json">JSON</a>
                 </div>
                 <div id="table-included-domains" class="striped-table w-100 py-2"></div>
+            </div>
         </div>
     </div>
-</div>
 
-{% endblock %}
+    {% endblock %}
 
 
-{% block scripts %}
+    {% block scripts %}
 
-<script type='text/javascript'>
-    function loadContentToElement(element, source, overwrite=false){
-        let targetElement = $(element);
-        if (targetElement.attr('loaded') && !overwrite){
-            return;
-        }
-        let loadingText = `<div class="p-2 bg-light">Loading...</div>`;
-        let errorText = `<div class="p-2 bg-light">&#x26A0; Failed to load ${source}</div>`;
-        targetElement.empty();
-        targetElement.append(loadingText);  
-
-        fetch(source)
-        .then(response => response.ok ? response.text() : errorText)
-        .catch(response => errorText)
-        .then(text => {
+    <script type='text/javascript'>
+        function loadContentToElement(element, source, overwrite = false) {
+            let targetElement = $(element);
+            if (targetElement.attr('loaded') && !overwrite) {
+                return;
+            }
+            let loadingText = `<div class="p-2 bg-light">Loading...</div>`;
+            let errorText = `<div class="p-2 bg-light">&#x26A0; Failed to load ${source}</div>`;
             targetElement.empty();
-            targetElement.append(text);        
-        });
-        targetElement.attr('loaded', true);
-    }
+            targetElement.append(loadingText);
 
-    initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
+            fetch(source)
+                .then(response => response.ok ? response.text() : errorText)
+                .catch(response => errorText)
+                .then(text => {
+                    targetElement.empty();
+                    targetElement.append(text);
+                });
+            targetElement.attr('loaded', true);
+        }
 
-    $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs.html'));
-    $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains.html'));
-    $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample.html'));
-</script>
+        initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
 
-{% endblock %}
+        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs.html'));
+        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains.html'));
+        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample.html'));
+    </script>
+
+    {% endblock %}

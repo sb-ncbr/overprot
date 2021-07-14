@@ -502,7 +502,7 @@ export namespace Drawing {
             sses: sses,
             ladders: edges,
         };
-        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true } as any);
+        viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true } as any);
     }
 
     export function handleEvent(viewer: Types.Viewer, event: CustomEvent): void {
