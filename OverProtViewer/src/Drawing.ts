@@ -214,7 +214,8 @@ export namespace Drawing {
             .style('stroke', n => (n as Dag.Node).visual.stroke);
         let betaArcs = viewer.canvas
             .select('g.beta-connectivity')
-            .selectAll('path');
+            .selectAll('g.ladder')
+            .selectAll('path.vis');
         if (viewer.settings.colorMethod != Enums.ColorMethod.Stdev) {
             betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
         } else {
@@ -371,17 +372,67 @@ export namespace Drawing {
             dag.beta_connectivity.forEach(edge => edge[3] = dag.nodes[edge[0]].active && dag.nodes[edge[1]].active ? 1 : 0);
             let betaConnectivityVis = viewer.canvas
                 .append('g').attr('class', 'beta-connectivity');
-            let betaConnectivityPaths = betaConnectivityVis.selectAll()
+            // let betaConnectivityPaths = betaConnectivityVis.selectAll()
+            //     .data(dag.beta_connectivity)
+            //     .enter()
+            //     .append('path')
+            //     .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
+            let betaConnectivityLadders = betaConnectivityVis.selectAll()
                 .data(dag.beta_connectivity)
                 .enter()
-                .append('path')
+                .append('g').attr('class', 'ladder');
+            viewer.ladderMap = new Types.TupleMap<string, SVGElement>();
+            betaConnectivityLadders.each((d, i, elems) => {
+                const strand1 = viewer.data.nodes[d[0]].label;
+                const strand2 = viewer.data.nodes[d[1]].label;
+                const dir = d[2] > 0 ? 'parallel' : 'antiparallel';
+                viewer.ladderMap.set([strand1, strand2, dir], elems[i]);
+            });
+            // console.log('ladderMap', viewer.ladderMap.entries());
+            let betaPaths = betaConnectivityLadders
+                .append('path').attr('class', 'vis')
                 .style('stroke', ladder => dag.nodes[ladder[0]].visual.stroke);
-            addPointBehavior(viewer, betaConnectivityPaths as any);
+            let betaGhostPaths = betaConnectivityLadders
+                .append('path').attr('class', 'ghost');
+            // addPointBehavior(viewer, betaConnectivityPaths as any);
+            addPointBehavior(viewer, betaGhostPaths as any, path => selectLadderFromGhostPath(viewer, path as any, true),
+                nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             redraw(viewer, false);
             if (transition) {
                 fadeIn(betaConnectivityVis as unknown as Types.D3Selection);
             }
         }
+    }
+
+    function selectLadderFromGhostPath(viewer: Types.Viewer, path: SVGElement, includeStrands: boolean): Types.D3Selection {
+        let ladder = d3.select(path.parentElement);
+        if (!includeStrands) {
+            return ladder as any;
+        }
+        const edge = ladder.data()[0] as Dag.Edge;
+        let nodes = viewer.canvas.selectAll('g.node').nodes();
+        const m = d3.selectAll([ladder.node(), nodes[edge[0]], nodes[edge[1]]]);
+        return m;
+    }
+
+    export function selectNodeFromShape(viewer: Types.Viewer, shape: SVGElement, includeLadders: boolean): Types.D3Selection {
+        let gnode = d3.select(shape.parentElement);
+        if (!includeLadders) {
+            return gnode as any;
+        }
+        let result: d3.BaseType[] = [gnode.node()];
+        const node = gnode.data()[0] as Dag.Node;
+        if (node.ladders != undefined && node.ladders.length>0){
+            let gladders = viewer.canvas.selectAll('g.ladder').nodes();
+            for (const i of node.ladders) result.push(gladders[i]);
+        }
+        return d3.selectAll(result);
+    }
+
+    function concatSelections(...selections: Types.D3Selection[]): Types.D3Selection {
+        let nodes = [];
+        for (const selection of selections) nodes.push(...selection.nodes());
+        return d3.selectAll(nodes);
     }
 
     export function fadeOutRemove(selection: Types.D3Selection, delay = 0): Types.D3Transition {
@@ -420,44 +471,55 @@ export namespace Drawing {
         }
     }
 
-    export function dispatchSseEvent(viewer: Types.Viewer, eventType: string, sses: Dag.Node[]): void {
+    export function dispatchMixedEvent(viewer: Types.Viewer, eventType: string, targets: (Dag.Node | Dag.Edge)[]): void {
         if (!viewer.settings.dispatchEvents) return;
-        let eventDetail = { 
-            sourceType: viewer.d3viewer.node()?.tagName,
+        let sses = [];
+        let edges = [];
+        for (const target of targets) {
+            if ((target as any).label != undefined) {  // is SSE
+                const sse = target as Dag.Node;
+                sses.push({
+                    label: sse.label,
+                    type: sse.type,
+                    sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
+                });
+            } else {  // is ladder
+                const edge = target as Dag.Edge;
+                edges.push([
+                    viewer.data.nodes[edge[0]].label,
+                    viewer.data.nodes[edge[1]].label,
+                    edge[2] > 0 ? 'parallel' : 'antiparallel',
+                ]);
+            }
+        }
+        let eventDetail = {
+            sourceType: viewer.d3viewer.node()?.tagName.toLowerCase(),
             sourceId: viewer.id,
-            sourceInternalId: viewer.uniqueId,
+            sourceInternalId: viewer.internalId,
             eventType: eventType,
-            targetType: 'sses',
-            sses: sses.map(sse => { return {
-                label: sse.label,
-                type: sse.type,
-                sheetId: sse.type.toLowerCase() == 'e' ? sse.sheet_id : null,
-            }}),                 
-            // pickedData: sses,
+            sses: sses,
+            ladders: edges,
         };
-        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX+eventType, { detail: eventDetail, bubbles: true } as any);
+        viewer.mainDiv.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true } as any);
     }
 
     export function handleEvent(viewer: Types.Viewer, event: CustomEvent): void {
         // console.log('Inbound event', event.type, event);
         const detail = event.detail;
-        if (detail == null || detail == undefined){
+        if (detail == null || detail == undefined) {
             console.error(`Event ${event.type}: event.detail must be an object.`);
             return;
         }
-        if (detail.sourceType == viewer.d3viewer.node()?.tagName && detail.sourceInternalId == viewer.uniqueId) {
-            console.log('Ignoring self', viewer.uniqueId);
+        if (detail.sourceType == viewer.d3viewer.node()?.tagName.toLowerCase() && detail.sourceInternalId == viewer.internalId) {
+            // console.log('Ignoring self', viewer.uniqueId);
             return;
         }
-        const sses = detail!.sses;
-        if (sses == undefined){
-            console.error(`Event ${event.type}: event.detail.sses must be an array.`);
-            return;
-        }
-        const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_SELECT;
-        const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX+Constants.EVENT_TYPE_DO_HOVER;
+        const sses = detail.sses ?? [];
+        const ladders = detail.ladders ?? [];
+        const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT;
+        const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER;
         let attribute: string;
-        switch (event.type){
+        switch (event.type) {
             case PDB_OVERPROT_DO_SELECT:  // PDB.overprot.do.select
                 attribute = 'picked';
                 break;
@@ -469,24 +531,38 @@ export namespace Drawing {
                 return;
         }
 
-        viewer.canvas.selectAll(`g.node[${attribute}]`).attr(attribute, null);
+        viewer.canvas.selectAll(`g.node[${attribute}],g.ladder[${attribute}]`).attr(attribute, null);
         for (const sse of sses) {
-            if (sse.label == undefined){
+            if (sse.label == undefined) {
                 console.error(`Event ${event.type}: event.detail.sses[i].label must be a string.`);
                 return;
             }
             const g = viewer.nodeMap.get(sse.label);
-            if (g != undefined){
+            if (g != undefined) {
                 d3.select(g).attr(attribute, attribute);
             } else {
                 console.warn(`Event ${event.type}: SSE with label "${sse.label}" is not present.`);
             }
         }
-
-        if (event.type == PDB_OVERPROT_DO_SELECT){
-            unpinAllTooltips(viewer);
+        for (const ladder of ladders) {
+            if (ladder.length < 3) {
+                console.error(`Event ${event.type}: event.detail.ladders[i] must be an array of length 3 ([strand1, strand2, "parallel"|"antiparallel"]).`, ladder);
+                return;
+            }
+            const u = ladder[0];
+            const v = ladder[1];
+            const dir = ladder[2];
+            const g = viewer.ladderMap.get([u, v, dir]) ?? viewer.ladderMap.get([v, u, dir]);
+            if (g != undefined) {
+                d3.select(g).attr(attribute, attribute);
+            } else {
+                console.warn(`Event ${event.type}: Beta-ladder ${ladder} is not present.`);
+            }
         }
 
+        if (event.type == PDB_OVERPROT_DO_SELECT) {
+            unpinAllTooltips(viewer);
+        }
     }
 
 }

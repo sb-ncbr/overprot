@@ -143,13 +143,16 @@
 
     <script>
         document.addEventListener('PDB.overprot.select', (e) => {
-            console.log('PDB.overprot.select', e.detail.sses.map(sse=>sse.label), e);
+            // console.log('PDB.overprot.select', e.detail.sses.map(sse=>sse.label), e);
             for (const viewer of document.querySelectorAll('overprot-viewer')) {
                 viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.select', {detail: e.detail}));
             }
         });
+        document.addEventListener('PDB.overprot.do.select', (e) => {
+            console.log('PDB.overprot.do.select', e.detail.sses.map(sse=>sse.label), e);
+        });
         document.addEventListener('PDB.overprot.hover', (e) => {
-            console.log('PDB.overprot.hover', e.detail.sses.map(sse=>sse.label), e);
+            // console.log('PDB.overprot.hover', e.detail.sses.map(sse=>sse.label), e);
             for (const viewer of document.querySelectorAll('overprot-viewer')) {
                 viewer.dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {detail: e.detail}));
             }

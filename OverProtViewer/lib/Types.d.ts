@@ -7,7 +7,7 @@ export declare namespace Types {
     type D3Transition = d3.Transition<d3.BaseType, any, d3.BaseType, any>;
     type Viewer = {
         id: string;
-        uniqueId: string;
+        internalId: string;
         d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>;
         mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>;
         guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>;
@@ -19,8 +19,9 @@ export declare namespace Types {
         zoom: Geometry.ZoomInfo;
         settings: Settings;
         nodeMap: Map<string, SVGElement>;
+        ladderMap: TupleMap<string, SVGElement>;
     };
-    function newViewer(id: string, uniqueId: string, d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>, d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, settings?: Settings | null): Viewer;
+    function newViewer(id: string, internalId: string, d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>, d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, settings?: Settings | null): Viewer;
     type Settings = {
         file: string;
         width: number;
@@ -35,4 +36,13 @@ export declare namespace Types {
     };
     function newSettings(): Settings;
     function newSettingsFromHTMLElement(element: HTMLElement): Settings;
+    class TupleMap<K, V> {
+        map: Map<K, TupleMap<K, V>> | undefined;
+        value: V | undefined;
+        constructor();
+        get(key: K[]): V | undefined;
+        set(key: K[], value: V): void;
+        entries(): [K[], V][];
+        private collectEntries;
+    }
 }

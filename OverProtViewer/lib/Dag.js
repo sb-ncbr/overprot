@@ -19,6 +19,7 @@ export var Dag;
             dag.activeNodes = d3.range(dag.nodes.length);
             dag.origPrecedence = dag.precedence;
             dag.origBetaConnectivity = dag.beta_connectivity;
+            addLaddersToNodes(dag);
             return dag;
         }
         catch (ex) {
@@ -125,6 +126,20 @@ export var Dag;
             outs[edge[0]].push(edge[1]);
         });
         return { ins: ins, outs: outs };
+    }
+    function addLaddersToNodes(dag) {
+        var _a, _b;
+        for (let iLadder = 0; iLadder < dag.beta_connectivity.length; iLadder++) {
+            const ladder = dag.beta_connectivity[iLadder];
+            const u = ladder[0];
+            const v = ladder[1];
+            if (dag.nodes[u].ladders == undefined)
+                dag.nodes[u].ladders = [];
+            (_a = dag.nodes[u].ladders) === null || _a === void 0 ? void 0 : _a.push(iLadder);
+            if (dag.nodes[v].ladders == undefined)
+                dag.nodes[v].ladders = [];
+            (_b = dag.nodes[v].ladders) === null || _b === void 0 ? void 0 : _b.push(iLadder);
+        }
     }
     function getNodeMinMaxLength(node) {
         let lengthLevels = node.cdf.map(lp => lp[0]).filter(l => l > 0);

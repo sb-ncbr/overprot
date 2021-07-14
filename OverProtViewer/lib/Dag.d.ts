@@ -24,6 +24,7 @@ export declare namespace Dag {
         cdf: number[][];
         active: boolean;
         visual: NodeVisual;
+        ladders: number[] | undefined;
     };
     type NodeVisual = {
         rect: Geometry.Rectangle;

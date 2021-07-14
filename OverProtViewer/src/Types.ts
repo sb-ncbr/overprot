@@ -11,8 +11,8 @@ export namespace Types {
 
     export type Viewer = {
         id: string,
-        uniqueId: string,
-        d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>, 
+        internalId: string,
+        d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>,
         mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
         guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
         canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>,
@@ -22,20 +22,21 @@ export namespace Types {
         screen: Geometry.Rectangle,
         zoom: Geometry.ZoomInfo,
         settings: Settings,
-        nodeMap: Map<string, SVGElement>
+        nodeMap: Map<string, SVGElement>,
+        ladderMap: TupleMap<string, SVGElement>,
     };
 
     export function newViewer(
-            id: string,
-            uniqueId: string,
-            d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>, 
-            d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, 
-            d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>, 
-            d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>, 
-            settings: Settings|null = null): Viewer {
+        id: string,
+        internalId: string,
+        d3viewer: d3.Selection<HTMLElement, unknown, null, undefined>,
+        d3mainDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
+        d3guiDiv: d3.Selection<HTMLDivElement, unknown, null, undefined>,
+        d3canvas: d3.Selection<SVGSVGElement, any, d3.BaseType, any>,
+        settings: Settings | null = null): Viewer {
         return {
             id: id,
-            uniqueId: uniqueId,
+            internalId: internalId,
             d3viewer: d3viewer,
             mainDiv: d3mainDiv,
             guiDiv: d3guiDiv,
@@ -47,6 +48,7 @@ export namespace Types {
             zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
             settings: settings ?? newSettings(),
             nodeMap: new Map(),
+            ladderMap: new TupleMap(),
         };
     };
 
@@ -80,11 +82,11 @@ export namespace Types {
 
     export function newSettingsFromHTMLElement(element: HTMLElement): Settings {
         let MANDATORY_ATTRIBUTES = ['file'];
-        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height', 
+        let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
             'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
             'dispatch-events', 'listen-events'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
-            if (!element.hasAttribute(attributeName)){
+            if (!element.hasAttribute(attributeName)) {
                 console.error(`Missing attribute: "${attributeName}".`);
                 // throw `Missing attribute: "${attributeName}".`;
             }
@@ -151,10 +153,10 @@ export namespace Types {
         }
         else {
             let value = parseInt(attributeValue);
-            if (isNaN(value)){
+            if (isNaN(value)) {
                 console.warn(`Attribute "${attributeName}" has invalid value "${attributeValue}". Value must be an integer.`);
                 return defaultValue;
-            } else if (minMaxLimits.length >= 2 && (value < minMaxLimits[0] || value > minMaxLimits[1])){
+            } else if (minMaxLimits.length >= 2 && (value < minMaxLimits[0] || value > minMaxLimits[1])) {
                 console.warn(`Attribute "${attributeName}" has invalid value "${attributeValue}". Value must be an integer between ${minMaxLimits[0]} and ${minMaxLimits[1]}.`);
                 return defaultValue;
             } else {
@@ -163,7 +165,7 @@ export namespace Types {
         }
     }
 
-    function parseFloatAttribute(attributeName: string, attributeValue: string | null, defaultValue: number, minMaxLimits: number[] = [], allowPercentage=false): number {
+    function parseFloatAttribute(attributeName: string, attributeValue: string | null, defaultValue: number, minMaxLimits: number[] = [], allowPercentage = false): number {
         if (attributeValue === null) {
             return defaultValue;
         }
@@ -172,10 +174,10 @@ export namespace Types {
             if (allowPercentage && attributeValue.includes('%')) {
                 value *= 0.01;
             }
-            if (isNaN(value)){
+            if (isNaN(value)) {
                 console.warn(`Attribute "${attributeName}" has invalid value "${attributeValue}". Value must be a float.`);
                 return defaultValue;
-            } else if (minMaxLimits.length >= 2 && (value < minMaxLimits[0] || value > minMaxLimits[1])){
+            } else if (minMaxLimits.length >= 2 && (value < minMaxLimits[0] || value > minMaxLimits[1])) {
                 console.warn(`Attribute "${attributeName}" has invalid value "${attributeValue}". Value must be a float between ${minMaxLimits[0]} and ${minMaxLimits[1]}.`);
                 return defaultValue;
             } else {
@@ -183,5 +185,56 @@ export namespace Types {
             }
         }
     }
+
+    export class TupleMap<K, V> {
+        /* Map where keys can be tuples. */
+        map: Map<K, TupleMap<K, V>> | undefined;
+        value: V | undefined;
+
+        constructor() {
+            this.map = undefined;
+            this.value = undefined;
+        }
+        get(key: K[]): V | undefined {
+            let currentTM: TupleMap<K, V> | undefined = this;
+            for (const k of key) {
+                currentTM = currentTM.map?.get(k);
+                if (currentTM == undefined) return undefined;
+            }
+            return currentTM.value;
+        }
+        set(key: K[], value: V): void {
+            let currentTM: TupleMap<K, V> = this;
+            for (const k of key) {
+                if (!currentTM.map) {
+                    currentTM.map = new Map();
+                }
+                if (!currentTM.map.has(k)) {
+                    currentTM.map.set(k, new TupleMap());
+                }
+                currentTM = currentTM.map.get(k)!;
+            }
+            currentTM.value = value;
+        }
+        entries(): [K[], V][] {
+            let outList: [K[], V][] = [];
+            this.collectEntries([], outList);
+            return outList;
+        }
+        private collectEntries(prefix: K[], outList: [K[], V][]): void {
+            if (this.value != undefined) {
+                outList.push([[...prefix], this.value]);
+            }
+            if (this.map != undefined) {
+                for(const [k, sub] of this.map.entries()){
+                    prefix.push(k);
+                    sub.collectEntries(prefix, outList);
+                    prefix.pop();
+                }
+            }
+        }
+    }
+
+
 
 }

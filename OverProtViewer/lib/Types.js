@@ -5,10 +5,10 @@ import { Enums } from './Enums';
 import { Constants } from './Constants';
 export var Types;
 (function (Types) {
-    function newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
+    function newViewer(id, internalId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings = null) {
         return {
             id: id,
-            uniqueId: uniqueId,
+            internalId: internalId,
             d3viewer: d3viewer,
             mainDiv: d3mainDiv,
             guiDiv: d3guiDiv,
@@ -20,6 +20,7 @@ export var Types;
             zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
             settings: settings !== null && settings !== void 0 ? settings : newSettings(),
             nodeMap: new Map(),
+            ladderMap: new TupleMap(),
         };
     }
     Types.newViewer = newViewer;
@@ -147,5 +148,52 @@ export var Types;
             }
         }
     }
+    class TupleMap {
+        constructor() {
+            this.map = undefined;
+            this.value = undefined;
+        }
+        get(key) {
+            var _a;
+            let currentTM = this;
+            for (const k of key) {
+                currentTM = (_a = currentTM.map) === null || _a === void 0 ? void 0 : _a.get(k);
+                if (currentTM == undefined)
+                    return undefined;
+            }
+            return currentTM.value;
+        }
+        set(key, value) {
+            let currentTM = this;
+            for (const k of key) {
+                if (!currentTM.map) {
+                    currentTM.map = new Map();
+                }
+                if (!currentTM.map.has(k)) {
+                    currentTM.map.set(k, new TupleMap());
+                }
+                currentTM = currentTM.map.get(k);
+            }
+            currentTM.value = value;
+        }
+        entries() {
+            let outList = [];
+            this.collectEntries([], outList);
+            return outList;
+        }
+        collectEntries(prefix, outList) {
+            if (this.value != undefined) {
+                outList.push([[...prefix], this.value]);
+            }
+            if (this.map != undefined) {
+                for (const [k, sub] of this.map.entries()) {
+                    prefix.push(k);
+                    sub.collectEntries(prefix, outList);
+                    prefix.pop();
+                }
+            }
+        }
+    }
+    Types.TupleMap = TupleMap;
 })(Types || (Types = {}));
 //# sourceMappingURL=Types.js.map

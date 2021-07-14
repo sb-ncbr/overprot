@@ -33,6 +33,7 @@ export namespace Dag {
             dag.activeNodes = d3.range(dag.nodes.length);
             dag.origPrecedence = dag.precedence;
             dag.origBetaConnectivity = dag.beta_connectivity;
+            addLaddersToNodes(dag);
             return dag;
         } catch (ex) {
             error = error ?? `Failed to parse input file.`;
@@ -56,7 +57,8 @@ export namespace Dag {
         stdev3d: number,
         cdf: number[][],
         active: boolean,
-        visual: NodeVisual
+        visual: NodeVisual,
+        ladders: number[]|undefined,
     };
 
     export type NodeVisual = {
@@ -161,6 +163,18 @@ export namespace Dag {
             outs[edge[0]].push(edge[1]);
         });
         return { ins: ins, outs: outs };
+    }
+
+    function addLaddersToNodes(dag: Dag): void{
+        for (let iLadder = 0; iLadder < dag.beta_connectivity.length; iLadder++) {
+            const ladder = dag.beta_connectivity[iLadder];
+            const u = ladder[0];
+            const v = ladder[1];
+            if (dag.nodes[u].ladders == undefined) dag.nodes[u].ladders = [];
+            dag.nodes[u].ladders?.push(iLadder);
+            if (dag.nodes[v].ladders == undefined) dag.nodes[v].ladders = [];
+            dag.nodes[v].ladders?.push(iLadder);
+        }
     }
 
     export function getNodeMinMaxLength(node: Dag.Node): [number, number] {

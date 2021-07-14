@@ -130,7 +130,7 @@ export var OverProtViewerCore;
         // COLOR CONTROLS
         let d3colorRadioDiv = d3controlsDiv.append('div').attr('class', 'radio-group').attr('id', 'color');
         d3colorRadioDiv.append('label').text('Color:');
-        let radioGroupName = `color-radio-${viewer.uniqueId}`;
+        let radioGroupName = `color-radio-${viewer.internalId}`;
         let options = [
             { label: 'Uniform', value: 'uniform', method: Enums.ColorMethod.Uniform, tip: 'Show all SSEs in the same color.' },
             { label: 'Type', value: 'type', method: Enums.ColorMethod.Type, tip: 'Show &beta;-strands in blue, helices in gray.' },
@@ -138,7 +138,7 @@ export var OverProtViewerCore;
             { label: '3D Variability', value: 'variability', method: Enums.ColorMethod.Stdev, tip: '<strong>3D variability</strong> measures the standard deviation of the SSE end point coordinates.<br>Low values (dark) indicate conserved SSE position, <br>high values (bright) indicate variable SSE position.' }
         ];
         for (const option of options) {
-            let radioId = `radio-${option.value}-${viewer.uniqueId}`;
+            let radioId = `radio-${option.value}-${viewer.internalId}`;
             let radioSpan = d3colorRadioDiv.append('span');
             radioSpan.append('input').attrs({ type: 'radio', name: radioGroupName, id: radioId })
                 .property('checked', viewer.settings.colorMethod == option.method)
@@ -150,13 +150,13 @@ export var OverProtViewerCore;
         // SHAPE CONTROLS
         let d3shapeRadioDiv = d3controlsDiv.append('div').attr('class', 'radio-group').attr('id', 'shape');
         d3shapeRadioDiv.append('label').text('Shape:');
-        let shapeRadioGroupName = `shape-radio-${viewer.uniqueId}`;
+        let shapeRadioGroupName = `shape-radio-${viewer.internalId}`;
         let shapeOptions = [
             { label: 'Rectangle', value: 'rectangle', method: Enums.ShapeMethod.Rectangle, tip: 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).' },
             { label: 'Symmetric CDF', value: 'symcdf', method: Enums.ShapeMethod.SymCdf, tip: '<strong>Cumulative distribution function</strong> describes the statistical distribution of the SSE length. <br>The widest part of the shape corresponds to maximum length, the narrowest to minimum length, <br> the height corresponds to occurrence. <br>(The shape consists of four symmetrical copies of the CDF, the bottom right quarter is the classical CDF.)' },
         ];
         for (const option of shapeOptions) {
-            let radioId = `radio-${option.value}-${viewer.uniqueId}`;
+            let radioId = `radio-${option.value}-${viewer.internalId}`;
             let radioSpan = d3shapeRadioDiv.append('span');
             radioSpan.append('input').attrs({ type: 'radio', name: shapeRadioGroupName, id: radioId })
                 .property('checked', viewer.settings.shapeMethod == option.method)
@@ -168,7 +168,7 @@ export var OverProtViewerCore;
         // BETA-CONNECTIVITY CONTROLS
         let d3betaConnectivityDiv = d3controlsDiv.append('div').attr('id', 'beta-connectivity');
         let d3betaConnectivitySpan = d3betaConnectivityDiv.append('span');
-        let checkboxId = `checkbox-beta-connectivity-${viewer.uniqueId}`;
+        let checkboxId = `checkbox-beta-connectivity-${viewer.internalId}`;
         d3betaConnectivitySpan.append('label').attr('for', checkboxId).text('Beta-connectivity:');
         d3betaConnectivitySpan.append('input').attr('type', 'checkbox').attr('id', checkboxId)
             .property('checked', viewer.settings.betaConnectivityVisibility)
@@ -183,7 +183,7 @@ export var OverProtViewerCore;
         d3betaConnectivityDiv.append('br');
         // OCCURRENCE THRESHOLD CONTROLS
         let d3sliderDiv = d3controlsDiv.append('div').attr('class', 'ext-slider').attr('id', 'occurrence-threshold');
-        let sliderId = 'occurrence-threshold-slider-' + viewer.uniqueId;
+        let sliderId = 'occurrence-threshold-slider-' + viewer.internalId;
         d3sliderDiv.append('label').attr('for', sliderId).text('Occurrence threshold: ')
             .append('span').attr('class', 'slider-indicator').attr('id', 'occurrence-threshold-indicator').text(viewer.settings.occurrenceThreshold * 100 + '%');
         d3sliderDiv.append('br');
@@ -342,31 +342,25 @@ export var OverProtViewerCore;
             dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
             dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
         }
-        let nodeMap = new Map();
         let d3nodes = viewer.canvas
             .append('g').attr('class', 'nodes')
             .selectAll('g.node')
             .data(dag.nodes)
             .enter()
             .append('g').attr('class', 'node')
-            .attr('opacity', n => n.active ? 1 : 0)
-            .each((d, i, nodes) => nodeMap.set(d.label, nodes[i]));
-        viewer.nodeMap = nodeMap;
-        console.log('viewer.nodeMap:', viewer.nodeMap);
+            .attr('opacity', n => n.active ? 1 : 0);
+        viewer.nodeMap = new Map();
+        d3nodes.each((d, i, nodes) => viewer.nodeMap.set(d.label, nodes[i]));
         let d3nodeShapes;
         if (viewer.settings.shapeMethod == Enums.ShapeMethod.SymCdf) {
-            d3nodeShapes = d3nodes
-                .append('polygon');
+            d3nodeShapes = d3nodes.append('polygon');
         }
         else {
-            d3nodeShapes = d3nodes
-                .append('rect');
+            d3nodeShapes = d3nodes.append('rect');
         }
         let d3activeShapes = d3nodeShapes.filter(n => n.active);
-        // Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement) as any);
-        Drawing.addPointBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
-        // Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement as any));
-        Drawing.addPickBehavior(viewer, d3nodeShapes, shape => d3.select(shape.parentElement), nodes => Drawing.dispatchSseEvent(viewer, Constants.EVENT_TYPE_SELECT, nodes.data()));
+        Drawing.addPointBehavior(viewer, d3nodeShapes, shape => Drawing.selectNodeFromShape(viewer, shape, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+        Drawing.addPickBehavior(viewer, d3nodeShapes, shape => Drawing.selectNodeFromShape(viewer, shape, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_SELECT, nodes.data()));
         Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
         d3nodes
             .append('text').attr('class', 'node-label')

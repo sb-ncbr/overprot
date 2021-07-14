@@ -57,11 +57,11 @@ export namespace Graphs {
             }
         }
         let result = newDagFromPrecedence(sliceLevels, sliceEdges);
-        // debug check, TODO remove
-        for (const [u, v] of result.edges) {
-            assert(result.vertices.includes(u), u, 'not in vertices');
-            assert(result.vertices.includes(v), v, 'not in vertices');
-        }
+        // Debug check:
+        // for (const [u, v] of result.edges) {
+        //     assert(result.vertices.includes(u), u, 'not in vertices');
+        //     assert(result.vertices.includes(v), v, 'not in vertices');
+        // }
         return result;
     }
 
@@ -104,10 +104,10 @@ export namespace Graphs {
         if (nLevels > lastSliceVertex + 1) {
             slices.push(getSlice(dag, lastSliceVertex + 1, nLevels));
         }
-        // debug check, TODO remove
-        let checkVertices = new Set();
-        for (const slice of slices) for (const v of slice.vertices) checkVertices.add(v);
-        assert(setsEqual(checkVertices, new Set(dag.vertices)), 'checkVertices', checkVertices, '!= dag.vertices', dag.vertices);
+        // Debug check:
+        // let checkVertices = new Set();
+        // for (const slice of slices) for (const v of slice.vertices) checkVertices.add(v);
+        // assert(setsEqual(checkVertices, new Set(dag.vertices)), 'checkVertices', checkVertices, '!= dag.vertices', dag.vertices);
         return slices;
     }
 
@@ -359,7 +359,7 @@ export namespace Graphs {
                 const iComp = vertex2component.get(vertex)!;
                 const levs = dags[iComp].levels;
                 if (levs.length <= iLevel) levs.push([]);
-                assert(levs.length == iLevel + 1, 'levs.length != iLevel + 1');  // debug
+                assert(levs.length == iLevel + 1, 'levs.length != iLevel + 1');  // Debug
                 levs[iLevel].push(vertex);
                 dags[iComp].vertices.push(vertex);
                 dags[iComp].in_neighbors.set(vertex, []);
@@ -368,7 +368,7 @@ export namespace Graphs {
         for (const edge of dag.edges) {
             const [u, v] = edge;
             const iComp = vertex2component.get(u)!;
-            assert(vertex2component.get(v) == iComp, 'vertex2component.get(v) != iComp');  // debug
+            assert(vertex2component.get(v) == iComp, 'vertex2component.get(v) != iComp');  // Debug
             dags[iComp].edges.push(edge);
             dags[iComp].in_neighbors.get(v)!.push(u);
         }
