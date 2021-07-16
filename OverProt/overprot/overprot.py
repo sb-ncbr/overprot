@@ -175,11 +175,10 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     print('\n::: MAPSCI :::')
     run_mapsci.main(datadir.sub('sample.json'), datadir.sub('pdb'), datadir.sub('mapsci'), mapsci=conf.mapsci.mapsci_path, init=conf.mapsci.init, n_max=conf.mapsci.n_max)
     mapsci_consensus_to_cif.main(datadir.sub('mapsci', 'consensus.pdb'), datadir.sub('mapsci', 'consensus.cif'))
-    datadir.sub('mapsci', 'consensus.cif').cp(datadir.sub('consensus.cif'))
 
     # Align structures to the consensus backbone by PyMOL's CEalign
     print('\n::: CEALIGN :::')
-    cealign_all.main(datadir.sub('consensus.cif'), datadir.sub('sample.json'), datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
+    cealign_all.main(datadir.sub('mapsci', 'consensus.cif'), datadir.sub('sample.json'), datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
 
     if conf.files.clean_pdb_cif:
         datadir.sub('pdb').rm(recursive=True)
@@ -200,6 +199,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     datadir.mkdir(results, exist_ok=True)
     for filename in str.split('lengths.tsv cluster_precedence_matrix.tsv statistics.tsv occurrence_correlation.tsv consensus.sses.json'):
         datadir.sub('cif_cealign', filename).cp(datadir.sub(results, filename))
+    datadir.sub('mapsci', 'consensus.cif').cp(datadir.sub(results, 'consensus.cif'))
 
     # Draw diagrams
     print('\n::: DIAGRAM :::')
@@ -216,10 +216,10 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
 
     # Visualize in PyMOL and save as a session + PNG
     print('\n::: VISUALIZE :::')
-    lib_pymol.create_consensus_session(datadir.sub('consensus.cif'), datadir.sub(results, 'consensus.sses.json'), datadir.sub(results, 'consensus.pse'), 
+    lib_pymol.create_consensus_session(datadir.sub(results, 'consensus.cif'), datadir.sub(results, 'consensus.sses.json'), datadir.sub(results, 'consensus.pse'), 
                                        coloring=conf.visualization.coloring, out_image_file=datadir.sub(results, 'consensus.png'), image_size=(1000,))
     if conf.visualization.create_multi_session:
-        lib_pymol.create_multi_session(datadir.sub('cif_cealign'), datadir.sub('consensus.cif'), datadir.sub(results, 'consensus.sses.json'), 
+        lib_pymol.create_multi_session(datadir.sub('cif_cealign'), datadir.sub(results, 'consensus.cif'), datadir.sub(results, 'consensus.sses.json'), 
                                        datadir.sub(results, 'clustered.pse'), coloring=conf.visualization.coloring, progress_bar=True)
 
     print('\n::: COMPLETED :::')

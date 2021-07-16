@@ -11,6 +11,7 @@ import json
 import argparse
 from typing import Dict, Any, Optional, Literal
 
+from .libs import lib
 from .libs.lib_domains import Domain
 
 #  CONSTANTS  ################################################################################
@@ -142,7 +143,7 @@ def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: b
     n_pdbs = len(output)
     n_domains = sum( len(doms) for pdb, doms in output.items() )
     sys.stderr.write(f'Found {n_domains} domains in {n_pdbs} PDB entries.\n')
-    json.dump(output, sys.stdout, indent=4)
+    lib.dump_json(output, sys.stdout)
     return None
 
 

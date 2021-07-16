@@ -4,6 +4,7 @@ from typing import Optional, Dict, List, Tuple, Union
 
 from .constants import DOMAIN_NAME, PDB, CHAIN, RANGES, AUTH_CHAIN, AUTH_RANGES, UNIPROT_ID
 from .lib import FilePath
+from . import lib
 
 
 COMMENT_SYMBOL = '#'
@@ -88,8 +89,7 @@ def save_domain_list(domains: Union[List[Domain], Dict[str, List[Domain]]], file
         domains = _group_domains_by_pdb(domains)
     elif isinstance(domains, dict) and by_pdb == False:
         domains = _ungroup_domains_by_pdb(domains)
-    with open(filename, 'w') as w:
-        json.dump(domains, w, indent=4)
+    lib.dump_json(domains, filename)
 
 # def load_domain_list_by_pdb(filename: Union[FilePath, str]) -> Dict[str, List[Domain]]:
 #     with open(filename) as f:

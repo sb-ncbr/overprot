@@ -91,8 +91,7 @@ def compute_distance_matrices(samples, directory, append_outputs=True):
 
 def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options=''):
     samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
-    with open(path.join(directory, 'samples_by_pdb.json'), 'w') as w:
-        json.dump(samples_by_pdb, w)
+    lib.dump_json(samples_by_pdb, path.join(directory, 'samples_by_pdb.json'), minify=True)
     shutil.copy(path.join(directory, '..', 'consensus.cif'), path.join(directory, 'consensus.cif'))  # lib.run_command('cp', path.join(directory, '..', 'consensus.cif'), path.join(directory, 'consensus.cif'))
     shutil.copy(path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))  # lib.run_command('cp', path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
@@ -135,8 +134,7 @@ def map_manual_template_to_consensus(directory: FilePath):
                 manual_label = label_mapping[automatic]
                 lib.insert_after(sse, 'label', [('manual_label', manual_label)])
                 mapped += 1
-        with directory.sub('consensus.sses.json').open('w') as w:
-            json.dump(js, w, indent=4)
+        directory.sub('consensus.sses.json').dump_json(js)
         print(f'Mapped {mapped} manual labels out of {len(label_mapping)}')
 
 def get_chain_from_annotation(annotation_file: FilePath) -> str:
@@ -261,5 +259,4 @@ def filter_annotation(input_file: str, indices: List[int], output_file: str, rec
             for i, sse in enumerate(sses):
                 sse['color'] = spectrum_color_i(i, n)
         output[name] = { 'secondary_structure_elements': sses, 'beta_connectivity': connectivity }
-    with open(output_file, 'w') as w:
-        json.dump(output, w, indent=4)
+    lib.dump_json(output, output_file)

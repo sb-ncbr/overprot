@@ -4,6 +4,8 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional, Union, List, Literal
 
+from .libs import lib
+
 #  FUNCTIONS  ################################################################################
 
 #  MAIN  #####################################################################################
@@ -43,8 +45,7 @@ def format_pdbs_csv(family: dict, file: str):
 
 def format_pdbs_json(family: dict, file: str):
     pdb_list = list(family.keys())
-    with open(file, 'w') as w:
-        json.dump(pdb_list, w, indent=2)
+    lib.dump_json(pdb_list, file)
 
 
 DOMAIN_FIELDS = [
@@ -80,8 +81,7 @@ def format_domains_csv(domains: List[dict], file: str):
             print(line, file=w)
 
 def format_domains_json(domains: List[dict], file: str):
-    with open(file, 'w') as w:
-        json.dump(domains, w, indent=2)
+    lib.dump_json(domains, file)
 
 
 def main(input_family_json: str, input_sample_json: str, 

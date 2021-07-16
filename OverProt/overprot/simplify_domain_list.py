@@ -12,6 +12,7 @@ import json
 from typing import Dict, Any, Optional, Union
 
 from .libs import lib_domains
+from .libs import lib
 from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
@@ -36,7 +37,7 @@ def main(input_file: Union[FilePath, str]) -> Optional[int]:
     # TODO add docstring
     domains = lib_domains.load_domain_list(input_file)
     simplified = [(dom.pdb, dom.name, dom.chain, dom.ranges) for dom in domains]
-    json.dump(simplified, sys.stdout, indent=4)
+    lib.dump_json(simplified, sys.stdout)
     return None
 
 

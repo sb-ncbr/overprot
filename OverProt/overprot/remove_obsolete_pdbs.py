@@ -12,6 +12,7 @@ import requests
 from typing import Dict, Any, Optional, Union
 
 from .libs import lib_domains
+from .libs import lib
 from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
@@ -64,9 +65,7 @@ def main(sample_json: Union[FilePath, str], missing_list: Union[FilePath, str],
             w.write(pdb)
             w.write('\n')
     filtered_domains = [dom for dom in domains if dom.pdb not in obsolete]
-    with open(output_sample_json, 'w') as w:
-        json.dump(filtered_domains, w, indent=4)
-        w.write('\n')
+    lib.dump_json(filtered_domains, output_sample_json)
     return 0 if len(still_missing) == 0 else 1
 
 

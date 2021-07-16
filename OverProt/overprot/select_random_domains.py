@@ -15,6 +15,7 @@ import numpy as np
 from typing import Dict, Any, Optional, Union, Literal
 
 from .libs import lib_domains
+from .libs import lib
 from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
@@ -80,7 +81,7 @@ def main(domain_file: Union[FilePath, str],
     sample = [domains[i] for i in indices]
 
     # Output
-    json.dump(sample, sys.stdout, indent=4)
+    lib.dump_json(sample, sys.stdout)
 
     str_all = ' (all)' if sample_size==N else ''
     str_unique_pdb = ' unique-PDB' if unique_pdb else ''

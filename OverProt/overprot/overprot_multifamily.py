@@ -18,7 +18,6 @@ from .libs import lib
 from .libs.lib import FilePath
 from . import get_cath_family_list
 from . import overprot
-# from . import collect_diagrams
 
 #  CONSTANTS  ################################################################################
 
@@ -76,9 +75,11 @@ def collect_results(families: List[str], input_dir: FilePath, filepath: List[str
                 inp.cp(out)
         elif hide_missing:
             missing.append(family)
-            with out.open('w') as w:
-                js_error = {'error': f"Failed to generate consensus for '{family}'"}
-                json.dump(js_error, w)
+            is_empty = input_dir.sub('families', family, 'EMPTY_FAMILY').exists()
+            error_message = f"Failed to generate consensus for '{family}'."
+            if is_empty:
+                error_message += " The family is empty."
+            out.dump_json({'error': error_message})
         else:
             missing.append(family)
             if print_missing:

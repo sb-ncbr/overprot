@@ -566,9 +566,7 @@ def print_json(filename: FilePath, n_structures, labels, occurrences, avg_length
     if beta_connectivity is not None:
         label2index = { label: i for i, label in enumerate(labels) }
         result['beta_connectivity'] = [(label2index[l1], label2index[l2], direc) for l1, l2, direc in beta_connectivity]
-    with filename.open('w') as f:
-        # json.dump(result, f, indent='\t')
-        json.dump(result, f, separators=(',', ':'))
+    lib.dump_json(result, filename, minify=True)
 
 def remove_self_connections(beta_connectivity, print_warnings=False):
     if beta_connectivity is None:

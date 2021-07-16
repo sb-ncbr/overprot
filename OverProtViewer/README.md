@@ -4,15 +4,19 @@
 
 ## Build
 
-    sh build.sh
+```sh
+sh build.sh
+```
 
 Built files will be in `dist/` directory.
 
 ## Run locally
 
-    node local_server.js
+```sh
+node local_server.js
+```
 
-Then open http://localhost:3000 in web browser
+Then open <http://localhost:3000> in web browser.
 
 ## Include in a web
 
@@ -56,4 +60,4 @@ See `web/example-events.html` for interconnecting OverProt Viewer with other ele
 
 ## Deployed instance
 
-https://overprot.ncbr.muni.cz
+<https://overprot.ncbr.muni.cz>

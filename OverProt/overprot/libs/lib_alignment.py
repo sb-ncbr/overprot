@@ -239,8 +239,7 @@ def matrix_overview(matrix):
 def print_alignment(structA: Structure, structB: Structure, matching: List[Tuple[int, int]], filename: str):
     NONMATCHED = lib_acyclic_clustering_simple.NONMATCHED
     out_aln = {'aligned_residues': [(structA.chain[i], int(structA.resi[i]), structB.chain[j], int(structB.resi[j])) for i, j in matching if i != NONMATCHED and j!= NONMATCHED]}
-    with open(filename, 'w') as w:
-        json.dump(out_aln, w, indent=4)
+    lib.dump_json(out_aln, filename)
 
 
 def eucldist_dynprog_score_matrix(struct1: Structure, struct2: Structure, match_value=10) -> np.ndarray:
@@ -286,8 +285,6 @@ def dist(structfileA: FilePath, structfileB: FilePath, with_cealign=True, with_i
             break
         old_score = score
         n_iters += 1
-        # out_aln = {'aligned_residues': [(structA.chain[i], int(structA.resi[i]), structB.chain[j], int(structB.resi[j])) for i,j in aln]}
-        # json.dump(out_aln, sys.stdout, indent=4)
         assert len(aln) > 0
         firsts, seconds = zip(*aln)
         R, t = superimpose3d.optimal_rotation_translation(coordsB_original[:, seconds], structA.coords[:, firsts])
@@ -452,8 +449,7 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
         # lib.print_matrix(distance_matrix, 'tmp/distance_matrix.tsv', names, names)
         # return
 
-        # with open(path.join(dirs[0], 'nn-tree.json'), 'w') as w:
-        #     json.dump(finder._tree.json(), w, indent=4)
+        # lib.dump_json(finder._tree.json(), path.join(dirs[0], 'nn-tree.json'))
         
         n_nodes = 2*n_structs - 1
         children = np.full((n_nodes, 2), lib_clustering.NO_CHILD)
@@ -545,7 +541,7 @@ def testing_score_matrices(struct1: FilePath, struct2: FilePath):
     aln, score = lib_acyclic_clustering_simple.dynprog_align(score_matrix_seq + score_matrix_shape2)
 
     out_aln = {'aligned_residues': [(s1.chain[i], int(s1.resi[i]), s2.chain[j], int(s2.resi[j])) for i,j in aln]}
-    json.dump(out_aln, sys.stdout, indent=4)
+    lib.dump_json(out_aln, sys.stdout)
 
 
 #  MAIN  #####################################################################################

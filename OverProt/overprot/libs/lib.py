@@ -6,6 +6,7 @@ from os import path
 import glob
 import sys
 import shutil
+import json
 import re
 from datetime import datetime
 import heapq
@@ -409,24 +410,6 @@ def test_left_subdag_tipsets():
     for g, h, t in sorted(s):
         print(f'{g} + {t} -> {h}')
     print(len(tipsets))
-
-# def connected_components(edges, vertex_sort_key=(lambda x: x)):
-#     vertices = set()
-#     for u, v, *_ in edges:
-#         vertices.add(u)
-#         vertices.add(v)
-#     components = [ [v] for v in vertices ]
-#     for u, v, *_ in edges:
-#         comp_u = next(comp for comp in components if u in comp)
-#         comp_v = next(comp for comp in components if v in comp)
-#         if comp_u != comp_v:
-#             components.remove(comp_u)
-#             components.remove(comp_v)
-#             components.append(comp_u + comp_v)
-#     for comp in components:
-#         comp.sort(key=vertex_sort_key)
-#     components.sort(key=lambda comp: vertex_sort_key(comp[0]))
-#     return components
 
 def safe_mean(X, axis=None, fallback_value=0.0):
     '''Same as numpy.mean, but on empty slices returns fallback_value instead of NaN; does not throw any warning.'''
@@ -1054,6 +1037,26 @@ class FilePath(os.PathLike, object):
         archive = shutil.make_archive(str(dest.parent().sub(dest.name)), fmt, str(self))
         return FilePath(archive)
 
+    def dump_json(self, obj: object, minify: bool = False) -> 'FilePath':
+        dump_json(obj, self, minify=minify)
+        return self
+
+
+def dump_json(obj: object, file: Union[TextIO, str, os.PathLike], minify: bool = False) -> None:
+    is_writer = hasattr(file, 'write')
+    options: Dict[str, object]
+    if minify:
+        options = {'separators': (',', ':')}
+    else:
+        options = {'indent': 2}
+    if is_writer:
+        json.dump(obj, file, **options)  # type: ignore
+        file.write('\n')  # type: ignore
+    else:
+        with open(file, 'w') as w:  # type: ignore
+            json.dump(obj, w, **options)  # type: ignore
+            w.write('\n')
+
 
 
 class RedirectIO:
@@ -1125,7 +1128,8 @@ class JobResult(NamedTuple):
     result: Any
     worker: str
 
-def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.Pool] = None) -> List[JobResult]:
+def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, 
+        callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.Pool] = None) -> List[JobResult]:
     '''Run jobs (i.e. call job.func(*job.args, **job.kwargs)) in n_processes processes. 
     Standard output and standard error output are saved in files job.stdout and job.stderr.
     Default n_processes: number of CPUs.

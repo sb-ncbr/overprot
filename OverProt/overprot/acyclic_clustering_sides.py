@@ -260,8 +260,7 @@ def write_clustered_sses_old(directory, original_labels, new_labels):
             elif types[new_label] != typ:
                 sys.stderr.write('WARNING: Conflict in types in cluster ' + str(new_label) + '\n')
         output_json = { domain: { 'secondary_structure_elements': new_sses } }
-        with open(path.join(directory, domain+'-clust.sses.json'), 'w') as g:
-            json.dump(output_json, g)
+        lib.dump_json(output_json, path.join(directory, domain+'-clust.sses.json'))
     lib.print_matrix(lengths, path.join(directory, 'lengths.tsv'), row_names=row_names, col_names=domains)
 
 def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table, precedence_matrix=None, edges=None):
@@ -290,8 +289,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
                 sse['rainbow_hex'] = lib_sses.pymol_spectrum_to_hex(sse['rainbow'])
                 these_sses.append(sse)
         output_json = { domain: { 'secondary_structure_elements': these_sses } }
-        with directory.sub(domain+'-clust.sses.json').open('w') as g:
-            json.dump(output_json, g, indent=4)
+        directory.sub(domain+'-clust.sses.json').dump_json(output_json)
     lib.print_matrix(lengths.transpose(), directory.sub('lengths.tsv'), row_names=new_labels, col_names=domain_names)
     if precedence_matrix is not None:
         lib.print_matrix(precedence_matrix, directory.sub('cluster_precedence_matrix.tsv'), row_names=new_labels, col_names=new_labels)
@@ -328,8 +326,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
         for sse in consensus_sses:
             if sse is not None and sse['label'].startswith('E'):
                 sse['sheet_id'] = 1
-    with directory.sub('consensus.sses.json').open('w') as w:
-        json.dump(consensus, w, indent=4)
+    directory.sub('consensus.sses.json').dump_json(consensus)
 
     # Write statistics
     occurences = [ size / m for size in sizes ]
@@ -349,22 +346,6 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
     corr = lib.safe_corrcoef(occ.transpose())
     lib.print_matrix(corr, directory.sub('occurrence_correlation.tsv'), row_names=new_labels, col_names=new_labels)
     return
-
-def write_consensus(directory, cluster_members, type_vector):
-    sse_coords, *_ = read_matrix(path.join(directory, 'sse_coordinates.tsv'))
-    sses = []
-    for cluster, members in enumerate(cluster_members):
-        these_coords = lib.submatrix_int_indexing(sse_coords, members, range(6))
-        consensus = np.mean(these_coords, 0)
-        start_vector = list(consensus[0:3])
-        end_vector = list(consensus[3:6])
-        typ = ('H' if type_vector[members[0]] == 1 else 'E')
-        label = typ + str(cluster)
-        color = lib_sses.hash_color(cluster)
-        sse = {'label': label, 'type': typ, 'found_in': len(members), 'start_vector': start_vector, 'end_vector': end_vector, 'color': color}
-        sses.append(sse)
-    with open(path.join(directory, 'consensus.sses.json'), 'w') as w:
-        json.dump({'consensus': {'secondary_structure_elements': sses}}, w)
 
 def table_by_pdb_and_label(offsets, n_labels, labels):  # Puts sse indices into a table of lists by their PDB (given by offsets) and label
     n_pdbs = len(offsets) - 1
