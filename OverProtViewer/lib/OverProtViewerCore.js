@@ -40,6 +40,8 @@ export var OverProtViewerCore;
         let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
         let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
             .attrs({ width: settings.width, height: settings.height });
+        const viewerCSS = getOverProtViewerCSS();
+        d3canvas.append('defs').append('style').attr('type', 'text/css').html(viewerCSS); // For rendering to PNG
         let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
         // initializeExternalControls(viewer);
         initializeInternalControls(viewer);
@@ -113,8 +115,20 @@ export var OverProtViewerCore;
         }
     }
     OverProtViewerCore.initializeViewer = initializeViewer;
-    function setkv(obj, key, value) {
-        obj[key] = value;
+    function getOverProtViewerCSS() {
+        var _a;
+        const VIEWER = 'div.overprot-viewer';
+        let styleLines = [];
+        for (const sheet of document.styleSheets) {
+            var rules = (_a = sheet.cssRules) !== null && _a !== void 0 ? _a : [];
+            for (const rule of rules) {
+                if (rule.cssText.includes(VIEWER)) {
+                    let ruleText = rule.cssText.replace(VIEWER, '');
+                    styleLines.push(ruleText);
+                }
+            }
+        }
+        return styleLines.join('\n');
     }
     function initializeExternalControls(viewer) {
         let d3controlsDiv = viewer.mainDiv.append('div').attr('id', 'controls');
@@ -225,14 +239,8 @@ export var OverProtViewerCore;
         Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
         let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
         Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
-        // let occurrenceThresholdSlider2 = Controls.newSlider(viewer, 'occurrence-threshold', 0, 100, 1, viewer.settings.occurrenceThreshold*100, 
-        //     '0%', '100%',
-        //     val => {},
-        //     val => applyFiltering(viewer, val / 100),
-        //     'Hide SSEs with occurrence lower than the specified threshold.');
-        // Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider2);
-        // let listbox = Controls2.newListbox(viewer, 'listbox', colorOptions, viewer.settings.colorMethod, v => {console.log(v);}, null);
-        // Controls2.addToControlPanel(panelito, listbox);
+        let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, () => Drawing.save(viewer), 'Save image.'); // Floppy: &#128190; Camera: &#128247; Download: &#10515;
+        Controls.addToControlPanel(controlPanel, saveButton);
         controlPanel.base.show(controlsDiv);
     }
     function setDataToViewer(viewer, data) {
@@ -241,7 +249,8 @@ export var OverProtViewerCore;
         refreshVisualization(viewer);
     }
     function refreshVisualization(viewer) {
-        viewer.canvas.selectAll('*').remove();
+        // viewer.canvas.selectAll('*').remove();
+        viewer.canvas.selectAll(':scope > :not(defs)').remove(); // clear all children but defs
         if (viewer.data.error !== null) {
             viewer.canvas.append('text').attr('class', 'central-message')
                 .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
@@ -366,7 +375,6 @@ export var OverProtViewerCore;
         Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
         d3nodes
             .append('text').attr('class', 'node-label')
-            .style('opacity', n => Drawing.nodeBigEnoughForLabel(viewer, n) ? 1 : 0)
             .text(n => n.label);
         viewer.canvas
             .append('g').attr('class', 'edges')

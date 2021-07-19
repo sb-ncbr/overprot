@@ -24,6 +24,7 @@ export declare namespace Constants {
     const EDGE_COLOR = "#808080";
     const NODE_FILL: d3.RGBColor;
     const NODE_STROKE: d3.RGBColor;
+    const NODE_LABEL_COLOR = "black";
     const MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
     const HEATMAP_MIDDLE_VALUE = 5;
     const DEFAULT_OCCURRENCE_THRESHOLD = 0.2;

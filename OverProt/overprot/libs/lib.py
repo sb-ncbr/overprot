@@ -566,7 +566,6 @@ class ProgressBar:
                 self.step(self.n_steps - self.done)
             self.writer.write('\n')
             self.writer.flush()
-    
 
 class Counter(Generic[K]):
     def __init__(self):
@@ -1057,6 +1056,25 @@ def dump_json(obj: object, file: Union[TextIO, str, os.PathLike], minify: bool =
             json.dump(obj, w, **options)  # type: ignore
             w.write('\n')
 
+def consolidate_file(infile: Union[str, FilePath], outfile: Union[str, FilePath]) -> None:
+    '''Remove "erased lines" from a text file, 
+    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
+    CR = ord(b'\r')
+    LF = ord(b'\n')
+    with open(infile, 'rb') as r:
+        original = r.read().replace(b'\r\n', b'\n')
+    current_line = []
+    with open(outfile, 'wb') as w:
+        for byte in original:
+            if byte == LF:
+                current_line.append(byte)
+                w.write(bytes(current_line))
+                current_line.clear()
+            elif byte == CR:
+                current_line.clear()
+            else:
+                current_line.append(byte)
+        w.write(bytes(current_line))
 
 
 class RedirectIO:
@@ -1089,11 +1107,11 @@ class RedirectIO:
             self.old_err = sys.stderr
             sys.stderr = self.new_err
         if self.tee_out_file is not None:
-            self.new_out = Tee(sys.stdout, open(self.tee_out_file, out_mode))  # TODO close stream!
+            self.new_out = Tee(sys.stdout, open(self.tee_out_file, out_mode))
             self.old_out = sys.stdout
             sys.stdout = self.new_out
         if self.tee_err_file is not None:
-            self.new_err = Tee(sys.stderr, open(self.tee_err_file, err_mode))  # TODO close stream!
+            self.new_err = Tee(sys.stderr, open(self.tee_err_file, err_mode))
             self.old_err = sys.stderr
             sys.stderr = self.new_err
 
@@ -1104,15 +1122,19 @@ class RedirectIO:
         if self.new_out_file is not None:
             sys.stdout = self.old_out
             self.new_out.close()
+            consolidate_file(self.new_out_file, self.new_out_file)
         if self.new_err_file is not None:
             sys.stderr = self.old_err
             self.new_err.close()
+            consolidate_file(self.new_err_file, self.new_err_file)
         if self.tee_out_file is not None:
             sys.stdout = self.old_out
             self.new_out.outputs[1].close()
+            consolidate_file(self.tee_out_file, self.tee_out_file)
         if self.tee_err_file is not None:
             sys.stderr = self.old_err
             self.new_err.outputs[1].close()
+            consolidate_file(self.tee_err_file, self.tee_err_file)
 
 
 class Job(NamedTuple):

@@ -3,6 +3,7 @@
 <head>
     <meta charset='UTF-8'>
     <base href='..'>
+    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"> -->
     <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.css'>
     <script type='text/javascript' src='dist/d3.v5.min.js'></script>
     <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
@@ -83,7 +84,7 @@
         dispatch-events='true' listen-events='true' color-method='rainbow'></overprot-viewer><br>
     <overprot-viewer id='rossmann-new-3' file='./sample_data/rossmann_3-40-50-2300/diagram.json' occurrence-threshold="0.0"
         dispatch-events='true' listen-events='true' color-method='variability' shape-method='symcdf'></overprot-viewer><br>
-    <!-- <br>
+    <br>
     <br>
     <br>
     <br>
@@ -131,15 +132,6 @@
     <h4>Rossman fold (CATH 3.40.50.2300) - CORS - HTTPS</h4>
     <overprot-viewer id='testing-cors-https' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-3.40.50.2300.json'></overprot-viewer>
     <br>
-    <div style="display: flex">
-        <div class="colordiv" id="reddiv" style="background-color: red; width: 100px; height: 100px; margin: 5px;"></div>
-        <div class="colordiv" id="greendiv" style="background-color: green; width: 100px; height: 100px; margin: 5px;"></div>
-        <div class="colordiv" id="bluediv" style="background-color: blue; width: 100px; height: 100px; margin: 5px;"></div>
-    </div>
-    <br>
-    <br>
-    <br>
-    <br> -->
 
     <script>
         document.addEventListener('PDB.overprot.select', (e) => {

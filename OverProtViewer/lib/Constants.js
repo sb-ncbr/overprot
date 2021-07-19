@@ -23,6 +23,7 @@ export var Constants;
     Constants.EDGE_COLOR = '#808080';
     Constants.NODE_FILL = Colors.NEUTRAL_COLOR;
     Constants.NODE_STROKE = Colors.NEUTRAL_COLOR.darker();
+    Constants.NODE_LABEL_COLOR = 'black';
     Constants.MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
     Constants.HEATMAP_MIDDLE_VALUE = 5;
     Constants.DEFAULT_OCCURRENCE_THRESHOLD = 0.2;

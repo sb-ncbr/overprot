@@ -30,6 +30,7 @@ export namespace Constants {
     export const EDGE_COLOR = '#808080';
     export const NODE_FILL = Colors.NEUTRAL_COLOR;
     export const NODE_STROKE = Colors.NEUTRAL_COLOR.darker();
+    export const NODE_LABEL_COLOR = 'black';
 
     export const MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
 

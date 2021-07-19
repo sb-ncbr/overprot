@@ -78,6 +78,40 @@ export namespace Drawing {
         redraw(viewer, false);
     }
 
+    export function save(viewer: Types.Viewer): void {
+        const w = viewer.screen.width;
+        const h = viewer.screen.height;
+
+        const serializer = new XMLSerializer();
+        viewer.canvas.attr('rendering', 'rendering');
+        const svgString = serializer.serializeToString(viewer.canvas.node()!);
+        viewer.canvas.attr('rendering', null);
+
+        const img = new Image(w, h);
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+        // const canvas = viewer.mainDiv.append('canvas').attr('width', w).attr('height', h).styles({position: 'absolute', left: '0', top: '0', 'z-index': '999'});
+        const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
+        d3.select(img).on('load', () => {
+            canvas.node()!.getContext('2d')!.drawImage(img, 0, 0, w, h);
+            const imgData = canvas.node()!.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            saveFile(imgData, 'overprot.png');
+            // d3.select(window).on('focus.removecanvas', () => {
+            //     console.log('picovina'); 
+            //     canvas.remove();
+            //     d3.select(window).on('focus.removecanvas', null);
+            // });
+        });
+
+    }
+
+    function saveFile(data: string, fileName: string) {
+        const saveLink = document.createElement("a");
+        saveLink.download = fileName;
+        saveLink.href = data;
+        saveLink.click();
+    }
+
     function placeTooltip(viewer: Types.Viewer, tooltip?: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         tooltip = tooltip || viewer.mainDiv.select('div.tooltip') as unknown as d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
         return tooltip
@@ -245,13 +279,17 @@ export namespace Drawing {
         d3nodes.select('polygon')
             .transition().duration(duration)
             .attr('points', n => Geometry.symCdfPolygonPoints(Geometry.rectToScreen(viewer.visWorld, viewer.screen, (n as Dag.Node).visual.rect), (n as Dag.Node).cdf));
+        let labelVisibility = d3nodes.select('text').data().map(n => nodeBigEnoughForLabel(viewer, n as Dag.Node));
         d3nodes.select('text')
+            .style('fill', Constants.NODE_LABEL_COLOR)  // fill must be set both before and after opacity transition because fill doesn't support transitions
             .transition().duration(duration)
             .attrs(n => {
                 let { x, y, height, width } = Geometry.rectToScreen(viewer.visWorld, viewer.screen, (n as Dag.Node).visual.rect);
                 return { x: x + width / 2, y: y + height + Constants.HANGING_TEXT_OFFSET }
             })
-            .style('opacity', n => nodeBigEnoughForLabel(viewer, n as Dag.Node) ? 1 : 0);
+            .style('opacity', (n, i) => labelVisibility[i] ? 1 : 0)
+            .transition().duration(0)
+            .style('fill', (n, i) => labelVisibility[i] ? Constants.NODE_LABEL_COLOR : 'none');
         viewer.canvas
             .select('g.edges')
             .selectAll('line')
@@ -424,7 +462,7 @@ export namespace Drawing {
         }
         let result: d3.BaseType[] = [gnode.node()];
         const node = gnode.data()[0] as Dag.Node;
-        if (node.ladders != undefined && node.ladders.length>0){
+        if (node.ladders != undefined && node.ladders.length > 0) {
             let gladders = viewer.canvas.selectAll('g.ladder').nodes();
             for (const i of node.ladders) result.push(gladders[i]);
         }

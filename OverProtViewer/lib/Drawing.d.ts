@@ -7,6 +7,7 @@ export declare namespace Drawing {
     function zoomSet(viewer: Types.Viewer, newZoomout: number, centerXY?: [number, number]): void;
     function shift(viewer: Types.Viewer, rightRelative: number, downRelative: number): void;
     function shiftByMouse(viewer: Types.Viewer, rightPixels: number, downPixels: number): void;
+    function save(viewer: Types.Viewer): void;
     function setTooltips(viewer: Types.Viewer, selection: Types.D3Selection, htmlContents: (string | null)[] | null, pinnable?: boolean, delay?: boolean): void;
     function addPointBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pointedElementSelector?: (pointed: HTMLElement) => Types.D3Selection, callback?: ((sel: Types.D3Selection) => any) | null): void;
     function addPickBehavior(viewer: Types.Viewer, selection: Types.D3Selection, pickedElementSelector?: (clicked: HTMLElement) => Types.D3Selection, callback?: ((sel: Types.D3Selection) => any) | null): void;

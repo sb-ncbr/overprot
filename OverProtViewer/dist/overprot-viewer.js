@@ -90,6 +90,7 @@
         Constants.EDGE_COLOR = '#808080';
         Constants.NODE_FILL = Colors.NEUTRAL_COLOR;
         Constants.NODE_STROKE = Colors.NEUTRAL_COLOR.darker();
+        Constants.NODE_LABEL_COLOR = 'black';
         Constants.MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
         Constants.HEATMAP_MIDDLE_VALUE = 5;
         Constants.DEFAULT_OCCURRENCE_THRESHOLD = 0.2;
@@ -1186,6 +1187,35 @@
             redraw(viewer, false);
         }
         Drawing.shiftByMouse = shiftByMouse;
+        function save(viewer) {
+            const w = viewer.screen.width;
+            const h = viewer.screen.height;
+            const serializer = new XMLSerializer();
+            viewer.canvas.attr('rendering', 'rendering');
+            const svgString = serializer.serializeToString(viewer.canvas.node());
+            viewer.canvas.attr('rendering', null);
+            const img = new Image(w, h);
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+            // const canvas = viewer.mainDiv.append('canvas').attr('width', w).attr('height', h).styles({position: 'absolute', left: '0', top: '0', 'z-index': '999'});
+            const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
+            d3.select(img).on('load', () => {
+                canvas.node().getContext('2d').drawImage(img, 0, 0, w, h);
+                const imgData = canvas.node().toDataURL("image/png").replace("image/png", "image/octet-stream");
+                saveFile(imgData, 'overprot.png');
+                // d3.select(window).on('focus.removecanvas', () => {
+                //     console.log('picovina'); 
+                //     canvas.remove();
+                //     d3.select(window).on('focus.removecanvas', null);
+                // });
+            });
+        }
+        Drawing.save = save;
+        function saveFile(data, fileName) {
+            const saveLink = document.createElement("a");
+            saveLink.download = fileName;
+            saveLink.href = data;
+            saveLink.click();
+        }
         function placeTooltip(viewer, tooltip) {
             tooltip = tooltip || viewer.mainDiv.select('div.tooltip');
             return tooltip
@@ -1352,13 +1382,17 @@
             d3nodes.select('polygon')
                 .transition().duration(duration)
                 .attr('points', n => Geometry.symCdfPolygonPoints(Geometry.rectToScreen(viewer.visWorld, viewer.screen, n.visual.rect), n.cdf));
+            let labelVisibility = d3nodes.select('text').data().map(n => nodeBigEnoughForLabel(viewer, n));
             d3nodes.select('text')
+                .style('fill', Constants.NODE_LABEL_COLOR) // fill must be set both before and after opacity transition because fill doesn't support transitions
                 .transition().duration(duration)
                 .attrs(n => {
                 let { x, y, height, width } = Geometry.rectToScreen(viewer.visWorld, viewer.screen, n.visual.rect);
                 return { x: x + width / 2, y: y + height + Constants.HANGING_TEXT_OFFSET };
             })
-                .style('opacity', n => nodeBigEnoughForLabel(viewer, n) ? 1 : 0);
+                .style('opacity', (n, i) => labelVisibility[i] ? 1 : 0)
+                .transition().duration(0)
+                .style('fill', (n, i) => labelVisibility[i] ? Constants.NODE_LABEL_COLOR : 'none');
             viewer.canvas
                 .select('g.edges')
                 .selectAll('line')
@@ -1921,6 +1955,8 @@
             let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
             let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
                 .attrs({ width: settings.width, height: settings.height });
+            const viewerCSS = getOverProtViewerCSS();
+            d3canvas.append('defs').append('style').attr('type', 'text/css').html(viewerCSS); // For rendering to PNG
             let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
             // initializeExternalControls(viewer);
             initializeInternalControls(viewer);
@@ -1994,6 +2030,21 @@
             }
         }
         OverProtViewerCore.initializeViewer = initializeViewer;
+        function getOverProtViewerCSS() {
+            var _a;
+            const VIEWER = 'div.overprot-viewer';
+            let styleLines = [];
+            for (const sheet of document.styleSheets) {
+                var rules = (_a = sheet.cssRules) !== null && _a !== void 0 ? _a : [];
+                for (const rule of rules) {
+                    if (rule.cssText.includes(VIEWER)) {
+                        let ruleText = rule.cssText.replace(VIEWER, '');
+                        styleLines.push(ruleText);
+                    }
+                }
+            }
+            return styleLines.join('\n');
+        }
         function initializeInternalControls(viewer) {
             let controlsDiv = viewer.guiDiv.append('div').attr('class', 'internal-controls');
             let colorOptions = [
@@ -2026,14 +2077,8 @@
             Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
             let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
             Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
-            // let occurrenceThresholdSlider2 = Controls.newSlider(viewer, 'occurrence-threshold', 0, 100, 1, viewer.settings.occurrenceThreshold*100, 
-            //     '0%', '100%',
-            //     val => {},
-            //     val => applyFiltering(viewer, val / 100),
-            //     'Hide SSEs with occurrence lower than the specified threshold.');
-            // Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider2);
-            // let listbox = Controls2.newListbox(viewer, 'listbox', colorOptions, viewer.settings.colorMethod, v => {console.log(v);}, null);
-            // Controls2.addToControlPanel(panelito, listbox);
+            let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, () => Drawing.save(viewer), 'Save image.'); // Floppy: &#128190; Camera: &#128247; Download: &#10515;
+            Controls.addToControlPanel(controlPanel, saveButton);
             controlPanel.base.show(controlsDiv);
         }
         function setDataToViewer(viewer, data) {
@@ -2042,7 +2087,8 @@
             refreshVisualization(viewer);
         }
         function refreshVisualization(viewer) {
-            viewer.canvas.selectAll('*').remove();
+            // viewer.canvas.selectAll('*').remove();
+            viewer.canvas.selectAll(':scope > :not(defs)').remove(); // clear all children but defs
             if (viewer.data.error !== null) {
                 viewer.canvas.append('text').attr('class', 'central-message')
                     .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
@@ -2167,7 +2213,6 @@
             Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
             d3nodes
                 .append('text').attr('class', 'node-label')
-                .style('opacity', n => Drawing.nodeBigEnoughForLabel(viewer, n) ? 1 : 0)
                 .text(n => n.label);
             viewer.canvas
                 .append('g').attr('class', 'edges')

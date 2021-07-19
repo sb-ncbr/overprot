@@ -16,7 +16,7 @@ div.overprot-viewer div.gui {
     display: inline-block;
 } */
 
-div.overprot-viewer div.canvas text {
+div.overprot-viewer svg.canvas text {
     font-family: sans-serif;
     fill: black;
     stroke: none;
@@ -25,6 +25,10 @@ div.overprot-viewer div.canvas text {
 div.overprot-viewer svg.canvas {
     background: white;
     border: 1px solid lightgray;
+}
+div.overprot-viewer svg.canvas[rendering] {
+    background: none;
+    border: none;
 }
 
 div.overprot-viewer svg.canvas text {
@@ -45,17 +49,7 @@ div.overprot-viewer g.node[picked] polygon {
 div.overprot-viewer text.node-label {
     dominant-baseline: hanging;
     text-anchor: middle;
-    text
 }
-
-/*div.overprot-viewer g.beta-connectivity path {
-    fill: none;
-    stroke: black; *//* dynamic *//*
-}
-div.overprot-viewer g.beta-connectivity path[pointed],
-div.overprot-viewer g.beta-connectivity path[pointed] {
-    stroke-width: 3px;
-}*/
 
 div.overprot-viewer g.ladder path.vis {
     fill: none;
