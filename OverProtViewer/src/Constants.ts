@@ -81,4 +81,14 @@ export namespace Constants {
     // Inbound events (listened to by the viewer):
     export const EVENT_TYPE_DO_SELECT = 'do.select';
     export const EVENT_TYPE_DO_HOVER = 'do.hover';
+
+    export const ICON_PLUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z"></path></svg>';
+    export const ICON_MINUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H75 V55 H25 z"></path></svg>';
+    export const ICON_RESET = '<svg viewBox="0 0 100 100"><path d="M50,25 A25,25,0,1,0,75,50 H65 A15,15,0,1,1,50,35 V47 L70,31 L50,15 z"></path></svg>';
+    export const ICON_CAMERA = '<svg viewBox="0 0 100 100"><path d="' + 
+        'M15,30 H32 L40,22 H60 L68,30 H85 V72 H15 z ' +  // body
+        'M34,50 A16,16,0,0,0,66,50 A16,16,0,0,0,34,50 z ' +  // around lens
+        'M40,50 A10,10,0,0,0,60,50 A10,10,0,0,0,40,50 z ' +  // lens
+        'M80,35 V41 H72 V35 z ' +  // window
+        '"></path></svg>';
 }

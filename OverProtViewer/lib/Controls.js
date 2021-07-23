@@ -22,11 +22,12 @@ export var Controls;
         panel.base.div = parentDiv.append('div').attr('class', 'control-panel').attr('id', panel.base.id);
         panel.base.children.forEach(child => child.base.show(panel.base.div));
     }
-    function newButton(viewer, id, text, square, onClick, tooltip) {
+    function newButton(viewer, id, text, square, icon, onClick, tooltip) {
         let button = {
             base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showButton(button, par) },
             text: text,
             square: square,
+            icon: icon,
             onClick: onClick
         };
         return button;
@@ -34,21 +35,22 @@ export var Controls;
     Controls.newButton = newButton;
     function showButton(button, parentDiv) {
         button.base.div = parentDiv.append('div').attr('class', button.square ? 'button square-button' : 'button').attr('id', button.base.id);
-        button.base.div.append('div').attr('class', 'button-text').html(button.text);
+        const clas = button.icon ? 'button-icon' : 'button-text';
+        button.base.div.append('div').attr('class', clas).html(button.text);
         Drawing.setTooltips(button.base.viewer, button.base.div, [button.base.tooltip], false, true);
         button.base.div.on('click', button.onClick);
         button.base.div.on('dblclick', () => { d3.event.stopPropagation(); });
     }
     function changeButtonText(button, newText) {
         button.text = newText;
-        button.base.div.select('div.button-text').html(newText);
+        button.base.div.select('div.button-icon,div.button-text').html(newText);
     }
     Controls.changeButtonText = changeButtonText;
     function newPopup(viewer, id, text, autocollapse, tooltip) {
         // console.log('newPopup');
         let popup = {
             base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showPopup(popup, par) },
-            headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, () => togglePopup(popup), tooltip),
+            headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, false, () => togglePopup(popup), tooltip),
             autocollapse: autocollapse
         };
         return popup;
@@ -78,16 +80,15 @@ export var Controls;
         }
     }
     function expandPopup(popup) {
-        var _a;
         // console.log('expandPopup');
         let headDiv = popup.base.div.select('div.popup-head');
         let tailDiv = popup.base.div.append('div').attr('class', 'popup-tail');
         popup.base.children.forEach(child => child.base.show(tailDiv));
-        let headWidth = headDiv.node().getBoundingClientRect().width;
-        let tailWidth = (_a = tailDiv.node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect().width;
-        if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
-            tailDiv.style('width', headWidth);
-        }
+        // let headWidth = headDiv.node().getBoundingClientRect().width;
+        // let tailWidth = tailDiv.node()?.getBoundingClientRect().width;
+        // if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
+        //     tailDiv.style('width', headWidth);
+        // }
         if (popup.autocollapse) {
             popup.base.viewer.mainDiv.on('click.autocollapse-popups', () => collapseAllAutocollapsePopups(popup.base.viewer));
             tailDiv.on('click.autocollapse-popups', () => d3.event.stopPropagation());

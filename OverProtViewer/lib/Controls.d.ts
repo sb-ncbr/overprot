@@ -19,6 +19,7 @@ export declare namespace Controls {
         base: ControlBase;
         text: string;
         square: boolean;
+        icon: boolean;
         onClick: () => any;
     };
     type Popup = {
@@ -45,7 +46,7 @@ export declare namespace Controls {
     };
     export function newControlPanel(viewer: Types.Viewer, id: string | null, tooltip: string | null): ControlPanel;
     export function addToControlPanel(panel: ControlPanel, child: Control): void;
-    export function newButton(viewer: Types.Viewer, id: string | null, text: string, square: boolean, onClick: () => any, tooltip: string | null): Button;
+    export function newButton(viewer: Types.Viewer, id: string | null, text: string, square: boolean, icon: boolean, onClick: () => any, tooltip: string | null): Button;
     export function changeButtonText(button: Button, newText: string): void;
     export function newPopup(viewer: Types.Viewer, id: string | null, text: string, autocollapse: boolean, tooltip: string | null): Popup;
     export function addToPopup(popup: Popup, child: Control): void;

@@ -71,7 +71,7 @@
     var Constants;
     (function (Constants) {
         Constants.CANVAS_HEIGHT = 300;
-        Constants.CANVAS_WIDTH = 1500;
+        Constants.CANVAS_WIDTH = 1200;
         Constants.ZOOM_STEP_RATIO = 1.25;
         Constants.ZOOM_STEP_RATIO_MOUSE = Constants.ZOOM_STEP_RATIO;
         Constants.SHIFT_STEP_RELATIVE = 0.2;
@@ -90,6 +90,7 @@
         Constants.EDGE_COLOR = '#808080';
         Constants.NODE_FILL = Colors.NEUTRAL_COLOR;
         Constants.NODE_STROKE = Colors.NEUTRAL_COLOR.darker();
+        Constants.NODE_LABEL_COLOR = 'black';
         Constants.MINIMAL_WIDTH_FOR_SSE_LABEL = 20;
         Constants.HEATMAP_MIDDLE_VALUE = 5;
         Constants.DEFAULT_OCCURRENCE_THRESHOLD = 0.2;
@@ -126,6 +127,15 @@
         // Inbound events (listened to by the viewer):
         Constants.EVENT_TYPE_DO_SELECT = 'do.select';
         Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
+        Constants.ICON_PLUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z"></path></svg>';
+        Constants.ICON_MINUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H75 V55 H25 z"></path></svg>';
+        Constants.ICON_RESET = '<svg viewBox="0 0 100 100"><path d="M50,25 A25,25,0,1,0,75,50 H65 A15,15,0,1,1,50,35 V47 L70,31 L50,15 z"></path></svg>';
+        Constants.ICON_CAMERA = '<svg viewBox="0 0 100 100"><path d="' +
+            'M15,30 H32 L40,22 H60 L68,30 H85 V72 H15 z ' + // body
+            'M34,50 A16,16,0,0,0,66,50 A16,16,0,0,0,34,50 z ' + // around lens
+            'M40,50 A10,10,0,0,0,60,50 A10,10,0,0,0,40,50 z ' + // lens
+            'M80,35 V41 H72 V35 z ' + // window
+            '"></path></svg>';
     })(Constants || (Constants = {}));
 
     var Geometry;
@@ -1186,6 +1196,35 @@
             redraw(viewer, false);
         }
         Drawing.shiftByMouse = shiftByMouse;
+        function save(viewer) {
+            const w = viewer.screen.width;
+            const h = viewer.screen.height;
+            const serializer = new XMLSerializer();
+            viewer.canvas.attr('rendering', 'rendering');
+            const svgString = serializer.serializeToString(viewer.canvas.node());
+            viewer.canvas.attr('rendering', null);
+            const img = new Image(w, h);
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+            // const canvas = viewer.mainDiv.append('canvas').attr('width', w).attr('height', h).styles({position: 'absolute', left: '0', top: '0', 'z-index': '999'});
+            const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
+            d3.select(img).on('load', () => {
+                canvas.node().getContext('2d').drawImage(img, 0, 0, w, h);
+                const imgData = canvas.node().toDataURL("image/png").replace("image/png", "image/octet-stream");
+                saveFile(imgData, 'overprot.png');
+                // d3.select(window).on('focus.removecanvas', () => {
+                //     console.log('picovina'); 
+                //     canvas.remove();
+                //     d3.select(window).on('focus.removecanvas', null);
+                // });
+            });
+        }
+        Drawing.save = save;
+        function saveFile(data, fileName) {
+            const saveLink = document.createElement("a");
+            saveLink.download = fileName;
+            saveLink.href = data;
+            saveLink.click();
+        }
         function placeTooltip(viewer, tooltip) {
             tooltip = tooltip || viewer.mainDiv.select('div.tooltip');
             return tooltip
@@ -1352,13 +1391,17 @@
             d3nodes.select('polygon')
                 .transition().duration(duration)
                 .attr('points', n => Geometry.symCdfPolygonPoints(Geometry.rectToScreen(viewer.visWorld, viewer.screen, n.visual.rect), n.cdf));
+            let labelVisibility = d3nodes.select('text').data().map(n => nodeBigEnoughForLabel(viewer, n));
             d3nodes.select('text')
+                .style('fill', Constants.NODE_LABEL_COLOR) // fill must be set both before and after opacity transition because fill doesn't support transitions
                 .transition().duration(duration)
                 .attrs(n => {
                 let { x, y, height, width } = Geometry.rectToScreen(viewer.visWorld, viewer.screen, n.visual.rect);
                 return { x: x + width / 2, y: y + height + Constants.HANGING_TEXT_OFFSET };
             })
-                .style('opacity', n => nodeBigEnoughForLabel(viewer, n) ? 1 : 0);
+                .style('opacity', (n, i) => labelVisibility[i] ? 1 : 0)
+                .transition().duration(0)
+                .style('fill', (n, i) => labelVisibility[i] ? Constants.NODE_LABEL_COLOR : 'none');
             viewer.canvas
                 .select('g.edges')
                 .selectAll('line')
@@ -1668,11 +1711,12 @@
             panel.base.div = parentDiv.append('div').attr('class', 'control-panel').attr('id', panel.base.id);
             panel.base.children.forEach(child => child.base.show(panel.base.div));
         }
-        function newButton(viewer, id, text, square, onClick, tooltip) {
+        function newButton(viewer, id, text, square, icon, onClick, tooltip) {
             let button = {
                 base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showButton(button, par) },
                 text: text,
                 square: square,
+                icon: icon,
                 onClick: onClick
             };
             return button;
@@ -1680,21 +1724,22 @@
         Controls.newButton = newButton;
         function showButton(button, parentDiv) {
             button.base.div = parentDiv.append('div').attr('class', button.square ? 'button square-button' : 'button').attr('id', button.base.id);
-            button.base.div.append('div').attr('class', 'button-text').html(button.text);
+            const clas = button.icon ? 'button-icon' : 'button-text';
+            button.base.div.append('div').attr('class', clas).html(button.text);
             Drawing.setTooltips(button.base.viewer, button.base.div, [button.base.tooltip], false, true);
             button.base.div.on('click', button.onClick);
             button.base.div.on('dblclick', () => { d3.event.stopPropagation(); });
         }
         function changeButtonText(button, newText) {
             button.text = newText;
-            button.base.div.select('div.button-text').html(newText);
+            button.base.div.select('div.button-icon,div.button-text').html(newText);
         }
         Controls.changeButtonText = changeButtonText;
         function newPopup(viewer, id, text, autocollapse, tooltip) {
             // console.log('newPopup');
             let popup = {
                 base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showPopup(popup, par) },
-                headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, () => togglePopup(popup), tooltip),
+                headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, false, () => togglePopup(popup), tooltip),
                 autocollapse: autocollapse
             };
             return popup;
@@ -1724,16 +1769,15 @@
             }
         }
         function expandPopup(popup) {
-            var _a;
             // console.log('expandPopup');
             let headDiv = popup.base.div.select('div.popup-head');
             let tailDiv = popup.base.div.append('div').attr('class', 'popup-tail');
             popup.base.children.forEach(child => child.base.show(tailDiv));
-            let headWidth = headDiv.node().getBoundingClientRect().width;
-            let tailWidth = (_a = tailDiv.node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect().width;
-            if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
-                tailDiv.style('width', headWidth);
-            }
+            // let headWidth = headDiv.node().getBoundingClientRect().width;
+            // let tailWidth = tailDiv.node()?.getBoundingClientRect().width;
+            // if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
+            //     tailDiv.style('width', headWidth);
+            // }
             if (popup.autocollapse) {
                 popup.base.viewer.mainDiv.on('click.autocollapse-popups', () => collapseAllAutocollapsePopups(popup.base.viewer));
                 tailDiv.on('click.autocollapse-popups', () => d3.event.stopPropagation());
@@ -1921,6 +1965,8 @@
             let d3canvasDiv = d3guiDiv.append('div').attr('class', 'canvas');
             let d3canvas = d3canvasDiv.append('svg').attr('class', 'canvas')
                 .attrs({ width: settings.width, height: settings.height });
+            const viewerCSS = getOverProtViewerCSS();
+            d3canvas.append('defs').append('style').attr('type', 'text/css').html(viewerCSS); // For rendering to PNG
             let viewer = Types.newViewer(id, uniqueId, d3viewer, d3mainDiv, d3guiDiv, d3canvas, settings);
             // initializeExternalControls(viewer);
             initializeInternalControls(viewer);
@@ -1994,6 +2040,21 @@
             }
         }
         OverProtViewerCore.initializeViewer = initializeViewer;
+        function getOverProtViewerCSS() {
+            var _a;
+            const VIEWER = 'div.overprot-viewer';
+            let styleLines = [];
+            for (const sheet of document.styleSheets) {
+                var rules = (_a = sheet.cssRules) !== null && _a !== void 0 ? _a : [];
+                for (const rule of rules) {
+                    if (rule.cssText.includes(VIEWER)) {
+                        let ruleText = rule.cssText.replace(VIEWER, '');
+                        styleLines.push(ruleText);
+                    }
+                }
+            }
+            return styleLines.join('\n');
+        }
         function initializeInternalControls(viewer) {
             let controlsDiv = viewer.guiDiv.append('div').attr('class', 'internal-controls');
             let colorOptions = [
@@ -2012,12 +2073,18 @@
                 ['Off', false, null],
             ];
             let controlPanel = Controls.newControlPanel(viewer, 'main-panel', null);
-            let zoomInButton = Controls.newButton(viewer, 'zoom-in', '+', true, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
-            Controls.addToControlPanel(controlPanel, zoomInButton);
-            let zoomOutButton = Controls.newButton(viewer, 'zoom-out', '-', true, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
-            Controls.addToControlPanel(controlPanel, zoomOutButton);
-            let zoomResetButoon = Controls.newButton(viewer, 'zoom-reset', Constants.RESET_SYMBOL, true, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
-            Controls.addToControlPanel(controlPanel, zoomResetButoon);
+            // let zoomInButton = Controls.newButton(viewer, 'zoom-in', '+', true, false, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+            // Controls.addToControlPanel(controlPanel, zoomInButton);
+            // let zoomOutButton = Controls.newButton(viewer, 'zoom-out', '-', true, false, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+            // Controls.addToControlPanel(controlPanel, zoomOutButton);
+            // let zoomResetButoon = Controls.newButton(viewer, 'zoom-reset', Constants.RESET_SYMBOL, true, false, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
+            // Controls.addToControlPanel(controlPanel, zoomResetButoon);
+            let zoomInButton2 = Controls.newButton(viewer, 'zoom-in', Constants.ICON_PLUS, true, true, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+            Controls.addToControlPanel(controlPanel, zoomInButton2);
+            let zoomOutButton2 = Controls.newButton(viewer, 'zoom-out', Constants.ICON_MINUS, true, true, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+            Controls.addToControlPanel(controlPanel, zoomOutButton2);
+            let zoomResetButoon2 = Controls.newButton(viewer, 'zoom-reset', Constants.ICON_RESET, true, true, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
+            Controls.addToControlPanel(controlPanel, zoomResetButoon2);
             let colorMethodDropdown = Controls.newDropdownList(viewer, 'color-method', 'Color', colorOptions, viewer.settings.colorMethod, method => applyColors(viewer, method), 'Choose coloring method.', true, false);
             Controls.addToControlPanel(controlPanel, colorMethodDropdown);
             let shapeMethodDropdown = Controls.newDropdownList(viewer, 'shape-method', 'Shape', shapeOptions, viewer.settings.shapeMethod, method => applyShapes(viewer, method), 'Choose shape method.', true, false);
@@ -2026,14 +2093,10 @@
             Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
             let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
             Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
-            // let occurrenceThresholdSlider2 = Controls.newSlider(viewer, 'occurrence-threshold', 0, 100, 1, viewer.settings.occurrenceThreshold*100, 
-            //     '0%', '100%',
-            //     val => {},
-            //     val => applyFiltering(viewer, val / 100),
-            //     'Hide SSEs with occurrence lower than the specified threshold.');
-            // Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider2);
-            // let listbox = Controls2.newListbox(viewer, 'listbox', colorOptions, viewer.settings.colorMethod, v => {console.log(v);}, null);
-            // Controls2.addToControlPanel(panelito, listbox);
+            // let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, false, () => Drawing.save(viewer), 'Save image.');
+            // Controls.addToControlPanel(controlPanel, saveButton);
+            let saveButton2 = Controls.newButton(viewer, 'save', Constants.ICON_CAMERA, true, true, () => Drawing.save(viewer), 'Save image.');
+            Controls.addToControlPanel(controlPanel, saveButton2);
             controlPanel.base.show(controlsDiv);
         }
         function setDataToViewer(viewer, data) {
@@ -2042,7 +2105,8 @@
             refreshVisualization(viewer);
         }
         function refreshVisualization(viewer) {
-            viewer.canvas.selectAll('*').remove();
+            // viewer.canvas.selectAll('*').remove();
+            viewer.canvas.selectAll(':scope > :not(defs)').remove(); // clear all children but defs
             if (viewer.data.error !== null) {
                 viewer.canvas.append('text').attr('class', 'central-message')
                     .attrs({ x: viewer.screen.width / 2, y: viewer.screen.height / 2 })
@@ -2167,7 +2231,6 @@
             Drawing.setTooltips(viewer, d3nodeShapes, d3nodes.data().map(createNodeTooltip), true, false);
             d3nodes
                 .append('text').attr('class', 'node-label')
-                .style('opacity', n => Drawing.nodeBigEnoughForLabel(viewer, n) ? 1 : 0)
                 .text(n => n.label);
             viewer.canvas
                 .append('g').attr('class', 'edges')

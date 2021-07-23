@@ -19,7 +19,7 @@ export namespace Controls {
     
     type Control = { base: ControlBase };
     type ControlPanel = { base: ControlBase };
-    type Button = { base: ControlBase, text: string, square: boolean, onClick: () => any };
+    type Button = { base: ControlBase, text: string, square: boolean, icon: boolean, onClick: () => any };
     type Popup = { base: ControlBase, headButton: Button, autocollapse: boolean };
     type Listbox<T> = { base: ControlBase, 
         namesValuesTooltips: [string, T, string | null][], selectedValue: T, onSelect: (value: T) => any };
@@ -47,32 +47,34 @@ export namespace Controls {
         panel.base.children.forEach(child => child.base.show(panel.base.div));
     }
 
-    export function newButton(viewer: Types.Viewer, id: string|null, text: string, square: boolean, onClick: () => any, tooltip: string|null): Button {
+    export function newButton(viewer: Types.Viewer, id: string|null, text: string, square: boolean, icon: boolean, onClick: () => any, tooltip: string|null): Button {
         let button = { 
             base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par: Types.D3Selection) => showButton(button, par)}, 
             text: text, 
             square: square,
+            icon: icon,
             onClick: onClick 
         };
         return button;
     }
     function showButton(button: Button, parentDiv: Types.D3Selection): void {
         button.base.div = parentDiv.append('div').attr('class', button.square ? 'button square-button' : 'button').attr('id', button.base.id!) as any;
-        button.base.div.append('div').attr('class', 'button-text').html(button.text);
+        const clas = button.icon ? 'button-icon':'button-text';
+        button.base.div.append('div').attr('class', clas).html(button.text);
         Drawing.setTooltips(button.base.viewer, button.base.div, [button.base.tooltip], false, true);
         button.base.div.on('click', button.onClick);
         button.base.div.on('dblclick', () => { d3.event.stopPropagation() });
     }
     export function changeButtonText(button: Button, newText: string): void {
         button.text = newText;
-        button.base.div.select('div.button-text').html(newText);
+        button.base.div.select('div.button-icon,div.button-text').html(newText);
     }
 
     export function newPopup(viewer: Types.Viewer, id: string|null, text: string, autocollapse: boolean, tooltip: string|null): Popup {
         // console.log('newPopup');
         let popup: Popup = { 
             base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par: Types.D3Selection) => showPopup(popup, par)}, 
-            headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, () => togglePopup(popup), tooltip),
+            headButton: newButton(viewer, null, text + Constants.OPEN_POPUP_SYMBOL, false, false, () => togglePopup(popup), tooltip),
             autocollapse: autocollapse 
         };
         return popup;
@@ -103,11 +105,11 @@ export namespace Controls {
         let headDiv = popup.base.div.select('div.popup-head') as any;
         let tailDiv = popup.base.div.append('div').attr('class', 'popup-tail') as any;
         popup.base.children.forEach(child => child.base.show(tailDiv));
-        let headWidth = headDiv.node().getBoundingClientRect().width;
-        let tailWidth = tailDiv.node()?.getBoundingClientRect().width;
-        if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
-            tailDiv.style('width', headWidth);
-        }
+        // let headWidth = headDiv.node().getBoundingClientRect().width;
+        // let tailWidth = tailDiv.node()?.getBoundingClientRect().width;
+        // if (tailWidth !== undefined && headWidth !== undefined && tailWidth < headWidth) {
+        //     tailDiv.style('width', headWidth);
+        // }
         if (popup.autocollapse) {
             popup.base.viewer.mainDiv.on('click.autocollapse-popups', () => collapseAllAutocollapsePopups(popup.base.viewer));
             tailDiv.on('click.autocollapse-popups', () => d3.event.stopPropagation());

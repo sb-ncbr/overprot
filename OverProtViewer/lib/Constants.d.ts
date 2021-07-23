@@ -57,4 +57,8 @@ export declare namespace Constants {
     const EVENT_TYPE_HOVER = "hover";
     const EVENT_TYPE_DO_SELECT = "do.select";
     const EVENT_TYPE_DO_HOVER = "do.hover";
+    const ICON_PLUS = "<svg viewBox=\"0 0 100 100\"><path d=\"M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z\"></path></svg>";
+    const ICON_MINUS = "<svg viewBox=\"0 0 100 100\"><path d=\"M25,45 H75 V55 H25 z\"></path></svg>";
+    const ICON_RESET = "<svg viewBox=\"0 0 100 100\"><path d=\"M50,25 A25,25,0,1,0,75,50 H65 A15,15,0,1,1,50,35 V47 L70,31 L50,15 z\"></path></svg>";
+    const ICON_CAMERA: string;
 }

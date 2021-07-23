@@ -16,7 +16,7 @@ div.overprot-viewer div.gui {
     display: inline-block;
 } */
 
-div.overprot-viewer svg.canvas text {
+div.overprot-viewer div.canvas text {
     font-family: sans-serif;
     fill: black;
     stroke: none;
@@ -25,10 +25,6 @@ div.overprot-viewer svg.canvas text {
 div.overprot-viewer svg.canvas {
     background: white;
     border: 1px solid lightgray;
-}
-div.overprot-viewer svg.canvas[rendering] {
-    background: none;
-    border: none;
 }
 
 div.overprot-viewer svg.canvas text {
@@ -49,7 +45,17 @@ div.overprot-viewer g.node[picked] polygon {
 div.overprot-viewer text.node-label {
     dominant-baseline: hanging;
     text-anchor: middle;
+    text
 }
+
+/*div.overprot-viewer g.beta-connectivity path {
+    fill: none;
+    stroke: black; *//* dynamic *//*
+}
+div.overprot-viewer g.beta-connectivity path[pointed],
+div.overprot-viewer g.beta-connectivity path[pointed] {
+    stroke-width: 3px;
+}*/
 
 div.overprot-viewer g.ladder path.vis {
     fill: none;
@@ -109,7 +115,9 @@ div.overprot-viewer div.control-panel > div {
     display: inline-block;
     vertical-align: top;
     margin-bottom:5px;
-    margin-right: 5px;
+}
+div.overprot-viewer div.control-panel > div:not(:first-child) {
+    margin-left: 5px;
 }
 div.overprot-viewer div.button {
     position: relative;
@@ -140,26 +148,6 @@ div.overprot-viewer div.button-text {
     margin-right: 5px;
     user-select: none;
 }
-div.overprot-viewer div.button-icon {
-    display: inline-block;
-    vertical-align: middle;
-    line-height: 26px;
-    margin: 0px;
-    user-select: none;
-}
-div.overprot-viewer div.button svg {
-    width: 100%;
-    height: 100%;
-}
-div.overprot-viewer div.button path {
-    stroke: black;
-    fill: black;
-    fill-rule: evenodd;
-}
-div.overprot-viewer div.button[disabled] path {
-    stroke: darkgrey;
-    fill: darkgrey;
-}
 div.overprot-viewer div.popup {
     position: relative;
 }
@@ -168,7 +156,7 @@ div.overprot-viewer div.popup#occurrence-threshold {
 }
 div.overprot-viewer div.popup#color-method,
 div.overprot-viewer div.popup#shape-method {
-    min-width: 90px;
+    min-width: 80px;
 }
 div.overprot-viewer div.popup#beta-connectivity {
     min-width: 170px;
@@ -178,7 +166,6 @@ div.overprot-viewer div.popup-tail {
     top: 30px;
     left: 0px;
     background: lightgray;
-    min-width: 100%;
     /* border: 1px solid darkgray; */
     z-index: 2;
 }

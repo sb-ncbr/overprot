@@ -225,12 +225,18 @@ export var OverProtViewerCore;
             ['Off', false, null],
         ];
         let controlPanel = Controls.newControlPanel(viewer, 'main-panel', null);
-        let zoomInButton = Controls.newButton(viewer, 'zoom-in', '+', true, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
-        Controls.addToControlPanel(controlPanel, zoomInButton);
-        let zoomOutButton = Controls.newButton(viewer, 'zoom-out', '-', true, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
-        Controls.addToControlPanel(controlPanel, zoomOutButton);
-        let zoomResetButoon = Controls.newButton(viewer, 'zoom-reset', Constants.RESET_SYMBOL, true, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
-        Controls.addToControlPanel(controlPanel, zoomResetButoon);
+        // let zoomInButton = Controls.newButton(viewer, 'zoom-in', '+', true, false, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+        // Controls.addToControlPanel(controlPanel, zoomInButton);
+        // let zoomOutButton = Controls.newButton(viewer, 'zoom-out', '-', true, false, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+        // Controls.addToControlPanel(controlPanel, zoomOutButton);
+        // let zoomResetButoon = Controls.newButton(viewer, 'zoom-reset', Constants.RESET_SYMBOL, true, false, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
+        // Controls.addToControlPanel(controlPanel, zoomResetButoon);
+        let zoomInButton2 = Controls.newButton(viewer, 'zoom-in', Constants.ICON_PLUS, true, true, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+        Controls.addToControlPanel(controlPanel, zoomInButton2);
+        let zoomOutButton2 = Controls.newButton(viewer, 'zoom-out', Constants.ICON_MINUS, true, true, () => Drawing.zoomOut(viewer), 'Zoom out. <br>Tip: Use Ctrl + mouse wheel to zoom.');
+        Controls.addToControlPanel(controlPanel, zoomOutButton2);
+        let zoomResetButoon2 = Controls.newButton(viewer, 'zoom-reset', Constants.ICON_RESET, true, true, () => Drawing.zoomAll(viewer), 'Reset zoom. <br>Tip: Use double click to reset zoom.');
+        Controls.addToControlPanel(controlPanel, zoomResetButoon2);
         let colorMethodDropdown = Controls.newDropdownList(viewer, 'color-method', 'Color', colorOptions, viewer.settings.colorMethod, method => applyColors(viewer, method), 'Choose coloring method.', true, false);
         Controls.addToControlPanel(controlPanel, colorMethodDropdown);
         let shapeMethodDropdown = Controls.newDropdownList(viewer, 'shape-method', 'Shape', shapeOptions, viewer.settings.shapeMethod, method => applyShapes(viewer, method), 'Choose shape method.', true, false);
@@ -239,8 +245,10 @@ export var OverProtViewerCore;
         Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
         let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
         Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
-        let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, () => Drawing.save(viewer), 'Save image.'); // Floppy: &#128190; Camera: &#128247; Download: &#10515;
-        Controls.addToControlPanel(controlPanel, saveButton);
+        // let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, false, () => Drawing.save(viewer), 'Save image.');
+        // Controls.addToControlPanel(controlPanel, saveButton);
+        let saveButton2 = Controls.newButton(viewer, 'save', Constants.ICON_CAMERA, true, true, () => Drawing.save(viewer), 'Save image.');
+        Controls.addToControlPanel(controlPanel, saveButton2);
         controlPanel.base.show(controlsDiv);
     }
     function setDataToViewer(viewer, data) {
