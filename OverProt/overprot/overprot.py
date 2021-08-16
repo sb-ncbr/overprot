@@ -33,11 +33,11 @@ from . import remove_obsolete_pdbs
 from . import run_mapsci
 from . import mapsci_consensus_to_cif
 from . import make_guide_tree
-from . import acyclic_clustering_sides
+from . import acyclic_clustering
 from . import draw_diagram
 from . import cealign_all
 from . import format_domains
-    
+
 
 #  CONSTANTS  ################################################################################
 
@@ -193,7 +193,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     with RedirectIO(tee_stdout=datadir.sub('making_guide_tree.log')):
         make_guide_tree.main(datadir.sub('cif_cealign'), show_tree=False, progress_bar=True)
     with RedirectIO(tee_stdout=datadir.sub('clustering.log')):
-        acyclic_clustering_sides.main(datadir.sub('cif_cealign'), force_ssa=conf.sec_str_consensus.force_ssa, secstrannotator_rematching= conf.sec_str_consensus.secstrannotator_rematching, min_occurrence=0, fallback=60)
+        acyclic_clustering.main(datadir.sub('cif_cealign'), force_ssa=conf.sec_str_consensus.force_ssa, secstrannotator_rematching= conf.sec_str_consensus.secstrannotator_rematching, min_occurrence=0, fallback=60)
 
     # Tidy up
     datadir.mkdir(results, exist_ok=True)

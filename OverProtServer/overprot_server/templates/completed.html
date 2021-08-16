@@ -166,6 +166,10 @@
     $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs.html'));
     $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains.html'));
     $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample.html'));
+
+    //$('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs-demo.html'));
+    //$('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains-demo.html'));
+    //$('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample-demo.html'));
 </script>
 
 {% endblock %}

@@ -1,6 +1,7 @@
 '''Library of functions related to SSEs (secondary structure elements) and running SecStrAnnotator'''
 
 from os import path
+import sys
 import shutil
 import numpy as np
 import json
@@ -21,8 +22,9 @@ START = 'start'
 END = 'end' # TODO move these into a separate module, which can then be imported as 'from sse_field_names import *'
 
 DOTNET = 'dotnet'
+PYTHON = sys.executable
 SECSTRANNOTATOR_DLL = 'dependencies/SecStrAnnotator/SecStrAnnotator.dll'
-SECSTRANNOTATOR_BATCH_COMMAND = 'python3 SecStrAnnotator/SecStrAnnotator_batch.py  --threads 8'
+SECSTRANNOTATOR_BATCH_COMMAND = f'{PYTHON} dependencies/SecStrAnnotator/SecStrAnnotator_batch.py --threads 8'
 
 
 class SseType(IntEnum):
@@ -92,13 +94,15 @@ def compute_distance_matrices(samples, directory, append_outputs=True):
 def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options=''):
     samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
     lib.dump_json(samples_by_pdb, path.join(directory, 'samples_by_pdb.json'), minify=True)
-    shutil.copy(path.join(directory, '..', 'consensus.cif'), path.join(directory, 'consensus.cif'))  # lib.run_command('cp', path.join(directory, '..', 'consensus.cif'), path.join(directory, 'consensus.cif'))
-    shutil.copy(path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))  # lib.run_command('cp', path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))
+    shutil.copy(path.join(directory, '..', 'mapsci', 'consensus.cif'), path.join(directory, 'consensus.cif'))
+    shutil.copy(path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))  
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
+    print('Running SecStrAnnotator:')
     lib.run_command(*SECSTRANNOTATOR_BATCH_COMMAND.split(), '--options', f'{options} ', 
         directory, 
         'consensus',
         path.join(directory, 'samples_by_pdb.json'))
+    print()
 
 def map_manual_template_to_consensus(directory: FilePath):
     manuals = directory.parent().sub('manual*.sses.json').glob()

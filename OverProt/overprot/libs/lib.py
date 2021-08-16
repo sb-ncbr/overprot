@@ -40,11 +40,17 @@ def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None
                 appendout: bool = False, appenderr: bool = False) -> int:
     out_mode = 'a' if appendout else 'w'
     err_mode = 'a' if appenderr else 'w'
+    arglist = list(map(str, args))
     with maybe_open(stdin, 'r', default=sys.stdin) as stdin_handle:
         with maybe_open(stdout, out_mode, default=sys.stdout) as stdout_handle: 
             with maybe_open(stderr, err_mode, default=sys.stderr) as stderr_handle:
-                # print(' '.join(map(str, args)))
-                process = subprocess.run(list(map(str, args)), check=True, stdin=stdin_handle, stdout=stdout_handle, stderr=stderr_handle)
+                normal_streams = hasattr(stdout_handle, 'fileno') and hasattr(stderr_handle, 'fileno')
+                if normal_streams:
+                    process = subprocess.run(arglist, check=True, stdin=stdin_handle, stdout=stdout_handle, stderr=stderr_handle)
+                else:
+                    process = subprocess.run(arglist, check=True, stdin=stdin_handle, capture_output=True)
+                    stdout_handle.write(consolidate_string(process.stdout.decode('utf8')))
+                    stderr_handle.write(consolidate_string(process.stderr.decode('utf8')))
     return process.returncode
 
 def run_dotnet(dll: str, *args, **run_command_kwargs):
@@ -1076,6 +1082,24 @@ def consolidate_file(infile: Union[str, FilePath], outfile: Union[str, FilePath]
                 current_line.append(byte)
         w.write(bytes(current_line))
 
+def consolidate_string(original: str) -> str:
+    '''Remove "erased lines" from a text file, 
+    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
+    CR = '\r'
+    LF = '\n'
+    result = []
+    current_line = []
+    for char in original:
+        if char == LF:
+            current_line.append(char)
+            result.extend(current_line)
+            current_line.clear()
+        elif char == CR:
+            current_line.clear()
+        else:
+            current_line.append(char)
+    result.extend(current_line)
+    return ''.join(result)
 
 class RedirectIO:
     def __init__(self, stdin: Union[FilePath, str, None] = None, stdout: Union[FilePath, str, None] = None, stderr: Union[FilePath, str, None] = None, 

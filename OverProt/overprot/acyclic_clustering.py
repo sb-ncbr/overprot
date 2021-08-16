@@ -1,13 +1,6 @@
 '''
 Performs clustering of SSEs from a set of domains, preserving SSE order and type.
-Requires these files to be in the working directory:
-    SecStrAnnotator.dll
-    script_align.py
-
-Example usage:
-    python3  foo.py  --foo 4  foo.txt 
 '''
-# TODO add description and example usage in docstring
 
 import json
 from os import path
@@ -722,7 +715,7 @@ class AcyclicClusteringWithSides:
                 P[i, j] = True
 
 
-def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurrence: float = 0.0, secstrannotator_rematching: bool = False, fallback: Optional[float] = 0) -> None:
+def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurrence: float = 0.0, secstrannotator_rematching: bool = False, fallback: Optional[float] = None) -> None:
     domain_names = [dom.name for dom in domains]
     offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering_simple.read_sses_simple(domains, directory)
     n_structures = len(offsets) - 1
@@ -953,7 +946,7 @@ def guided_clustering_sample_aggregation_function(coords1, weight1, coords2, wei
     coords = (coords1 * weight1 + coords2 * weight2) / weight
     return coords, weight
 
-def run_guided_clustering(domains: List[Domain], directory: FilePath) -> None:
+def run_guided_clustering(domains: List[Domain], directory: FilePath, secstrannotator_rematching: bool = False, fallback: Optional[float] = 0) -> None:
     domain_names = [domain.name for domain in domains]
     offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering_simple.read_sses_simple(domains, directory)
     n_structures = len(offsets) - 1
@@ -985,6 +978,39 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath) -> None:
     write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=gac.cluster_precedence_matrix, edges=cluster_edges) 
     # sizes, means, variances, covariances = sse_coords_stats(hybrids)
     
+    # Rematching with SecStrAnnotator
+    if secstrannotator_rematching:
+        for i in range(3):
+            directory.sub('consensus.sses.json').cp(directory.sub(f'consensus_{i}.sses.json'))
+            labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
+            n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, gac.cluster_precedence_matrix)
+
+            with directory.sub('labels_SSAnnot.cached.tsv').open('w') as w:
+                w.write('\n'.join( str(l) for l in labels ))
+            
+            lib.log('Found', n_clusters, 'clusters')
+            table = table_by_pdb_and_label(offsets, n_clusters, labels)
+            hybrids = make_hybrid_sses_from_table(table, sses)
+            cluster_edges = lib_acyclic_clustering_simple.cluster_edges(edges, labels)
+            # print('Table:', table)
+            # print('Hybrids:', hybrids)
+            write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
+            sizes, means, variances, covariances = sse_coords_stats(hybrids)
+            print('Sorted DAG:', lib.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
+            print('Sizes:', sizes)
+            
+            # Calculation of self-classification probabilities
+            self_probs, class_self_probs, total_self_prob = lib_acyclic_clustering_simple.self_classification_probabilities(coordinates, type_vector, labels, sse_weights=segment_lengths)
+            print('\nClass self probabilities:')
+            print(*( f'{i}: {p:.3f}' for i, p in enumerate(class_self_probs) ), sep='\n')
+            print('\nTotal self probability:')
+            print(f'{total_self_prob:.3f}')
+
+            # agreement_strict = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels)
+            # agreement_best = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels, allow_matching=True)
+            # agreement_best_wo_unclass = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels, allow_matching=True, include_both_unclassified=False)
+            # print('Agreement (no rematch vs ssan-rematch):', agreement_strict, agreement_best, agreement_best_wo_unclass)
+
     return
 
 
@@ -1060,7 +1086,7 @@ def main(directory: Union[FilePath, str],
         run_simple_clustering(domains, directory, min_occurrence=min_occurrence, secstrannotator_rematching=secstrannotator_rematching, fallback=fallback)
     elif METHOD == 'guided':
         # GUIDED CLUSTERING
-        run_guided_clustering(domains, directory)
+        run_guided_clustering(domains, directory, secstrannotator_rematching=secstrannotator_rematching, fallback=fallback)
     elif METHOD == 'sides':
         # CLUSTERING WITH SIDES
         run_clustering_with_sides(domains, directory, length_thresholds={'H': min_length_h, 'E': min_length_e}, protein_similarity_weight=protsim)
