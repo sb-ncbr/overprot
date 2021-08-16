@@ -163,31 +163,34 @@
     {% block scripts %}
 
     <script type='text/javascript'>
-        function loadContentToElement(element, source, overwrite = false) {
+        function loadContentToElement(element, source, overwrite=false, fullSource=null){
             let targetElement = $(element);
-            if (targetElement.attr('loaded') && !overwrite) {
+            if (targetElement.attr('loaded') && !overwrite){
                 return;
             }
             let loadingText = `<div class="p-2 bg-light">Loading...</div>`;
             let errorText = `<div class="p-2 bg-light">&#x26A0; Failed to load ${source}</div>`;
             targetElement.empty();
-            targetElement.append(loadingText);
-
+            targetElement.append(loadingText);  
+    
             fetch(source)
-                .then(response => response.ok ? response.text() : errorText)
-                .catch(response => errorText)
-                .then(text => {
-                    targetElement.empty();
-                    targetElement.append(text);
-                });
+            .then(response => response.ok ? response.text() : errorText)
+            .catch(response => errorText)
+            .then(text => {
+                targetElement.empty();
+                targetElement.append(text);
+                if (fullSource) {
+                    targetElement.find('button.btn-load-all').on('click', () => loadContentToElement(element, fullSource, true));
+                }
+            });
             targetElement.attr('loaded', true);
         }
 
         initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
 
-        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs.html'));
-        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains.html'));
-        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample.html'));
+        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs-demo.html', false, '/results/{{job_id}}/lists/pdbs.html'));
+        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains-demo.html', false, '/results/{{job_id}}/lists/domains.html'));
+        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample-demo.html', false, '/results/{{job_id}}/lists/sample.html'));
     </script>
 
     {% endblock %}

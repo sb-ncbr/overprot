@@ -143,7 +143,7 @@
 {% block scripts %}
 
 <script type='text/javascript'>
-    function loadContentToElement(element, source, overwrite=false){
+    function loadContentToElement(element, source, overwrite=false, fullSource=null){
         let targetElement = $(element);
         if (targetElement.attr('loaded') && !overwrite){
             return;
@@ -158,18 +158,17 @@
         .catch(response => errorText)
         .then(text => {
             targetElement.empty();
-            targetElement.append(text);        
+            targetElement.append(text);
+            if (fullSource) {
+                targetElement.find('button.btn-load-all').on('click', () => loadContentToElement(element, fullSource, true));
+            }
         });
         targetElement.attr('loaded', true);
     }
 
-    $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs.html'));
-    $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains.html'));
-    $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample.html'));
-
-    //$('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs-demo.html'));
-    //$('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains-demo.html'));
-    //$('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample-demo.html'));
+    $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/results/{{job_id}}/lists/pdbs-demo.html', false, '/results/{{job_id}}/lists/pdbs.html'));
+    $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/results/{{job_id}}/lists/domains-demo.html', false, '/results/{{job_id}}/lists/domains.html'));
+    $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/results/{{job_id}}/lists/sample-demo.html', false, '/results/{{job_id}}/lists/sample.html'));
 </script>
 
 {% endblock %}
