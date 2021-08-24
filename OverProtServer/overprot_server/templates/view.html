@@ -188,9 +188,9 @@
 
         initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
 
-        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs-demo.html', false, '/results/{{job_id}}/lists/pdbs.html'));
-        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains-demo.html', false, '/results/{{job_id}}/lists/domains.html'));
-        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample-demo.html', false, '/results/{{job_id}}/lists/sample.html'));
+        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs-demo.html', false, '/data/db/families/{{family}}/pdbs.html'));
+        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains-demo.html', false, '/data/db/families/{{family}}/domains.html'));
+        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family}}/sample-demo.html', false, '/data/db/families/{{family}}/sample.html'));
     </script>
 
     {% endblock %}
