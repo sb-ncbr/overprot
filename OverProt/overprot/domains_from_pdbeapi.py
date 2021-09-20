@@ -61,9 +61,9 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
         if chain_change_warning and chain != auth_chain:
             sys.stderr.write(f'Warning: {pdb} {auth_chain} --> {chain}\n')
         segments.append(Domain(name=domain_name, pdb=pdb, chain=chain, ranges=rang, auth_chain=auth_chain, auth_ranges=auth_rang))
-    if all( segment.name is not None for segment in segments ):
+    if all(segment.name is not None for segment in segments):
         # All segments have a domain name, join segments with the same domain name.
-        segments_by_domain = create_multidict( (seg.name, seg) for seg in segments )
+        segments_by_domain = create_multidict((seg.name, seg) for seg in segments)
         result = []
         for domain_name, domain_segments in sorted(segments_by_domain.items()):
             chains = [seg.chain for seg in domain_segments]
@@ -77,8 +77,8 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
                 exit(1)
             chain = chains[0]
             auth_chain = auth_chains[0]
-            ranges = ','.join( str(rang) for rang in ranges )
-            auth_ranges = ','.join( str(rang) for rang in auth_ranges )
+            ranges = ','.join(str(rang) for rang in ranges)
+            auth_ranges = ','.join(str(rang) for rang in auth_ranges)
             result.append(Domain(name=domain_name, pdb=pdb, chain=chain, ranges=ranges, auth_chain=auth_chain, auth_ranges=auth_ranges))
     else:
         # Some segments miss a domain name, creating new domain names.

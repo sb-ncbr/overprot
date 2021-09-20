@@ -84,11 +84,13 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('directory', help='Directory to save everything in', type=str)
     parser.add_argument('--config', help=f'Configuration file (default: {DEFAULT_CONFIG_FILE})', type=str, default=DEFAULT_CONFIG_FILE)
     parser.add_argument('--domains', help='File with the list of input domains (do not download domain list)', type=str)
+    parser.add_argument('--structure_source', help='Override download.structure_sources parameter from the config file. Only one source can be specified.', type=str)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(family: str, sample_size: Union[int, str, None], directory: Union[FilePath, str], config: Optional[str] = DEFAULT_CONFIG_FILE, domains: Union[FilePath, str, None] = None) -> Optional[int]:
+def main(family: str, sample_size: Union[int, str, None], directory: Union[FilePath, str], config: Optional[str] = DEFAULT_CONFIG_FILE, 
+         domains: Union[FilePath, str, None] = None, structure_source: Optional[str] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     
@@ -101,6 +103,8 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     conf.download.structure_cutter_path = str(FilePath(config).parent().sub(conf.download.structure_cutter_path))
     conf.mapsci.mapsci_path = str(FilePath(config).parent().sub(conf.mapsci.mapsci_path))
     conf.sec_str_consensus.secstrannotator_path = str(FilePath(config).parent().sub(conf.sec_str_consensus.secstrannotator_path))
+    if structure_source is not None:
+        conf.download.structure_sources = [structure_source]
     results = conf.files.results_dir
 
     print('Configuration:', config)
