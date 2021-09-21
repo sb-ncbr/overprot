@@ -1,33 +1,33 @@
 // const e = require("express");
 
-function autocomplete(inp, arr, maxItems=10, openIfEmpty=false, selectAllOnFocus=true) {
+function autocomplete(inputElement, options, maxItems=10, openIfEmpty=false, selectAllOnFocus=true) {
     /*the autocomplete function takes two arguments,
     the text field element and an array of possible autocompleted values:*/
 
-    if (inp.getAttribute('autocomplete-set') == 'true'){
-        console.error('Repeated initialization of autocomplete on ', inp);
+    if (inputElement.getAttribute('autocomplete-set') == 'true'){
+        console.error('Repeated initialization of autocomplete on ', inputElement);
         return;
     }
-    inp.setAttribute('autocomplete-set', 'true');
-    inp.setAttribute('autocomplete', 'off');
+    inputElement.setAttribute('autocomplete-set', 'true');
+    inputElement.setAttribute('autocomplete', 'off');
 
+    let autocompleteDiv = inputElement.parentNode;
     let currentFocus;
 
     function inputHandler(){
-        let val = inp.value;
+        let val = inputElement.value;
         /*close any already open lists of autocompleted values*/
         closeAllLists();
-        if (val == '' && !openIfEmpty) { return false; }
+        if (val == '' && !openIfEmpty) { return false; } // DEBUG
         currentFocus = -1;
         /*create a DIV element that will contain the items (values):*/
         let list = document.createElement("DIV");
-        list.setAttribute("id", inp.id + "autocomplete-list");
+        list.setAttribute("id", inputElement.id + "autocomplete-list");
         list.setAttribute("class", "autocomplete-items");
         /*append the DIV element as a child of the autocomplete container:*/
-        inp.parentElement.appendChild(list);
+        autocompleteDiv.appendChild(list);
         /*for each item in the array...*/
-        console.log('maxItems', maxItems);
-        let matches = getMatches(val, arr, maxNumber=maxItems);
+        let matches = getMatches(val, options, maxNumber=maxItems);
         matches.forEach(opt => list.appendChild(createListItem(opt, val.length)));
     }
 
@@ -73,14 +73,14 @@ function autocomplete(inp, arr, maxItems=10, openIfEmpty=false, selectAllOnFocus
         event.preventDefault();
         item = item ?? this;
         /*insert the value for the autocomplete text field:*/
-        inp.value = item.getAttribute('value');  // item.getElementsByTagName("input")[0].value;
+        inputElement.value = item.getAttribute('value');  // item.getElementsByTagName("input")[0].value;
         /*close the list of autocompleted values,(or any other open lists of autocompleted values:*/
         closeAllLists();
         if (item.getAttribute('keep-open') == 'true'){
             inputHandler();
         }
         if (item.getAttribute('do-submit') == 'true'){
-            inp.form.submit();
+            inputElement.form.submit();
         }
 
     }
@@ -91,10 +91,10 @@ function autocomplete(inp, arr, maxItems=10, openIfEmpty=false, selectAllOnFocus
     }
 
     /*execute a function when someone writes in the text field:*/
-    inp.addEventListener("input", inputHandler);
-    inp.addEventListener("click", inputHandler);
+    inputElement.addEventListener("input", inputHandler);
+    inputElement.addEventListener("click", inputHandler);
     if (selectAllOnFocus) {
-        inp.addEventListener("focus", selectAllInputText);
+        inputElement.addEventListener("focus", selectAllInputText);
     }
 
     function keydownHandler(e){
@@ -134,7 +134,7 @@ function autocomplete(inp, arr, maxItems=10, openIfEmpty=false, selectAllOnFocus
     }
 
     /*execute a function presses a key on the keyboard:*/
-    inp.addEventListener("keydown", keydownHandler);
+    inputElement.addEventListener("keydown", keydownHandler);
 
     function addActive(x) {
         /*a function to classify an item as "active":*/
@@ -155,10 +155,13 @@ function autocomplete(inp, arr, maxItems=10, openIfEmpty=false, selectAllOnFocus
     function closeAllLists(elmnt) {
         /*close all autocomplete lists in the document,
         except the one passed as an argument:*/
-        var x = document.getElementsByClassName("autocomplete-items");
-        for (var i = 0; i < x.length; i++) {
-            if (elmnt != x[i] && elmnt != inp) {
-                x[i].parentNode.removeChild(x[i]);
+        if (elmnt == inputElement) {
+            return;
+        }
+        var listElems = autocompleteDiv.getElementsByClassName('autocomplete-items');
+        for (let listElem of listElems){
+            if (elmnt != listElem){
+                autocompleteDiv.removeChild(listElem);
             }
         }
         currentFocus = -1;
@@ -229,24 +232,45 @@ function cathFamiliesAutocompleteOptions(familyIdsNames){
     return optsDictToOpts(result, 4);
 }
 
-function initFamilyInputAutocompleteAndFamilyName(optionsUrl, familyId, familyInputElement=null, familyNameClass=null){
-    // console.log('INIT:', optionsUrl, familyId, familyInputElement, familyNameClass);
+// function initFamilyInputAutocompleteAndFamilyName(optionsUrl, familyId, familyInputElement=null, familyNameClass=null){
+//     // console.log('INIT:', optionsUrl, familyId, familyInputElement, familyNameClass);
+//     fetch(optionsUrl)
+//         .then(response => response.text())
+//         .then(text => {
+//             let opts = JSON.parse(text);
+//             if (familyInputElement){
+//                 let familyNameElems = document.getElementsByClassName(familyNameClass);
+//                 let familyName = getFamilyName(opts, familyId);
+//                 for (let i = 0; i < familyNameElems.length; i++){
+//                     elem = familyNameElems[i];
+//                     familyNameElems[i].innerHTML = familyName;
+//                 }
+//             }
+//             if (familyInputElement){
+//                 let elem = document.getElementById(familyInputElement);
+//                 if (elem){
+//                     autocomplete(document.getElementById(familyInputElement), opts, maxItems=10, openIfEmpty=true, selectAllOnFocus=true);
+//                 }
+//             }
+//         });
+// }
+function initFamilyInputAutocompleteAndFamilyName(optionsUrl, familyId, familyInputElementSelector, familyNameSelector){
+    console.log('initFamilyInputAutocompleteAndFamilyName:', optionsUrl, familyId, familyInputElementSelector, familyNameSelector);
     fetch(optionsUrl)
         .then(response => response.text())
         .then(text => {
             let opts = JSON.parse(text);
-            if (familyInputElement){
-                let familyNameElems = document.getElementsByClassName(familyNameClass);
+            if (familyNameSelector){
+                let familyNameElems = document.querySelectorAll(familyNameSelector);
                 let familyName = getFamilyName(opts, familyId);
-                for (let i = 0; i < familyNameElems.length; i++){
-                    elem = familyNameElems[i];
-                    familyNameElems[i].innerHTML = familyName;
+                for (let elem of familyNameElems){
+                    elem.innerHTML = familyName;
                 }
             }
-            if (familyInputElement){
-                let elem = document.getElementById(familyInputElement);
-                if (elem){
-                    autocomplete(document.getElementById(familyInputElement), opts, maxItems=10, openIfEmpty=true, selectAllOnFocus=true);
+            if (familyInputElementSelector){
+                let elems = document.querySelectorAll(familyInputElementSelector);
+                for (let elem of elems){
+                    autocomplete(elem, opts, maxItems=10, openIfEmpty=true, selectAllOnFocus=true);
                 }
             }
         });

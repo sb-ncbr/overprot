@@ -186,7 +186,7 @@
             targetElement.attr('loaded', true);
         }
 
-        initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
+        //initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', '.family-name');
 
         $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family}}/pdbs-demo.html', false, '/data/db/families/{{family}}/pdbs.html'));
         $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family}}/domains-demo.html', false, '/data/db/families/{{family}}/domains.html'));

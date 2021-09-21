@@ -35,7 +35,7 @@
         <form action="/view">
             <label for="family">Family CATH ID:</label>
             <div class="autocomplete">
-                <input type="text" id="family-input" name="family" placeholder="e.g. 1.10.630.10" class='family-id'>
+                <input type="text" id="family-input" name="family" placeholder="e.g. 1.10.630.10" class="family-input">
                 <input type="submit" value="Go">
             </div>
         </form>
@@ -182,14 +182,5 @@
         </p>
     </div>
 </div>
-
-{% endblock %}
-
-
-{% block scripts %}
-
-<script type='text/javascript'>
-    initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', 'family-input', 'family-name');
-</script>
 
 {% endblock %}

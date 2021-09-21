@@ -44,7 +44,14 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="navbar-collapse collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav ml-auto">
+
+                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/view">
+                    <div class="autocomplete">
+                        <input class="form-control mr-sm-2 family-input" name="family" type="search" placeholder="Family CATH ID, e.g. 1.10.630.10" aria-label="Search">
+                        <input type="submit" value="Go">
+                    </div>
+                </form>
+                <ul class="navbar-nav">
                     <!-- <li class="nav-item active">
                             <a class="nav-link" href="/static/web/home.html">Home <span class="sr-only">(current)</span></a>
                         </li>
@@ -64,10 +71,6 @@
                             <del><a class="nav-link" href="/static/web/trash.html">Trash</a></del>
                         </li> -->
                 </ul>
-                <!-- <form class="form-inline my-2 my-lg-0">
-                        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                    </form> -->
             </div>
         </nav>
 
@@ -91,6 +94,10 @@
         </footer>
 
     </div>
+
+    <script type='text/javascript'>
+        initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', '.family-input', '.family-name');
+    </script>
 
     {% block scripts %}{% endblock %}
 
