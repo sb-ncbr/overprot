@@ -21,7 +21,7 @@
                 <div class="col-12 col-lg-6">
                     <div style="display: flex; flex-wrap: wrap;">
                         <label for="input_job_name" class="my-auto">Job name:</label>
-                        <input type="text" id="input_job_name" name="job_name" value="{{job_name}}" style="flex: 1;">
+                        <input type="text" class="form-control" id="input_job_name" name="job_name" value="{{job_name}}" style="flex: 1;">
                     </div>
                 </div>
             </div>
@@ -32,7 +32,7 @@
             </div>
             <div class="row mb-2">
                 <div class="col-12 col-sm-6">
-                    <textarea id="input_list" name="list" style="width: 100%; height: 100%; font-family: monospace;" rows="6">{{domain_list}}</textarea>
+                    <textarea class="form-control" id="input_list" name="list" style="width: 100%; height: 100%; font-family: monospace;" rows="6">{{domain_list}}</textarea>
                     <div style="min-width: 250px;"></div>
                 </div>
                 <div class="col-12 col-sm-6">
@@ -49,7 +49,7 @@
 1og2,B 
 1bu7,A,100:450 
 1bu7,B,100:178,185:370,390:</pre>
-                <input type="button" value="Load example" onclick="
+                <input type="button" class="btn btn-outline-primary" value="Load example" onclick="
                     document.getElementById('input_list').value = document.getElementById('example_1').innerHTML;
                     document.getElementById('input_job_name').value = 'Example job - Cytochromes P450';
                     ">
@@ -57,8 +57,13 @@
             </div>
             <div class="row mb-2">
                 <div class="col">
-                    or load domain list from file &nbsp;
-                    <input type="file" id="input_list_file" name="list_file">
+                    <div class="my-file">
+                        or load domain list from file &nbsp;
+                        <!-- <input type="file" id="input_list_file" name="list_file"> -->
+                        <input type="button" class="my-file-button btn btn-outline-primary" for="input-list-file" value="Choose file">
+                        <label class="my-file-label ml-1" for="input-list-file"></label>
+                        <input type="file" class="my-file-input" id="input-list-file" name="list_file">
+                    </div>
                 </div>
             </div>
             <!-- <div class="row mb-2">
@@ -74,12 +79,51 @@
                             </div> -->
             <div class="row mb-2">
                 <div class="col">
-                    <input type="submit" value="Submit">
+                    <input type="submit" class="btn btn-primary px-4" value="Submit">
                 </div>
             </div>
         </form>
 
     </div>
 </div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript'>
+    function setFilenameToLabels(inputs, labels){
+        if (inputs.length == 0) {
+            return;
+        }
+        let filename = '';
+        if (inputs[0].files.length > 0) {
+            filename = inputs[0].files[0].name;
+        }
+        for (let label of labels){
+            label.innerText = filename;
+        }
+    }
+
+    function initializeMyFile(myFileInputId){
+        let inputs = $(`#${myFileInputId}`);
+        let buttons = $(`.my-file-button[for=${myFileInputId}],.my-file-label[for=${myFileInputId}]`);
+        let labels = $(`label[for=${myFileInputId}]`);
+        if (inputs.length == 0) {
+            return;
+        }
+        buttons.on('click', () => inputs.trigger('click', 'really-click'));
+        inputs.on('click', (event, data) => { 
+            if (data != 'really-click'){
+                event.preventDefault();
+            }
+        });
+        setFilenameToLabels(inputs, labels);
+        inputs.on('input', () => setFilenameToLabels(inputs, labels));
+    }
+
+    initializeMyFile('input-list-file');
+</script>
 
 {% endblock %}

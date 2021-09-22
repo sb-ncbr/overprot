@@ -51,7 +51,7 @@
             Save this link to get to your results later:
             <br>
             <a href='{{url}}' id='submission-url'>{{url}}</a>
-            <input type="button" value="Copy link" onclick="navigator.clipboard.writeText('{{url}}'); document.getElementById('copy-confirmation').innerHTML='&check;Copied';">
+            <input type="button" class="btn btn-outline-primary mx-2" value="Copy link" onclick="navigator.clipboard.writeText('{{url}}'); document.getElementById('copy-confirmation').innerHTML='&check;Copied';">
             <span id='copy-confirmation'></span>
         </p>
         <p>

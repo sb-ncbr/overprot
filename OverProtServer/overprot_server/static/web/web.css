@@ -23,39 +23,10 @@ mark {
 
 
 
-/* input[type=text], input[type=submit]{
-  border: 1px solid transparent;
-  background-color: #f1f1f1;
-  padding: 10px;
-  font-size: 100%;
-}*/
-input[type=text] {
-  padding: 5px;
-}
-/* textarea {
-  border: none;
-  background-color: #f1f1f1;
-} */
-input[type=submit] {
-  border: 1px solid transparent;
-  padding: 10px;
-  font-size: 100%;
-  font-weight: bold;
-
-  background-color: DodgerBlue;
-  color: #fff;
-}
-/* input[type=button] {
-  padding: 8px2;
-  background-color: gainsboro;
-  color: black;
-} */
-
 label {
   font-weight: bold;
   margin-right: 1em;
 }
-
 
 
 .menu {
@@ -165,4 +136,15 @@ table.summary th, table.summary td {
 }
 .striped-table tr:nth-child(even) {
   background-color: #f6f6f6;
+}
+
+.my-file {
+  position: relative;
+}
+.my-file-input {
+  position: absolute; 
+  left: 0px; 
+  top: 0px; 
+  opacity: 0%; 
+  z-index: -1;
 }
