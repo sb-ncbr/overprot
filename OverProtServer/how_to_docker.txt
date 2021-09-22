@@ -1,0 +1,20 @@
+Install:
+$ sudo apt install docker docker.io
+
+Create docker group and add myself (so I can run Docker without sudo):
+$ sudo groupadd docker
+$ sudo usermod -aG docker $USER
+log out and log back in
+
+Test:
+docker run hello-world
+docker images  # list downloaded images
+docker ps      # list running containers
+
+Build my image:
+docker build . --tag my-image:0.9  # builds from ./Dockerfile (I think); name is my-image, tag is 0.9
+docker images
+
+Create and run container:
+docker run my-image:0.9 --detach   # default tag is latest, --detach (-d) is to run on background 
+this still isn't working

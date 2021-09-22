@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 
-RUN apt install -y python3-venv nginx redis-server pymol
+RUN apt-get update -y
+RUN apt-get install -y python3-venv nginx redis-server pymol
 
 RUN mkdir /server_data
 
