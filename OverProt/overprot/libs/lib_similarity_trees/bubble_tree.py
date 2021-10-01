@@ -23,9 +23,7 @@ class _BNode(Generic[K]):
     parent: Optional['_BNode[K]'] = field(default=None, repr=False)
 
 
-class BubbleTree(Generic[K, V], AbstractSimilarityTree[K, V]):
-    # _elements: List[K]
-    # _distance_function: Callable[[V, V], float]
+class BubbleTree(AbstractSimilarityTree[K, V]):
     _distance_cache: DistanceCache[K, V]
     _root: Optional[_BNode[K]]
     _MAX_RADIUS: float = 1024.0
@@ -33,7 +31,6 @@ class BubbleTree(Generic[K, V], AbstractSimilarityTree[K, V]):
     _Q: float = 2  # what other quotient? 1.618? :)
 
     def __init__(self, distance_function: Callable[[V, V], float], keys_values: Sequence[Tuple[K, V]] = ()) -> None:
-        # self._distance_function = distance_function
         self._distance_cache = DistanceCache(distance_function)
         self._root = _BNode(pivot=ZERO_ELEMENT, radius=self._MAX_RADIUS)
         n = len(keys_values)

@@ -20,7 +20,7 @@ TOLERANCE = 0.0
 TOLERANCE_RATIO = 1.0
 
 
-class LAESA(Generic[K, V], AbstractSimilarityTree[K, V]):
+class LAESA(AbstractSimilarityTree[K, V]):
     # _distance_function: Callable[[V, V], float]
     _distance_cache: DistanceCache[K, V]
     _elements: List[K]

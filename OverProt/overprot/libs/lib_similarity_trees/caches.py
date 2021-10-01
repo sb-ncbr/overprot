@@ -174,7 +174,7 @@ class Range(NamedTuple):
     high: float
 
 
-class DistanceCacheWithRanges(Generic[K, V], DistanceCache[K, V]):
+class DistanceCacheWithRanges(DistanceCache[K, V]):
     def __init__(self, distance_function: Callable[[V, V], float]):
         super().__init__(distance_function)
         self._range_cache: Dict[K, Dict[K, Range]] = {}

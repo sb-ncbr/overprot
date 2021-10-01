@@ -40,7 +40,7 @@ _Node = Union[_Fork[K], _Leaf[K]]
 
 _Entry = Union[_ForkEntry[K], _LeafEntry[K]]
 
-class MTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class MTree(AbstractSimilarityTree[K, V]):
     def __init__(self, distance_function: Callable[[V, V], float], fork_arity: int = 4, leaf_arity: int = 4, update_pivots_on_insert: bool = False):
         self._distance_function: Callable[[V, V], float] = distance_function
         self._fork_arity: int = fork_arity

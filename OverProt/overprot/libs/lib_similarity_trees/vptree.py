@@ -36,7 +36,7 @@ _VPNode = Union[_VPFork[K], _VPLeaf[K]]
 REUSE_PIVOTS = True
 
 
-class VPTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class VPTree(AbstractSimilarityTree[K, V]):
     _leaf_size: int
     # _distance_function: Callable[[V, V], float]
     _distance_cache: DistanceCache[K, V]

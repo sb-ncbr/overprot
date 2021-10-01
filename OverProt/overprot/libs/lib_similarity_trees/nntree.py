@@ -393,7 +393,7 @@ class _NNTree(Generic[V]):
             lst.pop()
 
 
-class NNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class NNTree(AbstractSimilarityTree[K, V]):
     def __init__(self, distance_function: Callable[[V, V], float], with_nearest_pair_queue: bool = False, **kwargs):
         self._tree = _NNTree(distance_function, with_nearest_pair_queue=with_nearest_pair_queue, **kwargs)
         self._key2index: Dict[K, int] = {}
@@ -452,7 +452,7 @@ class NNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
         self._tree._check_invariants()
 
 
-class _MagicNNTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class _MagicNNTree(AbstractSimilarityTree[K, V]):
     def __init__(self, *args, **kwargs):
         self._main_tree = NNTree(*args, **kwargs)
         self._helping_tree = NNTree(*args, **kwargs)

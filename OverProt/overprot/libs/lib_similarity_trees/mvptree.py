@@ -34,7 +34,7 @@ class _MVPLeaf(Generic[K]):
 _MVPNode = Union[_MVPFork[K], _MVPLeaf[K]]
 
 
-class MVPTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class MVPTree(AbstractSimilarityTree[K, V]):
     _K: int  # arity
     _leaf_size: int
     # _distance_function: Callable[[V, V], float]

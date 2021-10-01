@@ -45,7 +45,7 @@ _GHNode = Union[_GHRoot[K], _GHFork[K], _GHLeaf[K]]
 REUSE_PIVOTS = True
 
 
-class GHTree(Generic[K, V], AbstractSimilarityTree[K, V]):
+class GHTree(AbstractSimilarityTree[K, V]):
     def __init__(self, distance_function: Callable[[V, V], float], keys_values: Sequence[Tuple[K, V]] = (), leaf_size: int = 8):
         assert leaf_size >= 1
         self._leaf_size: int = leaf_size

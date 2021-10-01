@@ -12,9 +12,8 @@ from .caches import FunctionCache, DistanceCache, MinFinder
 from ..lib import PriorityQueue, ProgressBar
 
 
-class DummySearcher(Generic[K, V], AbstractSimilarityTree[K, V]):
+class DummySearcher(AbstractSimilarityTree[K, V]):
     _elements: List[K]
-    # _distance_function: Callable[[V, V], float]
     _distance_cache: DistanceCache[K, V]
 
     def __init__(self, distance_function: Callable[[V, V], float], keys_values: Sequence[Tuple[K, V]] = ()) -> None:
