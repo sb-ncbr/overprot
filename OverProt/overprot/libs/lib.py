@@ -3,6 +3,7 @@
 
 import os
 from os import path
+from pathlib import Path
 import glob
 import sys
 import shutil
@@ -54,9 +55,19 @@ def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None
     return process.returncode
 
 def run_dotnet(dll: str, *args, **run_command_kwargs):
+    dotnet_candidates = ['dotnet', str(Path.home()/'.dotnet'/'dotnet')]
+    for candidate in dotnet_candidates:
+        try:
+            run_command(candidate, '--info', stdout=os.devnull, stderr=os.devnull)
+            dotnet = candidate
+            break
+        except subprocess.CalledProcessError:
+            pass
+    else:
+        raise FileNotFoundError(f'Cannot find dotnet (tried these: {dotnet_candidates})')
     if not os.path.isfile(dll):  # dotnet returns random exit code, if the DLL is not found ¯\_(ツ)_/¯
         raise FileNotFoundError(dll)
-    run_command('dotnet', dll, *args, **run_command_kwargs)
+    run_command(dotnet, dll, *args, **run_command_kwargs)
 
 def try_remove_file(filename: str) -> bool:
     '''Try to remove a file ($ rm -f filename). Return True if the file has been successfully removed, False otherwise.'''

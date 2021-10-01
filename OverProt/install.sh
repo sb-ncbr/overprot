@@ -6,6 +6,8 @@ for ARG in $@; do
 done;
 
 sudo apt-get update -y
+
+# Python virtual environment
 sudo apt-get install -y python3-venv
 python3 -m venv venv/
 . venv/bin/activate
@@ -17,3 +19,7 @@ DIR=$(echo $VIRTUAL_ENV/lib/python3.*/site-packages)
 ln -s "/usr/lib/python3/dist-packages/pymol" "$DIR/pymol"
 ln -s "/usr/lib/python3/dist-packages/chempy" "$DIR/chempy"
 ln -s "/usr/lib/python3/dist-packages/pymol2" "$DIR/pymol2"
+
+# Install .NET (for StructureCutter and SecStrAnnotator)
+dotnet --info || ./dotnet-install.sh -c 3.1
+
