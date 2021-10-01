@@ -142,7 +142,7 @@ def read_cif(structfile: FilePath, only_polymer=False):
     auth_chain = np.array(querying.cif_get_array(obj, '_atom_site.auth_asym_id'))
     entity = np.array(querying.cif_get_array(obj, '_atom_site.label_entity_id'))
     alt = np.array(querying.cif_get_array(obj, '_atom_site.label_alt_id'))
-    group = np.array(querying.cif_get_array(obj, '_atom_site.group_PDB'))
+    group = np.array(querying.cif_get_array(obj, '_atom_site.group_PDB'))  # TODO is this causing problems in PyMOL 2.4???
     coords = querying.get_coordset(obj).transpose()
     n_models = querying.count_states(obj)
     if n_models > 1:
