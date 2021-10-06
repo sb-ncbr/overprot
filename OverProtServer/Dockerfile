@@ -1,7 +1,10 @@
 FROM ubuntu:20.04
 
 RUN apt-get update -y
-RUN apt-get install -y python3-venv nginx redis-server pymol
+RUN apt-get install -y nginx
+RUN apt-get install -y redis-server
+# RUN apt-get install -y python3-venv  # DEBUG
+# RUN apt-get install -y pymol  # DEBUG
 
 RUN mkdir /server_data
 
@@ -10,6 +13,13 @@ WORKDIR /server_data
 RUN mkdir data
 RUN mkdir jobs
 RUN mkdir logs
+
+RUN mkdir nginx
+
+COPY trying-docker/nginx.conf nginx/nginx.conf
+COPY trying-docker/message.txt data/message.txt
+
+ENTRYPOINT ["nginx", "-c", "/server_data/nginx/nginx.conf", "-g", "daemon off;"]
 
 # TODO 
 

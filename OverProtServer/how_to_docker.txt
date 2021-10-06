@@ -7,14 +7,22 @@ $ sudo usermod -aG docker $USER
 log out and log back in
 
 Test:
-docker run hello-world
-docker images  # list downloaded images
-docker ps      # list running containers
+$ docker run hello-world
+$ docker images  # list downloaded images
+$ docker ps      # list running containers
 
 Build my image:
-docker build . --tag my-image:0.9  # builds from ./Dockerfile (I think); name is my-image, tag is 0.9
-docker images
+$ docker build . --tag my-image:0.9  # builds from ./Dockerfile (I think); name is my-image, tag is 0.9
+$ docker images
+(Currently cannot build because of error in Ubuntu repo (python3-venv, pymol))
+
 
 Create and run container:
-docker run my-image:0.9 --detach   # default tag is latest, --detach (-d) is to run on background 
-this still isn't working
+$ docker run -p 8080:80 -d my-image:0.9   
+# -p 8080:80 maps container's port 80 to host's port 8080
+# -d (--detach) is to run on background 
+# default tag is latest, --detach (-d) is to run on background 
+
+$ docker run -it my-image:0.9  # run and stay connected
+
+$ curl localhost:8080/data/message.txt
