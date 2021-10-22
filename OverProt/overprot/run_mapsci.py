@@ -7,10 +7,10 @@ Example usage:
 # TODO add description and example usage in docstring
 
 import subprocess
-import numpy
 import argparse
 from typing import Dict, Any, Optional, Literal, Final, Union
 
+from .libs import lib
 from .libs import lib_domains
 from .libs.lib import FilePath
 
@@ -65,7 +65,8 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     # Select random subset, if too many domains
     if n_max != N_MAX_ALL and len(domains) > n_max:
         print(f'Selecting {n_max} out of {len(domains)} domains')
-        selected_indices = sorted(numpy.random.choice(len(domains), n_max, replace=False))
+        selected_indices = sorted(lib.consistent_pseudorandom_choice((dom.name for dom in domains), n_max))
+        # selected_indices = sorted(numpy.random.choice(len(domains), n_max, replace=False))
         domains = [domains[i] for i in selected_indices]
     else:
         print(f'Taking all {len(domains)} domains')

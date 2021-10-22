@@ -148,32 +148,32 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     with datadir.sub('family_info.txt').open('a') as w:
         print('n_sample:', n_sample, file=w)
     
-    # Download structures in CIF, cut the domains and save them as CIF and PDB
-    print('\n::: DOWNLOAD :::')
-    lib.run_dotnet(conf.download.structure_cutter_path, datadir.sub('sample.simple.json'), '--sources', ' '.join(conf.download.structure_sources), 
-                   '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt')) 
+    # # Download structures in CIF, cut the domains and save them as CIF and PDB
+    # print('\n::: DOWNLOAD :::')
+    # lib.run_dotnet(conf.download.structure_cutter_path, datadir.sub('sample.simple.json'), '--sources', ' '.join(conf.download.structure_sources), 
+    #                '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
     
-    # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
-    some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
-                                                   datadir.sub('sample-nonobsolete.json'), datadir.sub('StructureCutter-failures-nonobsolete.txt'))
-    if some_still_missing != 0:
-        raise Exception(f'Failed to download some structure and they are not obsolete. See {datadir.sub("StructureCutter-failures-nonobsolete.txt")}')
-    else:
-        datadir.sub('sample.json').mv(datadir.sub('sample-original.json'))
-        datadir.sub('sample-nonobsolete.json').mv(datadir.sub('sample.json'))
-        with RedirectIO(stdout=datadir.sub('sample.simple.json')):
-            simplify_domain_list.main(datadir.sub('sample.json'))
-    sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
-    n_sample = len(sample_domains)
-    with datadir.sub('family_info.txt').open('a') as w:
-        print('n_sample_without_obsoleted:', n_sample, file=w)
+    # # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
+    # some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
+    #                                                datadir.sub('sample-nonobsolete.json'), datadir.sub('StructureCutter-failures-nonobsolete.txt'))
+    # if some_still_missing != 0:
+    #     raise Exception(f'Failed to download some structure and they are not obsolete. See {datadir.sub("StructureCutter-failures-nonobsolete.txt")}')
+    # else:
+    #     datadir.sub('sample.json').mv(datadir.sub('sample-original.json'))
+    #     datadir.sub('sample-nonobsolete.json').mv(datadir.sub('sample.json'))
+    #     with RedirectIO(stdout=datadir.sub('sample.simple.json')):
+    #         simplify_domain_list.main(datadir.sub('sample.json'))
+    # sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
+    # n_sample = len(sample_domains)
+    # with datadir.sub('family_info.txt').open('a') as w:
+    #     print('n_sample_without_obsoleted:', n_sample, file=w)
 
-    # Convert PDB and domain lists into various formats
-    format_domains.main(datadir.sub('family.json'), datadir.sub('sample.json'), out_dir=datadir.sub('lists'))
-    datadir.sub('family_info.txt').cp(datadir.sub('lists', 'family_info.txt'))
-    if n_sample == 0:
-        datadir.sub('EMPTY_FAMILY').clear()
-        return 1
+    # # Convert PDB and domain lists into various formats
+    # format_domains.main(datadir.sub('family.json'), datadir.sub('sample.json'), out_dir=datadir.sub('lists'))
+    # datadir.sub('family_info.txt').cp(datadir.sub('lists', 'family_info.txt'))
+    # if n_sample == 0:
+    #     datadir.sub('EMPTY_FAMILY').clear()
+    #     return 1
 
     # Perform multiple structure alignment by MAPSCI
     print('\n::: MAPSCI :::')

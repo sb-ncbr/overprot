@@ -11,9 +11,10 @@ for ARG in $@; do
     fi;
 done;
 
-sudo apt install python3-venv
+sudo apt-get update -y
+sudo apt-get install -y python3-venv
 python3 -m venv venv/
 . venv/bin/activate
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
-sudo apt install nginx redis-server
+sudo apt-get install -y nginx redis-server

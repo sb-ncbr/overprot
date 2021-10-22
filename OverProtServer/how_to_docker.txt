@@ -1,5 +1,5 @@
 Install:
-$ sudo apt install docker docker.io
+$ sudo apt install docker docker.io docker-compose
 
 Create docker group and add myself (so I can run Docker without sudo):
 $ sudo groupadd docker
@@ -14,15 +14,49 @@ $ docker ps      # list running containers
 Build my image:
 $ docker build . --tag my-image:0.9  # builds from ./Dockerfile (I think); name is my-image, tag is 0.9
 $ docker images
-(Currently cannot build because of error in Ubuntu repo (python3-venv, pymol))
-
+$ docker image prune  # remove untagged images (from older builds)
 
 Create and run container:
 $ docker run -p 8080:80 -d my-image:0.9   
-# -p 8080:80 maps container's port 80 to host's port 8080
-# -d (--detach) is to run on background 
-# default tag is latest, --detach (-d) is to run on background 
+-p 8080:80 maps container's port 80 to host's port 8080
+-d (--detach) is to run on background 
+default tag is latest, --detach (-d) is to run on background 
+run = create + start
+--name CONTAINER_NAME
 
 $ docker run -it my-image:0.9  # run and stay connected
+$ docker exec -it CONTAINER bash  # connect to running container
+-it = interactive terminal
 
 $ curl localhost:8080/data/message.txt
+
+$ docker logs CONTAINER  # -f = stream
+
+Containers within a docker network can communicate via ports (without being mapped to host's ports):
+$ docker network ls
+$ docker network create NETWORK
+$ docker run --net NETWORK IMAGE
+
+Compose more containers to be run together in a common docker network:
+mongo-docker-compose.yaml
+https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana [1:32:52]
+$ docker-compose -f mongo-docker-compose.yaml up    # start containers
+$ docker-compose -f mongo-docker-compose.yaml down  # stop containers
+
+$ docker tag ... ...  # copy image with new name
+
+$ docker push ...
+
+$ docker run -v HOST_PATH:CONTAINER_PATH IMAGE  # mount host volume
+$ docker run -v VOLUME_NAME:CONTAINER_PATH IMAGE  # mount named volume
+
+
+ENTRYPOINT vs CMD ???
+
+Private image repository: aws -> ECR, ...
+
+https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana
+
+
+
+$ nginx -t  # check configuration file

@@ -2,14 +2,14 @@
 This Python3 script downloads the list of domains belonging to the specified Pfam family or CATH homologous superfamily and prints it in JSON in format { pdb: [[domain_name, chain, range]] }.
 
 Example usage:
-    python3  domains_from_pdbeapi.py  1.10.630.10
+    python3  -m domains_from_pdbeapi  1.10.630.10
 '''
 
 import sys
 import requests
 import json
 import argparse
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional
 
 from .libs import lib
 from .libs.lib_domains import Domain
@@ -90,12 +90,14 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
             ranges = [seg.ranges for seg in chain_segments]
             auth_ranges = [seg.auth_ranges for seg in chain_segments]
             if join_domains_in_chain:
+                ad_hoc_name = f'{pdb}_{chain}_0'
                 ranges = ','.join( str(rang) for rang in ranges )
                 auth_ranges = ','.join( str(rang) for rang in auth_ranges )
-                result.append(Domain(name=None, pdb=pdb, chain=chain, ranges=ranges, auth_chain=auth_chain, auth_ranges=auth_ranges))
+                result.append(Domain(name=ad_hoc_name, pdb=pdb, chain=chain, ranges=ranges, auth_chain=auth_chain, auth_ranges=auth_ranges))
             else:
-                for rang, auth_rang in zip(ranges, auth_ranges):
-                    result.append(Domain(name=None, pdb=pdb, chain=chain, ranges=rang, auth_chain=auth_chain, auth_ranges=auth_rang))
+                for i, (rang, auth_rang) in enumerate(zip(ranges, auth_ranges)):
+                    ad_hoc_name = f'{pdb}_{chain}_{i}'
+                    result.append(Domain(name=ad_hoc_name, pdb=pdb, chain=chain, ranges=rang, auth_chain=auth_chain, auth_ranges=auth_rang))
     return result
 
 #  MAIN  ###############################################################################

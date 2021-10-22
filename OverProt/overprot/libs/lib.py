@@ -17,6 +17,7 @@ import subprocess
 from contextlib import contextmanager, suppress
 import multiprocessing
 import configparser
+import hashlib
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Set, Iterable, Iterator, TypeVar, Union, Optional, NamedTuple, Generic, Callable, TextIO, Any, Literal, Sequence, Mapping, Final, Type, get_origin, get_args, get_type_hints
@@ -38,7 +39,7 @@ def log_debug(*args, **kwargs):
     sys.stdout.flush()  # necessary when importing pymol because it somehow fucks up stdout
 
 def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None, stderr: Optional[str] = None, 
-                appendout: bool = False, appenderr: bool = False) -> int:
+                appendout: bool = False, appenderr: bool = False, timing: bool = False) -> int:
     out_mode = 'a' if appendout else 'w'
     err_mode = 'a' if appenderr else 'w'
     arglist = list(map(str, args))
@@ -46,12 +47,14 @@ def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None
         with maybe_open(stdout, out_mode, default=sys.stdout) as stdout_handle: 
             with maybe_open(stderr, err_mode, default=sys.stderr) as stderr_handle:
                 normal_streams = hasattr(stdout_handle, 'fileno') and hasattr(stderr_handle, 'fileno')
-                if normal_streams:
-                    process = subprocess.run(arglist, check=True, stdin=stdin_handle, stdout=stdout_handle, stderr=stderr_handle)
-                else:
-                    process = subprocess.run(arglist, check=True, stdin=stdin_handle, capture_output=True)
-                    stdout_handle.write(consolidate_string(process.stdout.decode('utf8')))
-                    stderr_handle.write(consolidate_string(process.stderr.decode('utf8')))
+
+                with Timing(f'Run command "{arglist[0]} ..."', mute = not timing):
+                    if normal_streams:
+                        process = subprocess.run(arglist, check=True, stdin=stdin_handle, stdout=stdout_handle, stderr=stderr_handle)
+                    else:
+                        process = subprocess.run(arglist, check=True, stdin=stdin_handle, capture_output=True)
+                        stdout_handle.write(consolidate_string(process.stdout.decode('utf8')))
+                        stderr_handle.write(consolidate_string(process.stderr.decode('utf8')))
     return process.returncode
 
 def run_dotnet(dll: str, *args, **run_command_kwargs):
@@ -461,6 +464,24 @@ def integer_suffix(string, empty_means_zero=True):
     else:
         raise ValueError(f'String {string} contains no integer suffix')
 
+def consistent_hash(string: str) -> str:
+    '''Returns a hash of a string. The hash itself is a string with 40 hexadecimal characters.'''
+    return hashlib.sha1(string.encode('utf8')).hexdigest()
+
+def consistent_hash_float(string: str) -> float:
+    '''Returns a hash of a string. The hash itself is a float from [0, 1).'''
+    return int(consistent_hash(string), 16) / 16**40
+
+def consistent_pseudorandom_choice(strings: Iterable[str], size: int) -> List[int]:
+    '''Return indices of pseudorandomly selected strings. The number of selected indices is min(size, len(strings)).
+    The selection is done in such way that:
+    - For the same input set of strings (even permutated) and same size, the resulting string set is always the same (and in the same order).
+    - If i <= j, then consistent_pseudorandom_choice(S, i) is a subset of consistent_pseudorandom_choice(S, j).
+    - Similar string sets give similar resulting string set.
+    '''
+    hashis = [(consistent_hash(string), i) for i, string in enumerate(strings)]
+    hashis.sort()
+    return [i for (hashsh, i) in hashis[:size]]
 
 def matrix_from_function(shape: Tuple[int, ...], function: Callable, dtype=float, symmetric: bool = False, diag_value: Optional[Any] = None) -> np.ndarray:
     '''Create matrix of given shape, where matrix[i, j, ...] == function(i, j, ...).

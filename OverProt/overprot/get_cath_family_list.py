@@ -22,7 +22,7 @@ CATH_DOMAIN_LIST_URL = 'ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-r
 
 #  FUNCTIONS  ################################################################################
 
-def download_url(url: str, output_file: FilePath) -> None:   
+def download_url(url: str, output_file: FilePath) -> None:
     print(f'Downloading {url}', file=sys.stderr) 
     with request.urlopen(url) as r:
         with output_file.open('wb') as w:
