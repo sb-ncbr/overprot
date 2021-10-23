@@ -60,6 +60,7 @@ class OverProtConfig(Config):
         force_ssa: bool
         secstrannotator_rematching: bool
         secstrannotator_path: str
+        annotate_whole_family: bool
     class FilesCS(ConfigSection):
         results_dir: str
         clean_pdb_cif: bool
@@ -143,37 +144,44 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
         select_random_domains.main(datadir.sub('family.json'), size=sample_size, or_all=conf.sample_selection.or_all, unique_pdb=conf.sample_selection.unique_pdb)
     with RedirectIO(stdout=datadir.sub('sample.simple.json')):
         simplify_domain_list.main(datadir.sub('sample.json'))
+    if conf.sec_str_consensus.annotate_whole_family:
+        with RedirectIO(stdout=datadir.sub('sample-whole_family.json')):
+            select_random_domains.main(datadir.sub('family.json'), size='all', unique_pdb=False)
+        with RedirectIO(stdout=datadir.sub('sample-whole_family.simple.json')):
+            simplify_domain_list.main(datadir.sub('sample-whole_family.json'))
+        
     sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
     n_sample = len(sample_domains)
     with datadir.sub('family_info.txt').open('a') as w:
         print('n_sample:', n_sample, file=w)
     
-    # # Download structures in CIF, cut the domains and save them as CIF and PDB
-    # print('\n::: DOWNLOAD :::')
-    # lib.run_dotnet(conf.download.structure_cutter_path, datadir.sub('sample.simple.json'), '--sources', ' '.join(conf.download.structure_sources), 
-    #                '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
+    # Download structures in CIF, cut the domains and save them as CIF and PDB
+    print('\n::: DOWNLOAD :::')
+    sample_simple_file = datadir.sub('sample-whole_family.simple.json') if conf.sec_str_consensus.annotate_whole_family else datadir.sub('sample.simple.json')
+    lib.run_dotnet(conf.download.structure_cutter_path, sample_simple_file, '--sources', ' '.join(conf.download.structure_sources), 
+                   '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
     
-    # # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
-    # some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
-    #                                                datadir.sub('sample-nonobsolete.json'), datadir.sub('StructureCutter-failures-nonobsolete.txt'))
-    # if some_still_missing != 0:
-    #     raise Exception(f'Failed to download some structure and they are not obsolete. See {datadir.sub("StructureCutter-failures-nonobsolete.txt")}')
-    # else:
-    #     datadir.sub('sample.json').mv(datadir.sub('sample-original.json'))
-    #     datadir.sub('sample-nonobsolete.json').mv(datadir.sub('sample.json'))
-    #     with RedirectIO(stdout=datadir.sub('sample.simple.json')):
-    #         simplify_domain_list.main(datadir.sub('sample.json'))
-    # sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
-    # n_sample = len(sample_domains)
-    # with datadir.sub('family_info.txt').open('a') as w:
-    #     print('n_sample_without_obsoleted:', n_sample, file=w)
+    # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
+    some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
+                                                   datadir.sub('sample-nonobsolete.json'), datadir.sub('StructureCutter-failures-nonobsolete.txt'))
+    if some_still_missing != 0:
+        raise Exception(f'Failed to download some structure and they are not obsolete. See {datadir.sub("StructureCutter-failures-nonobsolete.txt")}')
+    else:
+        datadir.sub('sample.json').mv(datadir.sub('sample-original.json'))
+        datadir.sub('sample-nonobsolete.json').mv(datadir.sub('sample.json'))
+        with RedirectIO(stdout=datadir.sub('sample.simple.json')):
+            simplify_domain_list.main(datadir.sub('sample.json'))
+    sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
+    n_sample = len(sample_domains)
+    with datadir.sub('family_info.txt').open('a') as w:
+        print('n_sample_without_obsoleted:', n_sample, file=w)
 
-    # # Convert PDB and domain lists into various formats
-    # format_domains.main(datadir.sub('family.json'), datadir.sub('sample.json'), out_dir=datadir.sub('lists'))
-    # datadir.sub('family_info.txt').cp(datadir.sub('lists', 'family_info.txt'))
-    # if n_sample == 0:
-    #     datadir.sub('EMPTY_FAMILY').clear()
-    #     return 1
+    # Convert PDB and domain lists into various formats
+    format_domains.main(datadir.sub('family.json'), datadir.sub('sample.json'), out_dir=datadir.sub('lists'))
+    datadir.sub('family_info.txt').cp(datadir.sub('lists', 'family_info.txt'))
+    if n_sample == 0:
+        datadir.sub('EMPTY_FAMILY').clear()
+        return 1
 
     # Perform multiple structure alignment by MAPSCI
     print('\n::: MAPSCI :::')
@@ -182,7 +190,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
 
     # Align structures to the consensus backbone by PyMOL's CEalign
     print('\n::: CEALIGN :::')
-    cealign_all.main(datadir.sub('mapsci', 'consensus.cif'), datadir.sub('sample.json'), datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
+    cealign_all.main(datadir.sub('mapsci', 'consensus.cif'), datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json'), datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
 
     if conf.files.clean_pdb_cif:
         datadir.sub('pdb').rm(recursive=True)
@@ -191,13 +199,15 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # Calculate SSE positions and cluster SSEs
     # Will add manual labels into the consensus annotation, if $DIR/manual-*.sses.json and $DIR/manual-*.cif exist
     print('\n::: CLUSTERING :::')
-    lib_sses.compute_ssa(datadir.sub('sample.json'), datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, 
+    lib_sses.compute_ssa(datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json'), datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, 
                          secstrannotator_dll=conf.sec_str_consensus.secstrannotator_path, progress_bar=True)
     datadir.sub('sample.json').cp(datadir.sub('cif_cealign', 'sample.json'))
     with RedirectIO(tee_stdout=datadir.sub('making_guide_tree.log')):
         make_guide_tree.main(datadir.sub('cif_cealign'), show_tree=False, progress_bar=True)
     with RedirectIO(tee_stdout=datadir.sub('clustering.log')):
-        acyclic_clustering.main(datadir.sub('cif_cealign'), force_ssa=conf.sec_str_consensus.force_ssa, secstrannotator_rematching= conf.sec_str_consensus.secstrannotator_rematching, min_occurrence=0, fallback=60)
+        acyclic_clustering.main(datadir.sub('cif_cealign'), force_ssa=conf.sec_str_consensus.force_ssa, secstrannotator_rematching=conf.sec_str_consensus.secstrannotator_rematching, min_occurrence=0, fallback=60)
+    if conf.sec_str_consensus.annotate_whole_family:
+        lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], datadir.sub('cif_cealign'), extra_options='--fallback 60', outdirectory=datadir.sub('annotated_sses'))
 
     # Tidy up
     datadir.mkdir(results, exist_ok=True)

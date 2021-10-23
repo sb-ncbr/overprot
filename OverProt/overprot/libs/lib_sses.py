@@ -91,7 +91,7 @@ def compute_distance_matrices(samples, directory, append_outputs=True):
             bar.step()
         lib.try_remove_file(path.join(directory, 'template-smooth.pdb'))  # lib.run_command('rm', '-f', path.join(directory, 'template-smooth.pdb'))
 
-def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options=''):
+def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options='', outdirectory=None):
     samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
     lib.dump_json(samples_by_pdb, path.join(directory, 'samples_by_pdb.json'), minify=True)
     shutil.copy(path.join(directory, '..', 'mapsci', 'consensus.cif'), path.join(directory, 'consensus.cif'))
@@ -101,8 +101,15 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_o
     lib.run_command(*SECSTRANNOTATOR_BATCH_COMMAND.split(), '--options', f'{options} ', 
         directory, 
         'consensus',
-        path.join(directory, 'samples_by_pdb.json'))
+        path.join(directory, 'samples_by_pdb.json'),
+        timing=True)
     print()
+    if outdirectory is not None:
+        FilePath(outdirectory).mkdir()
+        for domain in domains:
+            filename = f'{domain.name}-annotated.sses.json'
+            shutil.move(path.join(directory, filename), path.join(outdirectory, filename))
+
 
 def map_manual_template_to_consensus(directory: FilePath):
     manuals = directory.parent().sub('manual*.sses.json').glob()
