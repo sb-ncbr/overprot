@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Linq;
-using System.Json;  // installed with: dotnet add package System.Json --version 4.5.0
 using Cif;
 using Cif.Filtering;
 using Cif.Tables;
@@ -30,7 +29,12 @@ namespace StructureCutter
 
             Options options = new Options();
             options.GlobalHelp = "StructureCutter 0.9";
-            options.AddArgument(new Argument("DOMAIN_LIST_FILE").AddHelp("JSON file with the list of domains to be downloaded, in format [[pdb, domain_name, chain, ranges]*]"));
+            options.AddArgument(new Argument("DOMAIN_LIST_FILE")
+                .AddHelp("JSON file with the list of domains to be downloaded, in format")
+                .AddHelp("[{\"pdb\": pdb, \"domain_name\": domain_name, \"chain\": chain, \"ranges\": ranges}*]")
+                .AddHelp("or")
+                .AddHelp("[[pdb, domain_name, chain, ranges]*]")
+            );
 
             options.AddOption(Option.StringOption(new string[]{"--cif_outdir"}, v => { cifOutDirectory = v; })
                 .AddParameter("DIRECTORY")
@@ -39,6 +43,7 @@ namespace StructureCutter
             options.AddOption(Option.StringOption(new string[]{"--pdb_outdir"}, v => { pdbOutDirectory = v; })
                 .AddParameter("DIRECTORY")
                 .AddHelp("Directory for output files in PDB format (or empty string to suppress PDB output).")
+                .AddHelp("The PDB files will contain renumbered chain ID, residue number, and atom ID!")
             );
             options.AddOption(Option.StringOption(new string[]{"--sources"}, v => { sources = v.Split(' ', StringSplitOptions.RemoveEmptyEntries); })
                 .AddParameter("SOURCES")
@@ -79,20 +84,16 @@ namespace StructureCutter
                 Console.WriteLine("WARNING: You did not specify either of --cif_outdir, --pdb_outdir. No output will be produced.");
             }
             
-            // // Parse arguments
-            // if (args.Length != 3){
-            //     Console.Error.WriteLine("ERROR: Wrong number arguments.");
-            //     Console.Error.WriteLine($"  Usage: {AppDomain.CurrentDomain.FriendlyName} DOMAIN_LIST_FILE OUTPUT_DIRECTORY PDB_OUTPUT_DIRECTORY");    
-            //     return 1;       
-            // }
-            // string domainListFile = args[0];
-            // string cifOutDirectory = args[1];
-            // string pdbOutDirectory = args[2];
 
-            // TODO write documentation
-
-            Domain[] domains = ReadDomainsFromJson(domainListFile);
-            Dictionary<string,List<Domain>> domainsByPdb = SortDomainsByPdb(domains);
+            Domain[] domains;
+            try {
+                domains = Domain.ReadDomainsFromJson(domainListFile);
+            } catch (FormatException ex){
+                Console.Error.WriteLine($"ERROR: Domain list file has invalid format:");
+                Console.Error.WriteLine($"       {ex.Message}");
+                return 2;
+            }
+            Dictionary<string,List<Domain>> domainsByPdb = Domain.SortDomainsByPdb(domains);
 
             if (cifOutDirectory != ""){
                 Directory.CreateDirectory(cifOutDirectory);
@@ -139,8 +140,8 @@ namespace StructureCutter
                 }
                 CifPackage package = CifPackage.FromString(cifString);
                 if (package.Blocks.Length == 0){
-                    Console.Error.WriteLine("CIF file contains no blocks.");
-                    return 1;
+                    Console.Error.WriteLine("ERROR: CIF file contains no blocks.");
+                    return 3;
                 }
                 CifBlock block = package.Blocks[0];
                 CifCategory atomSiteCategory = block.GetCategory("_atom_site");
@@ -189,7 +190,12 @@ namespace StructureCutter
                             Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using onlymodel {model.ModelNumber})");
                         }
                         RenumberModel(model);
-                        PrintModelToPdb(model, pdbOutputFile);
+                        try {
+                            PrintModelToPdb(model, pdbOutputFile);
+                        } catch (PDBFormatSucksException ex) {
+                            Console.Error.WriteLine($"ERROR: Cannot fit model for {domain.Name} into PDB format: {ex.Message}");
+                            return 4;
+                        }
                     }
                 }
                 progressBar.Step();
@@ -305,56 +311,11 @@ namespace StructureCutter
             throw new Exception($"Could not get any of these URLs: {String.Join(' ', urls)}", lastException);
         }
 
-        private static Domain[] ReadDomainsFromJson(string filename){
-            string domainsJsonString;
-            using (StreamReader r = new StreamReader(filename)){
-                domainsJsonString = r.ReadToEnd();
-            }
-            JsonValue domainsJson = System.Json.JsonValue.Parse(domainsJsonString);
-            if (domainsJson.JsonType != JsonType.Array) {
-                throw new FormatException($"Content of {filename} is not JSON array.");
-            }
-            int nDomains = domainsJson.Count;
-            Domain[] domains = new Domain[nDomains];
-            for (int i = 0; i<nDomains; i++){
-                JsonValue domainJson = domainsJson[i];
-                if (domainJson.JsonType != JsonType.Array) {
-                    throw new FormatException($"Content of {filename}[{i}] is not JSON array.");
-                }
-                if (domainJson.Count != 4) {
-                    throw new FormatException($"Content of {filename}[{i}] has length different from 4.");
-                }
-                if ((domainJson as IEnumerable<JsonValue>).Any(val => val.JsonType != JsonType.String)) {
-                    throw new FormatException($"Content of {filename}[{i}] has element which are not string.");
-                }
-                string pdb = domainJson[0];
-                string domainName = domainJson[1];
-                string chain = domainJson[2];
-                string range = domainJson[3];
-                domains[i] = new Domain(domainName, pdb, chain, range);
-            }
-            return domains;
-        }
-
-        private static Dictionary<string,List<Domain>> SortDomainsByPdb(IEnumerable<Domain> domains){
-            Dictionary<string,List<Domain>> result = new Dictionary<string, List<Domain>>();
-            foreach (Domain domain in domains){
-                if (!result.ContainsKey(domain.Pdb)){
-                    result[domain.Pdb] = new List<Domain>();
-                }
-                result[domain.Pdb].Add(domain);
-            }
-            return result;
-        }
-
         ///<summary> Changes chain and residue numbering in model (chainID = DEFAULT_CHAIN_ID, resi = numbered sequentially starting from DEFAULT_CHAIN_ID). </summary>
-        private static void RenumberModel(Model model) {
+        private static void RenumberModel_KeepAtomIds(Model model) {
             if (model.Chains.Count != 1){
                 throw new NotImplementedException("Not implemented for more than 1 chain in domain!");
             } 
-            // if (model.Chains.Id[0].Length != 1){
-            //     model.Chains.Id[0] = DEFAULT_CHAIN_ID.ToString();
-            // }
             model.Chains.Id[0] = DEFAULT_CHAIN_ID.ToString();
             int[] resis = model.Residues.SeqNumber;
             int resi = 1;
@@ -369,6 +330,30 @@ namespace StructureCutter
             resis[model.Residues.Count-1] = resi;
         }
 
+        ///<summary> Changes chain, residue, and atom numbering in model (chainID = DEFAULT_CHAIN_ID, resi and atomID = numbered sequentially starting from 1). </summary>
+        private static void RenumberModel(Model model) {
+            if (model.Chains.Count != 1){
+                throw new NotImplementedException("Not implemented for more than 1 chain in domain!");
+            } 
+            model.Chains.Id[0] = DEFAULT_CHAIN_ID.ToString();
+
+            int[] resis = model.Residues.SeqNumber;
+            int resi = 1;
+            for (int i = 0; i < model.Residues.Count-1; i++) {
+                int oldResi = resis[i];
+                resis[i] = resi;
+                    resi++;
+                if (resis[i+1] > oldResi+1){ // missing residues in the chain => skip residue numbers
+                    resi += SKIPPED_RESIDUES_AT_GAP;
+                }
+            }
+            resis[model.Residues.Count-1] = resi;
+
+            for (int i = 0; i < model.Atoms.Count; i++) {
+                model.Atoms.Id[i] = (i + 1).ToString();
+            }
+        }
+
         private static void PrintModelToPdb(Model model, string outputFile){
             AtomTable atoms = model.Atoms;
             ResidueTable residues = model.Residues;
@@ -380,24 +365,25 @@ namespace StructureCutter
 
             using (StreamWriter w = new StreamWriter(outputFile)){
                 for (int ai = 0; ai < atoms.Count; ai++){
+
                     string atomString = (atoms.IsHetatm[ai] ? "HETATM" : "ATOM  ")
-                        + SafePadLeft(atoms.Id[ai].ToString(), 5)
+                        + SafePadLeft(atoms.Id[ai].ToString(), 5, "Atom ID")
                         + " "
                         + PdbStyleAtomName(atoms.Name[ai], atoms.Element[ai])
-                        + SafePadLeft(atoms.AltLoc[ai]=="." ? " " : atoms.AltLoc[ai], 1)
-                        + SafePadLeft(residues.Compound[atoms.ResidueIndex[ai]], 3)
+                        + SafePadLeft(atoms.AltLoc[ai]=="." ? " " : atoms.AltLoc[ai], 1, "Alternate location indicator")
+                        + SafePadLeft(residues.Compound[atoms.ResidueIndex[ai]], 3, "Residue name")
                         + " "
-                        + SafePadLeft(chains.Id[atoms.ChainIndex[ai]], 1)
-                        + SafePadLeft(residues.SeqNumber[atoms.ResidueIndex[ai]].ToString(), 4)
+                        + SafePadLeft(chains.Id[atoms.ChainIndex[ai]], 1, "Chain ID")
+                        + SafePadLeft(residues.SeqNumber[atoms.ResidueIndex[ai]].ToString(), 4, "Residue number")
                         + INSERTION_CODE
                         + "   "
-                        + SafePadLeft(atoms.X[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8)
-                        + SafePadLeft(atoms.Y[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8)
-                        + SafePadLeft(atoms.Z[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8)
+                        + SafePadLeft(atoms.X[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8, "X coordinate")
+                        + SafePadLeft(atoms.Y[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8, "Y coordinate")
+                        + SafePadLeft(atoms.Z[ai].ToString("0.000"/*, new CultureInfo("en-US")*/), 8, "Z coordinate")
                         + OCCUPANCY
                         + TEMP_FACTOR
                         + "          "
-                        + SafePadLeft(atoms.Element[ai], 2)
+                        + SafePadLeft(atoms.Element[ai], 2, "Element symbol")
                         + CHARGE;
                     // Console.WriteLine(atomString);
                     w.WriteLine(atomString);
@@ -405,19 +391,19 @@ namespace StructureCutter
             }
         }
 
-        private static string SafePadLeft(string str, int width){
+        private static string SafePadLeft(string str, int width, string fieldName = "Value"){
             if (str.Length <= width) {
                 return str.PadLeft(width);
             } else {
-                throw new Exception($"Could not fit string '{str}' into {width} characters.");
+                throw new PDBFormatSucksException(fieldName, width, str);
             }
         }
 
-        private static string SafePadRight(string str, int width){
+        private static string SafePadRight(string str, int width, string fieldName = "Value"){
             if (str.Length <= width) {
                 return str.PadRight(width);
             } else {
-                throw new Exception($"Could not fit string '{str}' into {width} characters.");
+                throw new PDBFormatSucksException(fieldName, width, str);
             }
         }
 
@@ -425,9 +411,9 @@ namespace StructureCutter
             atomName = atomName.Trim();
             element = element.Trim();
             if (element.Length == 1 && atomName.Length <= 3){
-                return SafePadRight(" " + atomName, 4);
+                return SafePadRight(" " + atomName, 4, "Atom name");
             } else {
-                return SafePadRight(atomName, 4);
+                return SafePadRight(atomName, 4, "Atom name");
             }
         }
 

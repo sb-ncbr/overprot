@@ -142,13 +142,9 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     print('\n::: SELECT SAMPLE :::')
     with RedirectIO(stdout=datadir.sub('sample.json')):
         select_random_domains.main(datadir.sub('family.json'), size=sample_size, or_all=conf.sample_selection.or_all, unique_pdb=conf.sample_selection.unique_pdb)
-    with RedirectIO(stdout=datadir.sub('sample.simple.json')):
-        simplify_domain_list.main(datadir.sub('sample.json'))
     if conf.sec_str_consensus.annotate_whole_family:
         with RedirectIO(stdout=datadir.sub('sample-whole_family.json')):
             select_random_domains.main(datadir.sub('family.json'), size='all', unique_pdb=False)
-        with RedirectIO(stdout=datadir.sub('sample-whole_family.simple.json')):
-            simplify_domain_list.main(datadir.sub('sample-whole_family.json'))
         
     sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
     n_sample = len(sample_domains)
@@ -157,8 +153,8 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     
     # Download structures in CIF, cut the domains and save them as CIF and PDB
     print('\n::: DOWNLOAD :::')
-    sample_simple_file = datadir.sub('sample-whole_family.simple.json') if conf.sec_str_consensus.annotate_whole_family else datadir.sub('sample.simple.json')
-    lib.run_dotnet(conf.download.structure_cutter_path, sample_simple_file, '--sources', ' '.join(conf.download.structure_sources), 
+    sample_for_annotation = datadir.sub('sample-whole_family.json') if conf.sec_str_consensus.annotate_whole_family else datadir.sub('sample.json')
+    lib.run_dotnet(conf.download.structure_cutter_path, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), 
                    '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
     
     # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
@@ -169,8 +165,6 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     else:
         datadir.sub('sample.json').mv(datadir.sub('sample-original.json'))
         datadir.sub('sample-nonobsolete.json').mv(datadir.sub('sample.json'))
-        with RedirectIO(stdout=datadir.sub('sample.simple.json')):
-            simplify_domain_list.main(datadir.sub('sample.json'))
     sample_domains = lib_domains.load_domain_list(datadir.sub('sample.json'))
     n_sample = len(sample_domains)
     with datadir.sub('family_info.txt').open('a') as w:
