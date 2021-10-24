@@ -1,5 +1,6 @@
 '''Library of functions related to SSEs (secondary structure elements) and running SecStrAnnotator'''
 
+import os
 from os import path
 import sys
 import shutil
@@ -94,7 +95,7 @@ def compute_distance_matrices(samples, directory, append_outputs=True):
 def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options='', outdirectory=None):
     samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
     lib.dump_json(samples_by_pdb, path.join(directory, 'samples_by_pdb.json'), minify=True)
-    shutil.copy(path.join(directory, '..', 'mapsci', 'consensus.cif'), path.join(directory, 'consensus.cif'))
+    # shutil.copy(path.join(directory, '..', 'mapsci', 'consensus.cif'), path.join(directory, 'consensus.cif'))
     shutil.copy(path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))  
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
     print('Running SecStrAnnotator:')
@@ -105,10 +106,12 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_o
         timing=True)
     print()
     if outdirectory is not None:
-        FilePath(outdirectory).mkdir()
+        os.makedirs(outdirectory, exist_ok=True)
         for domain in domains:
             filename = f'{domain.name}-annotated.sses.json'
             shutil.move(path.join(directory, filename), path.join(outdirectory, filename))
+            os.remove(path.join(directory, f'{domain.name}-detected.sses.json'))
+            os.remove(path.join(directory, f'{domain.name}-aligned.cif'))
 
 
 def map_manual_template_to_consensus(directory: FilePath):

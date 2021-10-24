@@ -42,7 +42,8 @@ def main(target_file: Union[FilePath, str], sample_file: Union[FilePath, str], i
     out_directory_path = FilePath(out_directory).mkdir(exist_ok=True)
     mobile_files = [in_directory_path.sub(f'{mobile}.cif') for mobile in mobiles]
     result_files = [out_directory_path.sub(f'{mobile}.cif') for mobile in mobiles]
-    lib_pymol.cealign_many(FilePath(target_file), mobile_files, result_files, fallback_to_dumb_align=True, show_progress_bar=progress_bar)
+    result_ttt_files = [out_directory_path.sub(f'{mobile}-ttt.csv') for mobile in mobiles]
+    lib_pymol.cealign_many(FilePath(target_file), mobile_files, result_files, ttt_files=result_ttt_files, fallback_to_dumb_align=True, show_progress_bar=progress_bar)
     return None
 
 

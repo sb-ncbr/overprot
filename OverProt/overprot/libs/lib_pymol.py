@@ -3,7 +3,7 @@ import json
 from os import path  #TODO replace by FilePath
 from collections import namedtuple  # change namedtuple to typing.NamedTuple
 import numpy as np
-from typing import Optional, Sequence, Tuple, Dict, Any, Literal, Union
+from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Union
 
 try:
     from pymol import cmd, querying, util, CmdException  # type: ignore
@@ -82,30 +82,41 @@ def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[
     # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
     # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
 
-def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result_files: Sequence[FilePath], 
+def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result_files: Sequence[FilePath], ttt_files: Optional[Sequence[FilePath]] = None,
                  fallback_to_dumb_align: bool = False, show_progress_bar: bool = False) -> None:
     '''Perform structure superimposition of each mobile to the target with cealign command.
-    Save i-th transformed mobile structure into i-th result_files[i].
+    Save i-th transformed mobile structure into result_files[i].
+    Save i-th transformation matrix (PyMOL-style TTT matrix) into ttt_files[i].
     If fallback_to_super, try to use super command if cealign fails.'''
-    assert len(mobile_files) == len(result_files)
     n = len(mobile_files)
+    assert len(result_files) == n
+    if ttt_files is not None:
+        assert len(ttt_files) == n
+    else:
+        ttt_files = [None] * n
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
     with lib.ProgressBar(n, title=f'Cealigning {n} structures', mute = not show_progress_bar) as bar:
         cmd.load(target_file, obj_target)
-        for mobile_file, result_file in zip(mobile_files, result_files):
+        for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files):
             cmd.load(mobile_file, obj_mobile)
             try:
-                cmd.cealign(obj_target, obj_mobile)
+                # raise CmdException()  # debug
+                raw_result = cmd.cealign(obj_target, obj_mobile)
+                ttt = raw_result['rotation_matrix']
                 cmd.save(result_file, obj_mobile)
             except CmdException:
                 target_name = target_file.name
                 mobile_name = mobile_file.name
                 if fallback_to_dumb_align:
+                    # Cealign is expected to fail on small structures, e.g. CATH family 4.10.180.10
                     print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
-                    dumb_align(target_file, mobile_file, result_file)
+                    ttt = dumb_align(target_file, mobile_file, result_file).rotation_matrix
                 else:
                     print(f'Warning: cealign({target_name}, {mobile_name}) failed', file=sys.stderr)
                     raise
+            if ttt_file is not None:
+                with open(ttt_file, 'w') as w:
+                    print(*ttt, sep='\n', file=w)
             cmd.delete(obj_mobile)
             bar.step()
         cmd.delete(obj_target)
@@ -116,13 +127,14 @@ def dumb_align(target_file: FilePath, mobile_file: FilePath, result_file: Option
     T = target.coords[:, target.name=='CA']
     M = mobile.coords[:, mobile.name=='CA']
     R, t, rmsd = superimpose3d.dumb_align(M, T)
+    ttt = rotation_translation_to_ttt_matrix(RotationTranslation(R, t))
     if result_file is not None:
         mobile.coords = superimpose3d.rotate_and_translate(mobile.coords, R, t)
         with open(result_file, 'w') as w:
             w.write(mobile.to_cif())
-    return CealignResult(None, rmsd, None, R, t)
+    return CealignResult(None, rmsd, ttt, R, t)
 
-def ttt_matrix_to_rotation_translation(ttt_matrix: np.ndarray) -> RotationTranslation:
+def ttt_matrix_to_rotation_translation(ttt_matrix: Sequence[float]) -> RotationTranslation:
     '''Convert PyMOL pseudo-rotation matrix (ttt_matrix) to rotation and translation matrices (A' = rotation @ A + translation)'''
     ttt_matrix = np.array(ttt_matrix).reshape((4,4))
     pretranslation = ttt_matrix[3, 0:3].reshape((3,1))
@@ -130,6 +142,14 @@ def ttt_matrix_to_rotation_translation(ttt_matrix: np.ndarray) -> RotationTransl
     posttranslation = ttt_matrix[0:3, 3].reshape((3,1))
     translation = rotation @ pretranslation + posttranslation
     return RotationTranslation(rotation, translation)
+
+def rotation_translation_to_ttt_matrix(rot_trans: RotationTranslation) -> List[float]:
+    result = np.empty((4, 4), dtype=np.float64)
+    result[0:3, 0:3] = rot_trans.rotation
+    result[0:3, 3:4] = rot_trans.translation
+    result[3, 0:3] = 0.0
+    result[3, 3] = 1.0
+    return list(result.reshape((16,)))
 
 def read_cif(structfile: FilePath, only_polymer=False):
     obj = 'obj_read_cif'

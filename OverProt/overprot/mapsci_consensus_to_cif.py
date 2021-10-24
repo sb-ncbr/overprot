@@ -128,7 +128,7 @@ def main(input_pdb: Union[FilePath, str], output_cif: Union[FilePath, str]) -> O
     atoms.entity = [DEFAULT_ENTITY] * atoms.count()
     atoms.chain = [DEFAULT_CHAIN] * atoms.count()
     atoms.symbol = [DEFAULT_SYMBOL] * atoms.count()
-    apply_laying_rotation_translation(atoms)  # Place starting and ending more in front, place starting more top-left
+    apply_laying_rotation_translation(atoms)  # Center and align PCA axes with XYZ. Place starting and ending more in front, place starting more top-left
     print_cif_minimal(atoms, output_cif, structure_name='consensus')
     return None
 

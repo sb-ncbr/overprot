@@ -64,6 +64,7 @@ class OverProtConfig(Config):
     class FilesCS(ConfigSection):
         results_dir: str
         clean_pdb_cif: bool
+        clean_aligned_cif: bool
     class VisualizationCS(ConfigSection):
         coloring: Literal['color', 'rainbow']
         create_multi_session: bool
@@ -153,7 +154,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     
     # Download structures in CIF, cut the domains and save them as CIF and PDB
     print('\n::: DOWNLOAD :::')
-    sample_for_annotation = datadir.sub('sample-whole_family.json') if conf.sec_str_consensus.annotate_whole_family else datadir.sub('sample.json')
+    sample_for_annotation = datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json')
     lib.run_dotnet(conf.download.structure_cutter_path, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), 
                    '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
     
@@ -184,7 +185,8 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
 
     # Align structures to the consensus backbone by PyMOL's CEalign
     print('\n::: CEALIGN :::')
-    cealign_all.main(datadir.sub('mapsci', 'consensus.cif'), datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json'), datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
+    cealign_all.main(datadir.sub('mapsci', 'consensus.cif'), sample_for_annotation, datadir.sub('cif'), datadir.sub('cif_cealign'), progress_bar=True)
+    datadir.sub('mapsci', 'consensus.cif').cp(datadir.sub('cif_cealign', 'consensus.cif'))
 
     if conf.files.clean_pdb_cif:
         datadir.sub('pdb').rm(recursive=True)
@@ -193,7 +195,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # Calculate SSE positions and cluster SSEs
     # Will add manual labels into the consensus annotation, if $DIR/manual-*.sses.json and $DIR/manual-*.cif exist
     print('\n::: CLUSTERING :::')
-    lib_sses.compute_ssa(datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json'), datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, 
+    lib_sses.compute_ssa(sample_for_annotation, datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, 
                          secstrannotator_dll=conf.sec_str_consensus.secstrannotator_path, progress_bar=True)
     datadir.sub('sample.json').cp(datadir.sub('cif_cealign', 'sample.json'))
     with RedirectIO(tee_stdout=datadir.sub('making_guide_tree.log')):
@@ -205,9 +207,8 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
 
     # Tidy up
     datadir.mkdir(results, exist_ok=True)
-    for filename in str.split('lengths.tsv cluster_precedence_matrix.tsv statistics.tsv occurrence_correlation.tsv consensus.sses.json'):
+    for filename in str.split('lengths.tsv cluster_precedence_matrix.tsv statistics.tsv occurrence_correlation.tsv consensus.cif consensus.sses.json'):
         datadir.sub('cif_cealign', filename).cp(datadir.sub(results, filename))
-    datadir.sub('mapsci', 'consensus.cif').cp(datadir.sub(results, 'consensus.cif'))
 
     # Draw diagrams
     print('\n::: DIAGRAM :::')
@@ -220,7 +221,6 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     draw_diagram.main(datadir.sub(results), dag=True, output=datadir.sub(results, 'diagram_conn_arrow_min20.svg'), connectivity=True, shape='arrow', occurrence_threshold=0.2)
     draw_diagram.main(datadir.sub(results), dag=True, output=datadir.sub(results, 'diagram_conn_heatmap.svg'), connectivity=True, heatmap=True)
     draw_diagram.main(datadir.sub(results), dag=True, output=datadir.sub(results, 'diagram_conn_heatmap_min20.svg'), connectivity=True, heatmap=True, occurrence_threshold=0.2)
-    # TODO convert SVG -> PNG
 
     # Visualize in PyMOL and save as a session + PNG
     print('\n::: VISUALIZE :::')
@@ -229,6 +229,11 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     if conf.visualization.create_multi_session:
         lib_pymol.create_multi_session(datadir.sub('cif_cealign'), datadir.sub(results, 'consensus.cif'), datadir.sub(results, 'consensus.sses.json'), 
                                        datadir.sub(results, 'clustered.pse'), coloring=conf.visualization.coloring, progress_bar=True)
+
+    if conf.files.clean_aligned_cif:
+        for file in datadir.sub('cif_cealign').ls(only_files=True):
+            if str(file).endswith('.cif'):
+                file.rm()
 
     print('\n::: COMPLETED :::')
     # TODO write docs for each module/script, update README.txt

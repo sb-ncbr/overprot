@@ -10,7 +10,7 @@ UPDATE=$1
 
 UPDATE_DIR=$DATA_DIR/$UPDATE
 
-CONFIG=$(dirname $0)/overprot-config-unique_pdb.ini
+CONFIG=$(dirname $0)/overprot-config-overprotserverdb.ini
 
 mkdir -p $UPDATE_DIR
 echo "Data will be in $UPDATE_DIR"
