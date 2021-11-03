@@ -4,8 +4,6 @@ This Python3 script does foo ...
 Example usage:
     python3  overprot.py  FAMILY_ID  SAMPLE_SIZE  BASE_DIRECTORY 
 '''
-# TODO Continue mypying (str -> FilePath)
-
 # TODO add description and example usage in docstring
 
 # # Prerequisities
@@ -28,7 +26,6 @@ from .libs.lib import RedirectIO, Config, ConfigSection, FilePath
 
 from . import domains_from_pdbeapi
 from . import select_random_domains
-from . import simplify_domain_list
 from . import remove_obsolete_pdbs
 from . import run_mapsci
 from . import mapsci_consensus_to_cif
@@ -41,25 +38,22 @@ from . import format_domains
 
 #  CONSTANTS  ################################################################################
 
-DEFAULT_CONFIG_FILE = str(FilePath(__file__).parent().parent().sub('overprot-config.ini'))
+from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL, MAPSCI_EXE, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
 
 #  FUNCTIONS  ################################################################################
 
 class OverProtConfig(Config):
     class DownloadCS(ConfigSection):
-        structure_cutter_path: str
         structure_sources: List[str]
     class SampleSelectionCS(ConfigSection):
         unique_pdb: bool
         or_all: bool
     class MapsciCS(ConfigSection):
-        mapsci_path: str
         init: Literal['median', 'center']
         n_max: int
     class OverProtCS(ConfigSection):
         force_ssa: bool
         secstrannotator_rematching: bool
-        secstrannotator_path: str
         annotate_whole_family: bool
     class FilesCS(ConfigSection):
         results_dir: str
@@ -102,9 +96,6 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     datadir = FilePath(directory)
     
     conf = OverProtConfig(config, allow_extra=False, allow_missing=False)
-    conf.download.structure_cutter_path = str(FilePath(config).parent().sub(conf.download.structure_cutter_path))
-    conf.mapsci.mapsci_path = str(FilePath(config).parent().sub(conf.mapsci.mapsci_path))
-    conf.sec_str_consensus.secstrannotator_path = str(FilePath(config).parent().sub(conf.sec_str_consensus.secstrannotator_path))
     if structure_source is not None:
         conf.download.structure_sources = [structure_source]
     results = conf.files.results_dir
@@ -155,8 +146,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # Download structures in CIF, cut the domains and save them as CIF and PDB
     print('\n::: DOWNLOAD :::')
     sample_for_annotation = datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json')
-    lib.run_dotnet(conf.download.structure_cutter_path, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), 
-                   '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
+    lib.run_dotnet(STRUCTURE_CUTTER_DLL, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
     
     # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
     some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
@@ -180,7 +170,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
 
     # Perform multiple structure alignment by MAPSCI
     print('\n::: MAPSCI :::')
-    run_mapsci.main(datadir.sub('sample.json'), datadir.sub('pdb'), datadir.sub('mapsci'), mapsci=conf.mapsci.mapsci_path, init=conf.mapsci.init, n_max=conf.mapsci.n_max)
+    run_mapsci.main(datadir.sub('sample.json'), datadir.sub('pdb'), datadir.sub('mapsci'), init=conf.mapsci.init, n_max=conf.mapsci.n_max)
     mapsci_consensus_to_cif.main(datadir.sub('mapsci', 'consensus.pdb'), datadir.sub('mapsci', 'consensus.cif'))
 
     # Align structures to the consensus backbone by PyMOL's CEalign
@@ -195,8 +185,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # Calculate SSE positions and cluster SSEs
     # Will add manual labels into the consensus annotation, if $DIR/manual-*.sses.json and $DIR/manual-*.cif exist
     print('\n::: CLUSTERING :::')
-    lib_sses.compute_ssa(sample_for_annotation, datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, 
-                         secstrannotator_dll=conf.sec_str_consensus.secstrannotator_path, progress_bar=True)
+    lib_sses.compute_ssa(sample_for_annotation, datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, progress_bar=True)
     datadir.sub('sample.json').cp(datadir.sub('cif_cealign', 'sample.json'))
     with RedirectIO(tee_stdout=datadir.sub('making_guide_tree.log')):
         make_guide_tree.main(datadir.sub('cif_cealign'), show_tree=False, progress_bar=True)

@@ -1,0 +1,11 @@
+version: '3'
+services:
+  overprot_server:
+    image: registry.gitlab.com/midlik/overprot
+    ports: 
+      - 8080:80
+    environment: 
+      - HTTP_PORT=80
+    volumes:
+      - /home/adam/Workspace/Python/OverProt/docker_mount/data:/server/data
+      - /home/adam/Workspace/Python/OverProt/docker_mount/var:/server/var

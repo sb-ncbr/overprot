@@ -17,4 +17,6 @@ python3 -m venv venv/
 . venv/bin/activate
 python3 -m pip install -r requirements.txt
 
-sudo apt-get install -y nginx redis-server
+sudo apt-get install -y nginx
+sudo apt-get install -y redis-server
+sudo apt-get install -y gettext-base   # for envsubst

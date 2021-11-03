@@ -100,7 +100,6 @@ def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result
         for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files):
             cmd.load(mobile_file, obj_mobile)
             try:
-                # raise CmdException()  # debug
                 raw_result = cmd.cealign(obj_target, obj_mobile)
                 ttt = raw_result['rotation_matrix']
                 cmd.save(result_file, obj_mobile)

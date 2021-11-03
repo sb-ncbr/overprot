@@ -13,10 +13,10 @@ from typing import Dict, Any, Optional, Literal, Final, Union
 from .libs import lib
 from .libs import lib_domains
 from .libs.lib import FilePath
+from .libs.lib_dependencies import MAPSCI_EXE
 
 #  CONSTANTS  ################################################################################
 
-DEFAULT_MAPSCI = './mapsci'
 DEFAULT_INIT: Final = 'center'
 
 N_MAX_ALL = -1
@@ -39,7 +39,6 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('input_file', help='File with the list of protein domains in format [[pdb, domain_name, chain, range]]', type=str)
     parser.add_argument('input_dir', help='Directory with input PDB files, named <domain_name>.pdb', type=str)
     parser.add_argument('output_dir', help='Directory for output', type=str)
-    parser.add_argument('--mapsci', help=f'Location of MAPSCI binary (default {DEFAULT_MAPSCI})', type=str, default='/home/adam/Workspace/MAPSCI/mapsci-1.0/bin/mapsci')
     parser.add_argument('--init', help=f'Initial consensus selection method (default: {DEFAULT_INIT}, fastest: median, see MAPSCI documentation)', type=str, choices=['center', 'minmax', 'median'], default='center')
     parser.add_argument('--n_max', help=f'Maximum number of input domains. If there are more input domains, then N_MAX domains are selected randomly. Default: {N_MAX_ALL} (always take all).', type=int, default=N_MAX_ALL)
     parser.add_argument('--keep_rotated', help=f'Do not delete the rotated structure files ({ROTATED_EXT}) produced by MAPSCII', action='store_true')
@@ -47,8 +46,8 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], output_dir: Union[FilePath, str],
-         mapsci: Union[FilePath, str] = DEFAULT_MAPSCI, init: Literal['center', 'minmax', 'median'] = DEFAULT_INIT, 
+def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], output_dir: Union[FilePath, str], 
+         init: Literal['center', 'minmax', 'median'] = DEFAULT_INIT, 
          n_max: int = N_MAX_ALL, keep_rotated: bool = False) -> Optional[int]:
     '''Prepare MAPSCI input file and run MAPSCI'''
     # TODO add docstring
@@ -57,7 +56,6 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     input_file = FilePath(input_file).abs()
     input_dir = FilePath(input_dir).abs()
     output_dir = FilePath(output_dir).abs()
-    mapsci = FilePath(mapsci).abs()
 
     # Read input domain list
     domains = lib_domains.load_domain_list(input_file)
@@ -80,7 +78,7 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     # Run MAPSCI
     with output_dir.sub(MAPSCI_STDOUT).open('w') as stdout_writer:
         with output_dir.sub(MAPSCI_STDERR).open('w') as stderr_writer:
-            subprocess.run([str(mapsci), MAPSCI_INPUT_FILE_NAME, init, '-p', str(input_dir)], cwd=str(output_dir), stdout=stdout_writer, stderr=stderr_writer)
+            subprocess.run([MAPSCI_EXE, MAPSCI_INPUT_FILE_NAME, init, '-p', str(input_dir)], cwd=str(output_dir), stdout=stdout_writer, stderr=stderr_writer)
 
 
     ok = output_dir.sub(MAPSCI_CONSENSUS_FILE).isfile()

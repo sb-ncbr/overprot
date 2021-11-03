@@ -28,6 +28,8 @@ $ docker run -it my-image:0.9  # run and stay connected
 $ docker exec -it CONTAINER bash  # connect to running container
 -it = interactive terminal
 
+$ docker run -d -p 8080:80 -v /home/adam/Workspace/Python/OverProt/docker_mount/data:/server/data -v /home/adam/Workspace/Python/OverProt/docker_mount/var:/server/var  overprot-server:0.9 
+
 $ curl localhost:8080/data/message.txt
 
 $ docker logs CONTAINER  # -f = stream
@@ -37,11 +39,17 @@ $ docker network ls
 $ docker network create NETWORK
 $ docker run --net NETWORK IMAGE
 
+Push to registry:
+$ docker login registry.gitlab.com
+$ docker tag overprot-server:0.9 registry.gitlab.com/midlik/overprot
+$ docker push registry.gitlab.com/midlik/overprot
+
 Compose more containers to be run together in a common docker network:
 mongo-docker-compose.yaml
 https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana [1:32:52]
-$ docker-compose -f mongo-docker-compose.yaml up    # start containers
-$ docker-compose -f mongo-docker-compose.yaml down  # stop containers
+$ docker-compose -f mongo-docker-compose.yaml up -d  # start containers
+$ docker-compose -f mongo-docker-compose.yaml down   # stop containers
+-d detached
 
 $ docker tag ... ...  # copy image with new name
 

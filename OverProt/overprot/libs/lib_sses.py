@@ -7,6 +7,7 @@ import shutil
 import numpy as np
 import json
 import re
+import itertools
 from collections import defaultdict
 from typing import List, Dict, Tuple, Final, Union
 from enum import IntEnum
@@ -15,17 +16,13 @@ from . import lib
 from . import lib_domains
 from .lib import FilePath
 from .lib_domains import Domain
+from .lib_dependencies import PYTHON, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
 
 # Field names in JSON annotation format
 LABEL = 'label'
 CHAIN = 'chain_id'
 START = 'start'
 END = 'end' # TODO move these into a separate module, which can then be imported as 'from sse_field_names import *'
-
-DOTNET = 'dotnet'
-PYTHON = sys.executable
-SECSTRANNOTATOR_DLL = 'dependencies/SecStrAnnotator/SecStrAnnotator.dll'
-SECSTRANNOTATOR_BATCH_COMMAND = f'{PYTHON} dependencies/SecStrAnnotator/SecStrAnnotator_batch.py --threads 8'
 
 
 class SseType(IntEnum):
@@ -48,7 +45,7 @@ def get_out_err_files(directory, append=True):
     return stdout_file, stderr_file
 
 def compute_ssa(domains: Union[List[Domain], FilePath], directory, skip_if_exists=False, append_outputs=False, 
-                create_template_files=False, progress_bar=False, secstrannotator_dll=SECSTRANNOTATOR_DLL):
+                create_template_files=False, progress_bar=False):
     lib.log(f'Compute SSA: {directory}')
     if isinstance(domains, FilePath):
         domains = lib_domains.load_domain_list(domains)
@@ -65,7 +62,7 @@ def compute_ssa(domains: Union[List[Domain], FilePath], directory, skip_if_exist
                 for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
                     append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
                     append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
-                    lib.run_dotnet(secstrannotator_dll, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
+                    lib.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
                         stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
                     shutil.move(detected_file, sse_file)
                     bar.step()
@@ -86,20 +83,22 @@ def compute_distance_matrices(samples, directory, append_outputs=True):
             pi, di, ci, ri = samples[i]
             pj, dj, cj, rj = samples[j]
             lib.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--matching', 'none', directory, f'{di},{ci},{ri}' , f'{dj},{cj},{rj}', stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
-            shutil.move(path.join(directory, 'metric_matrix.tsv'), path.join(directory, f'matrix-{di}-{dj}.tsv'))  # lib.run_command('mv', path.join(directory, 'metric_matrix.tsv'), path.join(directory, f'matrix-{di}-{dj}.tsv'))
-            lib.try_remove_file(path.join(directory, f'alignment-{di}-{dj}.json'))  # lib.run_command('rm', '-f', path.join(directory, f'alignment-{di}-{dj}.json'))
-            lib.try_remove_file(path.join(directory, f'{dj}-detected.sses.json'))  # lib.run_command('rm', '-f', path.join(directory, f'{dj}-detected.sses.json'))
+            shutil.move(path.join(directory, 'metric_matrix.tsv'), path.join(directory, f'matrix-{di}-{dj}.tsv'))
+            lib.try_remove_file(path.join(directory, f'alignment-{di}-{dj}.json'))
+            lib.try_remove_file(path.join(directory, f'{dj}-detected.sses.json'))
             bar.step()
-        lib.try_remove_file(path.join(directory, 'template-smooth.pdb'))  # lib.run_command('rm', '-f', path.join(directory, 'template-smooth.pdb'))
+        lib.try_remove_file(path.join(directory, 'template-smooth.pdb'))
 
 def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_outputs=True, extra_options='', outdirectory=None):
     samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
     lib.dump_json(samples_by_pdb, path.join(directory, 'samples_by_pdb.json'), minify=True)
-    # shutil.copy(path.join(directory, '..', 'mapsci', 'consensus.cif'), path.join(directory, 'consensus.cif'))
     shutil.copy(path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))  
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
     print('Running SecStrAnnotator:')
-    lib.run_command(*SECSTRANNOTATOR_BATCH_COMMAND.split(), '--options', f'{options} ', 
+    lib.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
+        '--dll', SECSTRANNOTATOR_DLL, 
+        '--threads', '8', 
+        '--options', f'{options} ', 
         directory, 
         'consensus',
         path.join(directory, 'samples_by_pdb.json'),

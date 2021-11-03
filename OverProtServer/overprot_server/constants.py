@@ -8,7 +8,10 @@ try:
 except KeyError as ex:
     raise Exception(f'Environment variable {ex} must be defined before running this program.')
 
-DATA_DIR = f'{ROOT_DIR}/data'  # Directory with freely available static data (route /data maps to this dir, but in deployment it will be served by nginx)
+try:
+    DATA_DIR = os.environ['DATA_DIR']  # Directory with freely available static data (route /data maps to this dir, but in deployment it will be served by nginx)
+except KeyError:
+    DATA_DIR = f'{ROOT_DIR}/data'  # Directory with freely available static data (route /data maps to this dir, but in deployment it will be served by nginx)
 
 LAST_UPDATE_FILE = f'{DATA_DIR}/db/LAST_UPDATE.txt'
 DB_DIR = f'{ROOT_DIR}/jobs'

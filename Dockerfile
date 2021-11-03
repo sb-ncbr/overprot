@@ -3,41 +3,35 @@ FROM ubuntu:20.04
 RUN apt-get update -y
 RUN apt-get install -y sudo
 
-# Unnecessary (installed within install.sh)
-# RUN apt-get install -y nginx
-# RUN apt-get install -y redis-server
-# RUN apt-get install -y python-is-python3
-# RUN apt-get install -y python3-venv
-# RUN apt-get install -y pymol
+RUN mkdir -p /server
+WORKDIR /server
 
-RUN mkdir -p /server/overprot
-WORKDIR /server/overprot
-
-RUN mkdir software
+RUN mkdir bin
+RUN mkdir var
+RUN mkdir var/jobs
+RUN mkdir var/logs
 RUN mkdir data
-RUN mkdir data/data
-RUN mkdir data/jobs
-RUN mkdir data/logs
 
-# COPY . software/overprot
-# RUN bash software/overprot/OverProt/install.sh --clear
-# RUN bash software/overprot/OverProtServer/install.sh --clear
-COPY OverProt software/overprot/OverProt
-RUN bash software/overprot/OverProt/install.sh --clear
-COPY OverProtServer/install.sh software/overprot/OverProtServer/install.sh
-COPY OverProtServer/requirements.txt software/overprot/OverProtServer/requirements.txt
-RUN bash software/overprot/OverProtServer/install.sh --clear
-COPY OverProtServer software/overprot/OverProtServer
+# COPY . bin/overprot
+# RUN bash bin/overprot/OverProt/install.sh --clear
+# RUN bash bin/overprot/OverProtServer/install.sh --clear
+COPY OverProt bin/overprot/OverProt
+RUN bash bin/overprot/OverProt/install.sh --clear
+COPY OverProtServer/install.sh bin/overprot/OverProtServer/install.sh
+COPY OverProtServer/requirements.txt bin/overprot/OverProtServer/requirements.txt
+RUN bash bin/overprot/OverProtServer/install.sh --clear
+COPY OverProtServer bin/overprot/OverProtServer
 
 # RUN mkdir nginx
 # COPY trying-docker/nginx.conf nginx/nginx.conf
-# COPY trying-docker/message.txt data/message.txt
+# COPY trying-docker/message.txt var/message.txt
 # ENTRYPOINT ["nginx", "-c", "/server_data/nginx/nginx.conf", "-g", "daemon off;"]
 
 ENV N_RQ_WORKERS=8
 ENV N_GUNICORN_WORKERS=4
+ENV HTTP_PORT=80
 
-ENTRYPOINT ["bash", "/server/overprot/software/overprot/OverProtServer/startup-docker.sh"]
+ENTRYPOINT ["bash", "/server/bin/overprot/OverProtServer/startup-docker.sh"]
 
 # TODO fix redis-queue not starting (Error 99 connecting to localhost:6379. Cannot assign requested address.)
 

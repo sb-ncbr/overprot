@@ -58,16 +58,26 @@ def family_callback(result: lib.JobResult, directory: FilePath):
 
 
 def collect_results(families: List[str], input_dir: FilePath, filepath: List[str], output_dir: FilePath, 
-        zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False) -> List[str]:
+        zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False,
+        extension: Optional[str] = None, remove_if_exists: bool = True) -> List[str]:
     '''Collect results of the same type. Return the list of families with missing results.'''
-    if output_dir.isdir():
+    if output_dir.isdir() and remove_if_exists:
         output_dir.rm(recursive=True)
-    output_dir.mkdir()
+    output_dir.mkdir(exist_ok=True)
     missing = []
     for family in families:
         inp = input_dir.sub('families', family, *filepath)
         filename = FilePath(filepath[-1])
-        out = output_dir.sub(f'{filename.name}-{family}{filename.ext}') if include_original_name else output_dir.sub(family)
+        if include_original_name:
+            if extension is not None:
+                ext = extension
+                name = filename.base[:-len(ext)]
+            else:
+                ext = filename.ext
+                name = filename.name
+            out = output_dir.sub(f'{name}-{family}{ext}') 
+        else:
+            out = output_dir.sub(family)
         if inp.exists():
             if zip:
                 shutil.make_archive(str(out), 'zip', str(inp))
@@ -146,6 +156,10 @@ def main(family_list_file: Union[FilePath, str], sample_size: Union[int, str, No
         collect_results(families, directory, ['results'], directory.sub('collected_results', 'zip_results'), zip=True)
         collect_results(families, directory, ['results', 'diagram.json'], directory.sub('collected_results', 'diagrams'), hide_missing=True)
         collect_results(families, directory, ['lists'], directory.sub('collected_results', 'families'), include_original_name=False)
+        collect_results(families, directory, ['results', 'consensus.cif'], directory.sub('collected_results', 'consensus'))
+        collect_results(families, directory, ['results', 'consensus.sses.json'], directory.sub('collected_results', 'consensus'), remove_if_exists=False, extension='.sses.json')
+        bulk_dir = directory.sub('collected_results', 'bulk').mkdir()
+        shutil.make_archive(str(bulk_dir.sub('consensus')), 'zip', str(directory.sub('collected_results', 'consensus')))
         missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory.sub('collected_results', 'consensus_3d'), print_missing=True)
         with directory.sub('missing_results.txt').open('w') as w:
             for family in missing_families:
