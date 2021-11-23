@@ -48,7 +48,8 @@ namespace StructureCutter
             options.AddOption(Option.StringOption(new string[]{"--sources"}, v => { sources = v.Split(' ', StringSplitOptions.RemoveEmptyEntries); })
                 .AddParameter("SOURCES")
                 .AddHelp("Space-separated list of URL sources (each starting with http:// or file:///).")
-                .AddHelp("{pdb} in each source will be replaced by the actual PDB ID, {pdb12} will be replaced by the 2 middle characters of the PDB ID.")
+                .AddHelp("{pdb} in each source will be replaced by the actual PDB ID,")
+                .AddHelp("{pdb_0}, {pdb_1}, {pdb_2}, {pdb_3} will be replaced by the individual characters of the PDB ID.")
                 .AddHelp($"Default: '{String.Join(' ', DEFAULT_URL_SOURCES)}'")
             );
             options.AddOption(Option.StringOption(new string[]{"--failures"}, v => { failuresFile = v; })
@@ -67,6 +68,22 @@ namespace StructureCutter
             }
             string domainListFile = otherArgs[0];
 
+            if (sources.Length == 0){
+                Options.PrintError("Option --sources has invalid value. You must specify at least one source.");
+                return 1;
+            }
+            foreach (string source in sources){
+                string dummyUrl = FormatSource(source, "1234");
+                if (!Uri.IsWellFormedUriString(dummyUrl, UriKind.RelativeOrAbsolute)) {
+                    Options.PrintError($"Option --sources has invalid value. Invalid source: \"{source}\". The source must be a valid URL, possibly with special marks ({{pdb}}, {{pdb_0}}, {{pdb_1}}, {{pdb_2}}, {{pdb_3}}).");
+                    return 1;
+                }
+            }
+
+            if (cifOutDirectory == "" && pdbOutDirectory == ""){
+                Console.WriteLine("WARNING: You did not specify either of --cif_outdir, --pdb_outdir. No output will be produced.");
+            }
+            
 
             Console.WriteLine($"Domain list file: {domainListFile}");
             Console.WriteLine($"Sources:");
@@ -76,14 +93,6 @@ namespace StructureCutter
             Console.WriteLine($"CIF output directory: {cifOutDirectory}");
             Console.WriteLine($"PDB output directory: {pdbOutDirectory}");
 
-            if (sources.Length == 0){
-                Options.PrintError($"Must specify at least one source.");
-                return 1;
-            }
-            if (cifOutDirectory == "" && pdbOutDirectory == ""){
-                Console.WriteLine("WARNING: You did not specify either of --cif_outdir, --pdb_outdir. No output will be produced.");
-            }
-            
 
             Domain[] domains;
             try {
@@ -116,7 +125,8 @@ namespace StructureCutter
             // TODO nice progress bar
             progressBar.Start();
             foreach (string pdb in domainsByPdb.Keys){
-                string[] urls = sources.Select(source => source.Replace("{pdb}", pdb).Replace("{pdb12}", pdb.Substring(1, 2))).ToArray();
+                // string[] urls = sources.Select(source => source.Replace("{pdb}", pdb).Replace("{pdb12}", pdb.Substring(1, 2))).ToArray();
+                string[] urls = sources.Select(source => FormatSource(source, pdb)).ToArray();
                 string url;
                 string cifString;
                 try {
@@ -124,7 +134,7 @@ namespace StructureCutter
                     downloadedCounts[Array.IndexOf(urls, url)]++;
                 } catch (Exception ex) {
                     if (failuresFile == null){
-                        throw ex;
+                        throw;
                     } else {
                         string message = pdb;
                         if (failuresFile == "-"){
@@ -206,68 +216,17 @@ namespace StructureCutter
                 Console.WriteLine($"Downloaded {downloadedCounts[i]} PDB entries from {sources[i]}");
             }
 
-            // Stream stream = new FileStream("el_file.gz", FileMode.Open);
-            // GZipStream ungzipper = new GZipStream(stream, CompressionMode.Decompress);
-
             return 0;
         }
 
-        // static void ProcessPDB(string cifString){
-        //     CifPackage package = CifPackage.FromString(cifString);
-        //     if (package.Blocks.Length == 0){
-        //         throw new Exception("CIF file contains no blocks.");
-        //     }
-        //     CifBlock block = package.Blocks[0];
-        //     CifCategory atomSiteCategory = block.GetCategory("_atom_site");
-
-        //     foreach (Domain domain in domainsByPdb[pdb]){
-        //         Filter filter = Filter.StringEquals("label_asym_id", domain.Chain) & Filter.IntegerInRange("label_seq_id", domain.Ranges);
-        //         int[] rows = filter.GetFilteredRows(atomSiteCategory).ToArray();
-
-        //         // Select only the first model, if there are more than one
-        //         if (atomSiteCategory.ContainsItem("pdbx_PDB_model_num")){
-        //             int[] modelNumbers = atomSiteCategory.GetItem("pdbx_PDB_model_num").GetIntegers(rows).Distinct().ToArray();
-        //             if (modelNumbers.Length == 0) {
-        //                 Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-        //                 break;
-        //             }
-        //             if (modelNumbers.Length > 1) {
-        //                 int firstModelNumber = modelNumbers[0];
-        //                 Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using only model {firstModelNumber})");
-        //                 Filter modelFilter= Filter.IntegerInRange("pdbx_PDB_model_num", (firstModelNumber, firstModelNumber));
-        //                 rows = (Filter.TheseRows(rows) & modelFilter).GetFilteredRows(atomSiteCategory).ToArray();
-        //             }
-        //         }
-
-        //         if (cifOutDirectory != ""){
-        //             string outputFile = Path.Combine(cifOutDirectory, domain.Name + OUTPUT_EXTENSION);
-        //             using (StreamWriter w = new StreamWriter(outputFile)){
-        //                 w.WriteLine("#");
-        //                 w.WriteLine("data_" + block.Name);
-        //                 w.WriteLine();
-        //                 if (block.ContainsCategory("_entry")){
-        //                     w.Write(block.GetCategory("_entry").MakeCifString());
-        //                 }
-        //                 w.Write(atomSiteCategory.MakeCifString(rows));
-        //             }
-        //         }
-
-        //         if (pdbOutDirectory != ""){
-        //             string pdbOutputFile = Path.Combine(pdbOutDirectory, domain.Name + PDB_OUTPUT_EXTENSION);
-        //             ModelCollection models = ModelCollection.FromCifBlock(block, rows);
-        //             if (models.Count == 0) {
-        //                 Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-        //                 break;
-        //             }
-        //             Model model = models.GetModel(0);
-        //             if (models.Count > 1) {
-        //                 Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using onlymodel {model.ModelNumber})");
-        //             }
-        //             RenumberModel(model);
-        //             PrintModelToPdb(model, pdbOutputFile);
-        //         }
-        //     }
-        // }
+        /** Add PDB ID into source, e.g. "http://blabla.org/{pdb_1}{pdb_2}/{pdb}.cif" -> "http://blabla.org/tq/1tqn.cif" */
+        static string FormatSource(string source, string pdb){
+            source = source.Replace("{pdb}", pdb);
+            for (int i = 0; i < 4; i++){
+                source = source.Replace($"{{pdb_{i}}}", pdb.Substring(i, 1));
+            }
+            return source;
+        }
 
         /** Try to decompress a gzipped byte-sequence into a string. If it is not a gzip (does not start with bytes 1f-8b), return null. */
         static string DecompressGzip(byte[] gzipped){

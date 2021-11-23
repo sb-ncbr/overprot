@@ -12,9 +12,9 @@ GUNICORN=$(which gunicorn)
 NGINX=$(which nginx)
 
 START_TIME=$(date -u +%Y%m%d_%H%M%S)
-LOG_DIR="$ROOT_DIR/logs/run_$START_TIME"
+LOG_DIR="$VAR_DIR/logs/run_$START_TIME"
 echo "LOGS: $LOG_DIR"
-PROC_DIR="$ROOT_DIR/running_processes"
+PROC_DIR="$VAR_DIR/running_processes"
 rm -rf $PROC_DIR
 mkdir -p $PROC_DIR
 

@@ -16,13 +16,14 @@ Example usage:
 # # sudo apt install pymol
 
 import argparse
-from typing import Dict, Any, Optional, Union, List, Literal
+from typing import Dict, Any, Optional, Union
 
 from .libs import lib
 from .libs import lib_domains
 from .libs import lib_sses
 from .libs import lib_pymol
-from .libs.lib import RedirectIO, Config, ConfigSection, FilePath
+from .libs.lib import RedirectIO, FilePath
+from .libs.lib_overprot_config import OverProtConfig
 
 from . import domains_from_pdbeapi
 from . import select_random_domains
@@ -34,43 +35,8 @@ from . import acyclic_clustering
 from . import draw_diagram
 from . import cealign_all
 from . import format_domains
+from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL
 
-
-#  CONSTANTS  ################################################################################
-
-from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL, MAPSCI_EXE, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
-
-#  FUNCTIONS  ################################################################################
-
-class OverProtConfig(Config):
-    class DownloadCS(ConfigSection):
-        structure_sources: List[str]
-    class SampleSelectionCS(ConfigSection):
-        unique_pdb: bool
-        or_all: bool
-    class MapsciCS(ConfigSection):
-        init: Literal['median', 'center']
-        n_max: int
-    class OverProtCS(ConfigSection):
-        force_ssa: bool
-        secstrannotator_rematching: bool
-        annotate_whole_family: bool
-    class FilesCS(ConfigSection):
-        results_dir: str
-        clean_pdb_cif: bool
-        clean_aligned_cif: bool
-    class VisualizationCS(ConfigSection):
-        coloring: Literal['color', 'rainbow']
-        create_multi_session: bool
-
-    download: DownloadCS
-    sample_selection: SampleSelectionCS
-    mapsci: MapsciCS
-    sec_str_consensus: OverProtCS
-    files: FilesCS
-    visualization: VisualizationCS
-
-#  MAIN  #####################################################################################
 
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
@@ -80,8 +46,13 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('directory', help='Directory to save everything in', type=str)
     parser.add_argument('--config', help=f'Configuration file (default: {DEFAULT_CONFIG_FILE})', type=str, default=DEFAULT_CONFIG_FILE)
     parser.add_argument('--domains', help='File with the list of input domains (do not download domain list)', type=str)
-    parser.add_argument('--structure_source', help='Override download.structure_sources parameter from the config file. Only one source can be specified.', type=str)
+    parser.add_argument('--structure_source', help='Prepend a structure source to download.structure_sources parameter from the config file.', type=str)
     args = parser.parse_args()
+    if args.sample_size != 'all':
+        try:
+            args.sample_size = int(args.sample_size)
+        except ValueError:
+            parser.error(f"argument sample_size: invalid value: '{args.sample_size}', must be int or 'all'")
     return vars(args)
 
 
@@ -96,8 +67,8 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     datadir = FilePath(directory)
     
     conf = OverProtConfig(config, allow_extra=False, allow_missing=False)
-    if structure_source is not None:
-        conf.download.structure_sources = [structure_source]
+    if structure_source is not None and structure_source != '':
+        conf.download.structure_sources.insert(0, structure_source)
     results = conf.files.results_dir
 
     print('Configuration:', config)
@@ -134,7 +105,7 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     print('\n::: SELECT SAMPLE :::')
     with RedirectIO(stdout=datadir.sub('sample.json')):
         select_random_domains.main(datadir.sub('family.json'), size=sample_size, or_all=conf.sample_selection.or_all, unique_pdb=conf.sample_selection.unique_pdb)
-    if conf.sec_str_consensus.annotate_whole_family:
+    if conf.overprot.annotate_whole_family:
         with RedirectIO(stdout=datadir.sub('sample-whole_family.json')):
             select_random_domains.main(datadir.sub('family.json'), size='all', unique_pdb=False)
         
@@ -145,8 +116,11 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     
     # Download structures in CIF, cut the domains and save them as CIF and PDB
     print('\n::: DOWNLOAD :::')
-    sample_for_annotation = datadir.sub('sample-whole_family.json' if conf.sec_str_consensus.annotate_whole_family else 'sample.json')
-    lib.run_dotnet(STRUCTURE_CUTTER_DLL, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), '--failures', datadir.sub('StructureCutter-failures.txt'), timing=True) 
+    sample_for_annotation = datadir.sub('sample-whole_family.json' if conf.overprot.annotate_whole_family else 'sample.json')
+    lib.run_dotnet(STRUCTURE_CUTTER_DLL, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), 
+                   '--cif_outdir', datadir.sub('cif'), '--pdb_outdir', datadir.sub('pdb'), 
+                   '--failures', datadir.sub('StructureCutter-failures.txt'), 
+                   timing=True) 
     
     # Check if some failed-to-download structures are obsolete or what; remove them from the sample if yes
     some_still_missing = remove_obsolete_pdbs.main(datadir.sub('sample.json'), datadir.sub('StructureCutter-failures.txt'), 
@@ -185,13 +159,13 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # Calculate SSE positions and cluster SSEs
     # Will add manual labels into the consensus annotation, if $DIR/manual-*.sses.json and $DIR/manual-*.cif exist
     print('\n::: CLUSTERING :::')
-    lib_sses.compute_ssa(sample_for_annotation, datadir.sub('cif_cealign'), skip_if_exists = not conf.sec_str_consensus.force_ssa, progress_bar=True)
+    lib_sses.compute_ssa(sample_for_annotation, datadir.sub('cif_cealign'), skip_if_exists = not conf.overprot.force_ssa, progress_bar=True)
     datadir.sub('sample.json').cp(datadir.sub('cif_cealign', 'sample.json'))
     with RedirectIO(tee_stdout=datadir.sub('making_guide_tree.log')):
         make_guide_tree.main(datadir.sub('cif_cealign'), show_tree=False, progress_bar=True)
     with RedirectIO(tee_stdout=datadir.sub('clustering.log')):
-        acyclic_clustering.main(datadir.sub('cif_cealign'), force_ssa=conf.sec_str_consensus.force_ssa, secstrannotator_rematching=conf.sec_str_consensus.secstrannotator_rematching, min_occurrence=0, fallback=60)
-    if conf.sec_str_consensus.annotate_whole_family:
+        acyclic_clustering.main(datadir.sub('cif_cealign'), force_ssa=conf.overprot.force_ssa, secstrannotator_rematching=conf.overprot.secstrannotator_rematching, min_occurrence=0, fallback=60)
+    if conf.overprot.annotate_whole_family:
         lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], datadir.sub('cif_cealign'), extra_options='--fallback 60', outdirectory=datadir.sub('annotated_sses'))
 
     # Tidy up
@@ -228,14 +202,13 @@ def main(family: str, sample_size: Union[int, str, None], directory: Union[FileP
     # TODO write docs for each module/script, update README.txt
     return None
 
+
 def _main():
     args = parse_args()
     exit_code = main(**args)
     if exit_code is not None:
         exit(exit_code)
 
+
 if __name__ == '__main__':
     _main()
-
-# #############################################################################################
-

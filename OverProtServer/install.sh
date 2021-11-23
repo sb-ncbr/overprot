@@ -5,18 +5,19 @@ cd $DIR
 
 sudo echo  # check sudo before actually doing something
 
+sudo apt-get update -y
+sudo apt-get install -y python3-venv
+sudo apt-get install -y nginx
+sudo apt-get install -y redis-server
+sudo apt-get install -y gettext-base   # for envsubst
+
 for ARG in $@; do
     if [ "$ARG" = "--clean" ]; then
         rm -rf venv/;
     fi;
 done;
 
-sudo apt-get update -y
-sudo apt-get install -y python3-venv
 python3 -m venv venv/
-. venv/bin/activate
+source venv/bin/activate
 python3 -m pip install -r requirements.txt
-
-sudo apt-get install -y nginx
-sudo apt-get install -y redis-server
-sudo apt-get install -y gettext-base   # for envsubst
+python3 -m pip freeze > requirements-actual.txt

@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Any, Union
 
-from .constants import DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_FAILED, DB_DIR_ARCHIVED, DB_DIR_DELETED, JOB_STATUSINFO_FILE, JOB_INFO_FILE, JOB_DOMAINS_FILE, JOB_DATADIR, JOB_DATAZIP, JOB_RESULT_FILE, JOB_STDOUT_FILE, JOB_STDERR_FILE, JOB_ERROR_MESSAGE_FILE, OVERPROT_PYTHON, OVERPROT_PY, TIME_FORMAT, COMPLETED_JOB_STORING_DAYS, QUEUE_NAME, JOB_TIMEOUT, JOB_CLEANUP_TIMEOUT
+from .constants import DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_FAILED, DB_DIR_ARCHIVED, DB_DIR_DELETED, JOB_STATUSINFO_FILE, JOB_INFO_FILE, JOB_DOMAINS_FILE, JOB_DATADIR, JOB_DATAZIP, JOB_RESULT_FILE, JOB_STDOUT_FILE, JOB_STDERR_FILE, JOB_ERROR_MESSAGE_FILE, OVERPROT_PYTHON, OVERPROT_PY, OVERPROT_STRUCTURE_SOURCE, TIME_FORMAT, COMPLETED_JOB_STORING_DAYS, QUEUE_NAME, JOB_TIMEOUT, JOB_CLEANUP_TIMEOUT
 from .domain_parsing import Domain
 
 
@@ -35,51 +35,60 @@ def process_job(job_id: str):
     job_status = JobStatusInfo.update(Path(DB_DIR_RUNNING, job_id, JOB_STATUSINFO_FILE), status=JobStatus.RUNNING, start_time=get_current_time())
     assert job_status.id == job_id
 
+    stdout_file = Path(DB_DIR_RUNNING, job_id, JOB_STDOUT_FILE)
+    stderr_file = Path(DB_DIR_RUNNING, job_id, JOB_STDERR_FILE)
+    error_message_file = Path(DB_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE)
+    result_file = Path(DB_DIR_RUNNING, job_id, JOB_RESULT_FILE)
+
     info = json.loads(Path(DB_DIR_RUNNING, job_id, JOB_INFO_FILE).read_text())
-    with Path(DB_DIR_RUNNING, job_id, JOB_RESULT_FILE).open('w') as w:
+    with open(result_file, 'w') as w:
         for k, v in info.items():
             w.write(f'{k}: {v}\n\n')
         w.write('Running...\n\n')
 
     # time.sleep(10)
-    try:
-        proc = subprocess.run([OVERPROT_PYTHON, OVERPROT_PY, job_id, 'all', Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), 
-                            '--domains', Path(DB_DIR_RUNNING, job_id, JOB_DOMAINS_FILE)], 
-                            timeout=JOB_TIMEOUT, capture_output=True, encoding='utf8')
-        proc_returncode: Optional[int] = proc.returncode
-        proc_stdout = proc.stdout
-        proc_stderr = proc.stderr
-        successfull = proc.returncode==0
-    except subprocess.TimeoutExpired as ex:
-        proc_returncode = None
-        proc_stdout = anystr_to_str(ex.stdout)
-        proc_stderr = anystr_to_str(ex.stderr)
-        successfull = False
-        Path(DB_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE).write_text(f'Job timeout expired ({JOB_TIMEOUT} seconds).')
-    except Exception as ex:
-        proc_returncode = None
-        proc_stdout = ''
-        proc_stderr = str(ex)
-        successfull = False
-        error_message = f"Unexpected error:\n{type(ex).__name__}: {ex}"
-        Path(DB_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE).write_text(error_message)
+    with open(stdout_file, 'w') as w_out:
+        with open(stderr_file, 'w') as w_err:
+            try:
+                proc = subprocess.run([OVERPROT_PYTHON, OVERPROT_PY, 
+                                    job_id, 'all', Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), 
+                                    '--domains', Path(DB_DIR_RUNNING, job_id, JOB_DOMAINS_FILE),
+                                    '--structure_source', OVERPROT_STRUCTURE_SOURCE], 
+                                    check=True, timeout=JOB_TIMEOUT, stdout=w_out, stderr=w_err)
+                proc_returncode: Optional[int] = proc.returncode
+                successfull = True
+                error_message = None
+            except subprocess.CalledProcessError as ex:
+                proc_returncode = ex.returncode
+                successfull = False
+                error_message = 'Please contact us and include the job ID in your message.'
+                print(f'Unexpected error:\n{type(ex).__name__}: {ex}', file=w_err)
+            except subprocess.TimeoutExpired as ex:
+                proc_returncode = None
+                successfull = False
+                error_message = f'Job timeout expired ({JOB_TIMEOUT} seconds).'
+                print(error_message, file=w_err)
+            except Exception as ex:
+                proc_returncode = None
+                successfull = False
+                error_message = 'Please contact us and include the job ID in your message.'
+                print(f'Unexpected error:\n{type(ex).__name__}: {ex}', file=w_err)
+            if error_message is not None:
+                error_message_file.write_text(error_message)
 
 
-    with Path(DB_DIR_RUNNING, job_id, JOB_RESULT_FILE).open('a') as w:
+    with open(result_file, 'a') as w:
         if successfull:
             w.write('Completed\n\n')
         elif proc_returncode is not None: 
             w.write(f'Failed (exit code: {proc_returncode})\n\n')
         else: 
             w.write(f'Failed (timed out)\n\n')
-        w.write(f'Stdout:\n{proc_stdout}\n\n')
-        w.write(f'Stderr:\n{proc_stderr}\n\n')
-    Path(DB_DIR_RUNNING, job_id, JOB_STDOUT_FILE).write_text(proc_stdout)
-    Path(DB_DIR_RUNNING, job_id, JOB_STDERR_FILE).write_text(proc_stderr)
 
-    if not successfull and proc_returncode is not None:
-        err_msg = extract_error_message(proc_stderr)
-        Path(DB_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE).write_text(err_msg)
+    # if not successfull and proc_returncode is not None:
+    #     proc_stderr = Path(DB_DIR_RUNNING, job_id, JOB_STDERR_FILE).read_text()
+    #     err_msg = extract_error_message(proc_stderr)
+    #     error_message_file.write_text(err_msg)
         
 
 
@@ -243,24 +252,3 @@ class JobStatusInfo(object):
             return JobStatusInfo.load(Path(DB_DIR_DELETED, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         return JobStatusInfo(id=job_id, status=JobStatus.NONEXISTENT)
-
-
-# def process_job_fake(job_id: str, info: dict, duration: int):
-#     time.sleep(5) #debug
-#     job = rq.get_current_job()
-#     qid = job.get_id()
-#     Path(DB_DIR_RUNNING, job_id, JOB_STATUS_FILE).write_text('PROCESSING')
-#     with Path(DB_DIR_RUNNING, job_id, JOB_RESULT_FILE).open('w') as w:
-#         for k, v in info.items():
-#             w.write(f'{k}: {v}\n\n')
-#         w.write(f'Enqueued as {qid}\n\n')
-#         w.flush()
-#         for i in range(1, duration+1):
-#             time.sleep(1)
-#             w.write(f'{i}\n')
-#             w.flush()
-#         domains = Path(DB_DIR_RUNNING, job_id, JOB_DOMAINS_FILE).read_text()
-#         w.write(domains + '\n\n')    
-#         w.write('Completed\n')
-#     Path(DB_DIR_RUNNING, job_id, JOB_STATUS_FILE).write_text('COMPLETED')
-        

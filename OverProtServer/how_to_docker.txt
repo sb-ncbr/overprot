@@ -50,6 +50,8 @@ https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana [1:32:5
 $ docker-compose -f mongo-docker-compose.yaml up -d  # start containers
 $ docker-compose -f mongo-docker-compose.yaml down   # stop containers
 -d detached
+depends_on:, container_name:, build:context:, restart:on-failure
+services are reachable by name (also in nginx.conf)
 
 $ docker tag ... ...  # copy image with new name
 

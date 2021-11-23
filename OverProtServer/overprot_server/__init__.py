@@ -6,12 +6,13 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Union, Dict
 
-from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_RESULT_FILE, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
+from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
 from . import domain_parsing
 from . import queuing
 
 
 app = flask.Flask(__name__)
+app.url_map.strict_slashes = False  # This is needed because some browsers (e.g. older Opera) sometimes add trailing /, where you don't want them (WTF?)
 
 class ResponseTuple(NamedTuple):
     response: Union[str, dict]
@@ -29,10 +30,40 @@ class ResponseTuple(NamedTuple):
 def get_uuid() -> uuid.UUID:
     return uuid.uuid4()
 
+# @app.route('/test')
+# def test() -> Any:
+#     result = []
+#     scheme = flask.request.scheme
+#     result.append(f'Scheme: {scheme}')
+#     url1 = flask.url_for('home')
+#     url2 = flask.url_for('home', _external=True)
+#     url3 = flask.url_for('home', _external=True, _scheme=scheme)
+#     result.append(f'<a href="/redirect_home_relative">/redirect_home_relative  - {url1}</a>')
+#     result.append(f'<a href="/redirect_home_external">/redirect_home_external  - {url2}</a>')
+#     result.append(f'<a href="/redirect_home_external_scheme">/redirect_home_external_scheme  - {url3}</a>')
+#     headers = flask.request.headers
+#     result.append('')
+#     result.append('Headers:')
+#     for key, value in headers.items():
+#         result.append(f'&nbsp;&nbsp;<b>{key}:</b> {value}')
+#     return '<br>\n'.join(result)
+
+# @app.route('/redirect_home_relative')
+# def redirect_home_relative() -> Any:
+#     return flask.redirect(flask.url_for('home'))
+
+# @app.route('/redirect_home_external')
+# def redirect_home_external() -> Any:
+#     return flask.redirect(flask.url_for('home', _external=True))
+
+# @app.route('/redirect_home_external_scheme')
+# def redirect_home_external_scheme() -> Any:
+#     scheme = flask.request.scheme
+#     return flask.redirect(flask.url_for('home', _external=True, _scheme=scheme))
 
 @app.route('/')
 def index() -> Any:
-    return flask.redirect('/home')
+    return flask.redirect(flask.url_for('home'))
 
 @app.route('/home')
 def home() -> Any:
@@ -115,7 +146,7 @@ def job(job_id: str) -> Any:
         raise AssertionError(f'Unknow job status: {job_status.status}')
 
 
-@app.route('/view/', methods=['GET'])  # trailing / is needed because Opera automatically adds one (WTF?)
+@app.route('/view', methods=['GET'])
 def view() -> Any:
     values = flask.request.values 
     family = values.get('family', None)
@@ -159,6 +190,24 @@ def results(job_id: str, file: str) -> Any:
         except FileNotFoundError:
             return flask.send_file(Path(DB_DIR_FAILED, job_id, file))
 
+# DEBUG
+@app.route('/settings')
+def settings() -> Any:
+    pairs = {
+        'OVERPROT_PYTHON': constants.OVERPROT_PYTHON,
+        'OVERPROT_PY': constants.OVERPROT_PY,
+        'OVERPROT_STRUCTURE_SOURCE': constants.OVERPROT_STRUCTURE_SOURCE,
+        'VAR_DIR': constants.VAR_DIR,
+        'DATA_DIR': constants.DATA_DIR,
+        'QUEUE_NAME': constants.QUEUE_NAME,
+        'MAXIMUM_JOB_DOMAINS': constants.MAXIMUM_JOB_DOMAINS,
+        'JOB_TIMEOUT': constants.JOB_TIMEOUT,
+        'JOB_CLEANUP_TIMEOUT': constants.JOB_CLEANUP_TIMEOUT,
+        'COMPLETED_JOB_STORING_DAYS': constants.COMPLETED_JOB_STORING_DAYS,
+    }
+    key_width = max(len(key) for key in pairs.keys())
+    text = '\n'.join(f'{k:{key_width}}: {v}' for k, v in pairs.items())
+    return ResponseTuple.plain(text)
 
 # DEBUG
 @app.route('/data/<path:file>')

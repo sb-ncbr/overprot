@@ -2,7 +2,7 @@
 
 ```md
 
-/server/
+/srv/
     bin/
         overprot/  **OverProt git repository**
             OverProt/
@@ -10,7 +10,7 @@
                 startup-docker.sh  **Docker entrypoint**
                 nginx/
                     nginx-docker.template.conf  **$NGINX_CONF_TEMPLATE**
-    var/  **$ROOT_DIR** --> TODO mount host directory for persistence
+    var/  **$VAR_DIR - to be mounted** 
         nginx.conf
         logs/
             run_$START_TIME/  **$LOG_DIR**
@@ -32,7 +32,7 @@
             Failed/
             Archived/
             Deleted/
-    data/ **Static data served by Nginx**
+    data/ **Static data served by Nginx - to be mounted**
         db/
             LAST_UPDATE.txt
             cath_b_names_options.json
@@ -48,7 +48,12 @@
                     pdbs.csv, pdbs.html, pdbs.json, pdbs-demo.html
                     domains.csv, domains.html, domains.json, domains-demo.html
                     sample.csv, sample.html, sample.json, sample-demo.html
-    ssl/  --> TODO mount
-        ...
+    ssl/  **SSL certificate - to be mounted**
+        certificate.pem
+        key.pem
+    pdb/ **PDB mirror (can be elsewhere) - to be mounted**
+        mmCIF/
+            tq/, ...
+                1tqn.cif.gz, ...
             
 ```

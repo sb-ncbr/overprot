@@ -42,27 +42,26 @@ class Domain(object):
     chain: str
     ranges: List[Range]
 
-    def __init__(self, pdb: str, chain: Optional[str] = None, ranges: Optional[List[Range]] = None) -> None:
+    def __init__(self, pdb: str, chain: str, ranges: Optional[List[Range]] = None) -> None:
         self.pdb = pdb
-        self.chain = chain if chain is not None else DEFAULT_CHAIN
+        self.chain = chain
         self.ranges = ranges if ranges is not None else [Range(None, None)]
 
     @classmethod
     def parse(cls, string: str) -> 'Domain':
         fields = string.split(DOMAIN_FIELD_SEPARATOR)
+        if len(fields) < 2:
+            raise DomainParsingError('Chain must be specified')
+
         pdb = fields[0].strip()
         if not _is_valid_pdb(pdb):
-            raise DomainParsingError(f'{string} is not a valid PDB identifier')
+            raise DomainParsingError(f'{pdb} is not a valid PDB identifier')
         pdb = pdb.lower()
-        if not pdb.isalnum():
-            raise DomainParsingError(string)
-        chain: Optional[str]
-        if len(fields) >= 2:
-            chain = fields[1].strip()
-            if chain == '':
-                raise DomainParsingError('Chain must not be empty')
-        else:
-            chain = None
+
+        chain = fields[1].strip()
+        if chain == '':
+            raise DomainParsingError('Chain must not be empty')
+            
         ranges: Optional[List[Range]]
         if len(fields) >= 3:
             try:
@@ -77,7 +76,7 @@ class Domain(object):
         ranges = DOMAIN_FIELD_SEPARATOR.join(str(r) for r in self.ranges)
         return f'{self.pdb}{DOMAIN_FIELD_SEPARATOR}{self.chain}{DOMAIN_FIELD_SEPARATOR}{ranges}'
 
-    def __lt__(self, other: 'Domain') -> str:
+    def __lt__(self, other: 'Domain') -> bool:
         return repr(self) < repr(other)
 
 

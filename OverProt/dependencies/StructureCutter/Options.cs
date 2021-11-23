@@ -125,10 +125,8 @@ namespace StructureCutter
 
         public static void PrintError(String message, params object[] args)
         {
-            string formattedMessage = String.Format(message, args);
+            string formattedMessage = args.Length>0 ? String.Format(message, args) : message;
             string appName = System.AppDomain.CurrentDomain.FriendlyName;
-            // Lib2.WriteError(String.Format(message, args)
-            //     + "\nRun   dotnet " + System.AppDomain.CurrentDomain.FriendlyName + ".dll --help   for usage information.");
             Console.WriteLine(formattedMessage);
             Console.WriteLine($"Run   dotnet {appName}.dll --help   for usage information.");
         }

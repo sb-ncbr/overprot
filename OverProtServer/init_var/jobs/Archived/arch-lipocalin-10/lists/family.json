@@ -1,0 +1,202 @@
+{
+  "1b56": [
+    {
+      "domain": "1b56_A_01",
+      "pdb": "1b56",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "1pmp": [
+    {
+      "domain": "1pmp_A_01",
+      "pdb": "1pmp",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "2wut": [
+    {
+      "domain": "2wut_A_01",
+      "pdb": "2wut",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "3nr3": [
+    {
+      "domain": "3nr3_A_01",
+      "pdb": "3nr3",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4a1h": [
+    {
+      "domain": "4a1h_A_01",
+      "pdb": "4a1h",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4a1y": [
+    {
+      "domain": "4a1y_A_01",
+      "pdb": "4a1y",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4azm": [
+    {
+      "domain": "4azm_A_01",
+      "pdb": "4azm",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4azn": [
+    {
+      "domain": "4azn_A_01",
+      "pdb": "4azn",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4azo": [
+    {
+      "domain": "4azo_A_01",
+      "pdb": "4azo",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4azp": [
+    {
+      "domain": "4azp_A_01",
+      "pdb": "4azp",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4azr": [
+    {
+      "domain": "4azr_A_01",
+      "pdb": "4azr",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "4lkp": [
+    {
+      "domain": "4lkp_A_01",
+      "pdb": "4lkp",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "5bvt": [
+    {
+      "domain": "5bvt_A_01",
+      "pdb": "5bvt",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "5hz5": [
+    {
+      "domain": "5hz5_A_01",
+      "pdb": "5hz5",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6ew2": [
+    {
+      "domain": "6ew2_A_01",
+      "pdb": "6ew2",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6xu5": [
+    {
+      "domain": "6xu5_A_01",
+      "pdb": "6xu5",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6xu9": [
+    {
+      "domain": "6xu9_A_01",
+      "pdb": "6xu9",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6xvq": [
+    {
+      "domain": "6xvq_A_01",
+      "pdb": "6xvq",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6xvy": [
+    {
+      "domain": "6xvy_B_01",
+      "pdb": "6xvy",
+      "chain_id": "B",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ],
+  "6xw9": [
+    {
+      "domain": "6xw9_A_01",
+      "pdb": "6xw9",
+      "chain_id": "A",
+      "ranges": ":",
+      "auth_chain_id": null,
+      "auth_ranges": null
+    }
+  ]
+}

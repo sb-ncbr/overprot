@@ -9,7 +9,7 @@ sudo nginx -s quit 2> /dev/null
 
 # Kill Gunicorn and RedisQueue workers
 
-PROC_DIR="$ROOT_DIR/running_processes"
+PROC_DIR="$VAR_DIR/running_processes"
 
 for PID in $(ls $PROC_DIR) 
 do 
