@@ -7,18 +7,18 @@ services:
     image: registry.gitlab.com/midlik/overprot
     ports: 
       - 8080:80
-      - 4443:443
+      # - 4443:443
     volumes:
       - /home/adam/Workspace/Python/OverProt/docker_mount/var:/srv/var
       - /home/adam/Workspace/Python/OverProt/docker_mount/data:/srv/data:ro
       - /home/adam/Workspace/Python/OverProt/docker_mount/pdb:/srv/pdb:ro
       # Mounted volume must contain certificate.pem (chmod 644) and key.pem (chmod 600) (only if HTTPS_PORT is set)
-      - /home/adam/Workspace/Python/OverProt/OverProt-certificate:/srv/ssl:ro
+      # - /home/adam/Workspace/Python/OverProt/OverProt-certificate:/srv/ssl:ro
     environment: 
       - N_RQ_WORKERS=8
       - N_GUNICORN_WORKERS=4
       - HTTP_PORT=80
-      - HTTPS_PORT=443
+      # - HTTPS_PORT=443
       # Primary source of PDB structures (default sources are used as fallback):
       - OVERPROT_STRUCTURE_SOURCE=file:///srv/pdb/mmCIF/{pdb_1}{pdb_2}/{pdb}.cif.gz
       # Maximum number of domains per job (default 500):

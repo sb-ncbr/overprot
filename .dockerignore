@@ -53,11 +53,11 @@
 .git/
 .dockerignore
 dockerclean.sh
-OverProt/files/
-OverProt/working_scripts/
-OverProt/dependencies/mapsci-1.0.zip
-OverProt/dependencies/mapsci-1.0-modified/
-OverProt/dependencies/SecStrAnnotator-20200701/
+OverProtCore/files/
+OverProtCore/working_scripts/
+OverProtCore/dependencies/mapsci-1.0.zip
+OverProtCore/dependencies/mapsci-1.0-modified/
+OverProtCore/dependencies/SecStrAnnotator-20200701/
 
 OverProtServer/data/
 

@@ -15,15 +15,15 @@ RUN mkdir -p var/jobs
 RUN mkdir -p var/logs
 RUN mkdir -p data
 
-COPY OverProt bin/overprot/OverProt
-RUN bash bin/overprot/OverProt/install.sh --clean
+COPY OverProtCore/ bin/overprot/OverProtCore/
+RUN bash bin/overprot/OverProtCore/install.sh --clean
 
 COPY OverProtServer/install.sh bin/overprot/OverProtServer/install.sh
 COPY OverProtServer/requirements.txt bin/overprot/OverProtServer/requirements.txt
 RUN bash bin/overprot/OverProtServer/install.sh --clean
-COPY OverProtServer bin/overprot/OverProtServer
+COPY OverProtServer/ bin/overprot/OverProtServer/
 
-COPY OverProtServer/init_var init_var
+COPY OverProtServer/init_var/ init_var/
 
 ENV N_RQ_WORKERS="8"
 ENV N_GUNICORN_WORKERS="4"

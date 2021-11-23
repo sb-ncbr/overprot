@@ -1,5 +1,5 @@
  PyMOL not running, entering library mode (experimental)
-Configuration: /server_data/overprot_software/overprot/OverProt/overprot-config.ini
+Configuration: /server_data/overprot_software/overprot/OverProtCore/overprot-config.ini
 Output directory: /server_data/overprot_data/jobs/Running/da312bcd-aca6-4264-8133-053ab50438ac/job_data
 ::: GET DOMAIN LIST :::
 

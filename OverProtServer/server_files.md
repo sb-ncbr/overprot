@@ -5,7 +5,7 @@
 /srv/
     bin/
         overprot/  **OverProt git repository**
-            OverProt/
+            OverProtCore/
             OverProtServer/  **$SW_DIR**
                 startup-docker.sh  **Docker entrypoint**
                 nginx/

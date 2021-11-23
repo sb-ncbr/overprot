@@ -8,7 +8,7 @@ Completed
 
 Stdout:
  PyMOL not running, entering library mode (experimental)
-Configuration: /server_data/overprot_software/overprot/OverProt/overprot-config.ini
+Configuration: /server_data/overprot_software/overprot/OverProtCore/overprot-config.ini
 Output directory: /server_data/overprot_data/jobs/Running/b0978d1b-72aa-43e3-ae21-11aa3cf65871/job_data
 ::: GET DOMAIN LIST :::
 

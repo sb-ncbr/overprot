@@ -1,6 +1,6 @@
 
-export OVERPROT_PYTHON='/server_data/overprot_software/overprot/OverProt/venv/bin/python'
-export OVERPROT_PY='/server_data/overprot_software/overprot/OverProt/overprot.py'
+export OVERPROT_PYTHON='/server_data/overprot_software/overprot/OverProtCore/venv/bin/python'
+export OVERPROT_PY='/server_data/overprot_software/overprot/OverProtCore/overprot.py'
 export VAR_DIR='/server_data/overprot_data'
 export NGINX_DIR='/server_data/nginx'
 
