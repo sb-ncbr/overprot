@@ -16,6 +16,7 @@ import itertools
 import subprocess
 from contextlib import contextmanager, suppress
 import multiprocessing
+import multiprocessing.pool  # needed for type annotations
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass
@@ -162,7 +163,7 @@ def invert_offsets(offsets):  # Produces inverse mapping for offsets, e.g. [0, 3
     return result
 
 def read_matrix(filename: 'FilePath', sep='\t', dtype=None) -> Tuple[np.ndarray, List[str], List[str]]:
-    with filename.open() as f:
+    with filename._open() as f:
         col_names = None
         row_names = []
         values = []
@@ -754,58 +755,58 @@ class FilePath(os.PathLike, object):
     '''Represents a path to a file or directory.
     full = dir/base = dir/name+ext
     '''
-    full: str  # full path
-    dir: str  # full directory path
-    base: str  # basename
-    name: str  # basename without extension
-    ext: str  # extension
+    _full: str  # full path
+    _dir: str  # full directory path
+    _base: str  # basename
+    _name: str  # basename without extension
+    _ext: str  # extension
 
     def __init__(self, the_path: Union[str, 'FilePath'], *subpaths: Union[str, 'FilePath']):
-        self.full = path.join(str(the_path), *map(str, subpaths))
-        self.dir, self.base = path.split(self.full)
-        self.name, self.ext = path.splitext(self.base)
+        self._full = path.join(str(the_path), *map(str, subpaths))
+        self._dir, self._base = path.split(self._full)
+        self._name, self._ext = path.splitext(self._base)
 
     def __repr__(self) -> str:
-        full_path = self.full.rstrip('/')
-        d = '/' if self.isdir() else ''
+        full_path = self._full.rstrip('/')
+        d = '/' if self.is_dir() else ''
         return f'FilePath({full_path}{d})'
     
     def __str__(self) -> str:
-        full_path = self.full.rstrip('/')
-        d = '/' if self.isdir() else ''
+        full_path = self._full.rstrip('/')
+        d = '/' if self.is_dir() else ''
         return f'{full_path}{d}'
     
     def __fspath__(self) -> str:
         return str(self)
 
     @staticmethod
-    def string(file_path: Union['FilePath', str, None]) -> Optional[str]:
+    def _string(file_path: Union['FilePath', str, None]) -> Optional[str]:
         return str(file_path) if file_path is not None else None
 
-    def abs(self) -> 'FilePath':
+    def _abs(self) -> 'FilePath':
         '''Get equivalent absolute path'''
         pwd = os.getcwd()
         return FilePath(pwd, self)
 
-    def parent(self) -> 'FilePath':
+    def _parent(self) -> 'FilePath':
         '''Get path to the parent directory'''
-        return FilePath(self.dir)
+        return FilePath(self._dir)
 
-    def sub(self, *paths: str) -> 'FilePath':
+    def _sub(self, *paths: str) -> 'FilePath':
         '''Create path relative to self (self/*paths)'''
-        return FilePath(self.full, *paths)
+        return FilePath(self._full, *paths)
 
-    def isdir(self) -> bool:
+    def is_dir(self) -> bool:
         '''Is a directory?'''
-        return path.isdir(self.full)
+        return path.isdir(self._full)
 
-    def isfile(self) -> bool:
+    def is_file(self) -> bool:
         '''Is a file?'''
-        return path.isfile(self.full)
+        return path.isfile(self._full)
 
     def exists(self) -> bool:
         '''Exists?'''
-        return path.exists(self.full)
+        return path.exists(self._full)
 
     def ls(self, recursive: bool = False, only_files: bool = False, only_dirs: bool = False) -> List['FilePath']:
         '''List files in this directory or [] if self is not a directory.'''
@@ -813,38 +814,38 @@ class FilePath(os.PathLike, object):
             result = list(self._ls_recursive())
         else:
             result = []
-            if self.isdir():
-                for file in os.listdir(self.full):
-                    result.append(FilePath(self.full, file))
+            if self.is_dir():
+                for file in os.listdir(self._full):
+                    result.append(FilePath(self._full, file))
         if only_files:
-            result = [f for f in result if f.isfile()]
+            result = [f for f in result if f.is_file()]
         if only_dirs:
-            result = [f for f in result if f.isdir()]
+            result = [f for f in result if f.is_dir()]
         return result
     
     def _ls_recursive(self, include_self: bool = False) -> Iterator['FilePath']:
         if include_self:
             yield self
-        if self.isdir():
+        if self.is_dir():
             for file in self.ls():
                 yield from file._ls_recursive(include_self=True)
 
-    def mkdir(self, *paths: str, **makedirs_kwargs) -> 'FilePath':
+    def _mkdir(self, *paths: str, **makedirs_kwargs) -> 'FilePath':
         '''Make directory self/*paths'''
-        result = self.sub(*paths)
-        os.makedirs(result.full, **makedirs_kwargs)
+        result = self._sub(*paths)
+        os.makedirs(result._full, **makedirs_kwargs)
         return result
     
     def mv(self, dest: 'FilePath') -> 'FilePath':
         '''Move a file or directory ($ mv self dest)'''
-        new_path = shutil.move(self.full, dest.full)
+        new_path = shutil.move(self._full, dest._full)
         return FilePath(new_path)
 
     def cp(self, dest: 'FilePath') -> 'FilePath':
-        if self.isdir():
-            new_path = shutil.copytree(self.full, dest.full)
+        if self.is_dir():
+            new_path = shutil.copytree(self._full, dest._full)
         else:
-            new_path = shutil.copy(self.full, dest.full)
+            new_path = shutil.copy(self._full, dest._full)
         return FilePath(new_path)
 
     def rm(self, recursive: bool = False, ignore_errors: bool = False) -> None:
@@ -854,31 +855,31 @@ class FilePath(os.PathLike, object):
         if ignore_errors:
             with suppress(OSError):
                 return self.rm(recursive=recursive, ignore_errors=False)
-        if self.isdir():
+        if self.is_dir():
             if recursive:
-                shutil.rmtree(self.full)
+                shutil.rmtree(self._full)
             else:
-                os.rmdir(self.full)
+                os.rmdir(self._full)
         else:
-            os.remove(self.full)
+            os.remove(self._full)
 
-    def open(self, *args, **kwargs) -> TextIO:  #TODO replace by .write, .append, .dump_json, .load_json where possible
+    def _open(self, *args, **kwargs) -> TextIO:  #TODO replace by .write, .append, .dump_json, .load_json where possible
         '''Open file and return its file handle (like open(self)).'''
-        return open(self.full, *args, **kwargs)
+        return open(self._full, *args, **kwargs)
     
     def clear(self) -> 'FilePath':
         '''Remove all text from a file (or create empty file if does not exist).'''
-        with self.open('w'):
+        with self._open('w'):
             pass
         return self
 
-    def glob(self, **kwargs) -> List['FilePath']:
-        matches = glob.glob(self.full, **kwargs)
+    def _glob(self, **kwargs) -> List['FilePath']:
+        matches = glob.glob(self._full, **kwargs)
         return [FilePath(match) for match in matches]
 
     def archive_to(self, dest: 'FilePath') -> 'FilePath':
-        fmt = dest.ext.lstrip('.')
-        archive = shutil.make_archive(str(dest.parent().sub(dest.name)), fmt, str(self))
+        fmt = dest._ext.lstrip('.')
+        archive = shutil.make_archive(str(dest._parent()._sub(dest._name)), fmt, str(self))
         return FilePath(archive)
 
     def dump_json(self, obj: object, minify: bool = False) -> 'FilePath':
@@ -946,11 +947,11 @@ class RedirectIO:
                  append_stdout: bool = False, append_stderr: bool = False):
         assert stdout is None or tee_stdout is None, f'Cannot specify both stdout and tee_stdout'
         assert stderr is None or tee_stderr is None, f'Cannot specify both stderr and tee_stderr'
-        self.new_in_file = FilePath.string(stdin)
-        self.new_out_file = FilePath.string(stdout)
-        self.new_err_file = FilePath.string(stderr)
-        self.tee_out_file = FilePath.string(tee_stdout)
-        self.tee_err_file = FilePath.string(tee_stderr)
+        self.new_in_file = FilePath._string(stdin)
+        self.new_out_file = FilePath._string(stdout)
+        self.new_err_file = FilePath._string(stderr)
+        self.tee_out_file = FilePath._string(tee_stdout)
+        self.tee_err_file = FilePath._string(tee_stderr)
         self.append_stdout = append_stdout
         self.append_stderr = append_stderr
 
@@ -1005,8 +1006,8 @@ class Job(NamedTuple):
     func: Callable
     args: Sequence
     kwargs: Mapping
-    stdout: FilePath
-    stderr: FilePath
+    stdout: Optional[FilePath]
+    stderr: Optional[FilePath]
 
 class JobResult(NamedTuple):
     job: Job
@@ -1014,7 +1015,7 @@ class JobResult(NamedTuple):
     worker: str
 
 def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, 
-        callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.Pool] = None) -> List[JobResult]:
+        callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.pool.Pool] = None) -> List[JobResult]:
     '''Run jobs (i.e. call job.func(*job.args, **job.kwargs)) in n_processes processes. 
     Standard output and standard error output are saved in files job.stdout and job.stderr.
     Default n_processes: number of CPUs.

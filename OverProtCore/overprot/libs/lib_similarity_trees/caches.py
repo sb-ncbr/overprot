@@ -1,6 +1,6 @@
 import math
 import heapq
-from multiprocessing import Pool
+import multiprocessing
 from typing import NamedTuple, Generic, Dict, Callable, Mapping, Iterator, Iterable, Sized, Container, Optional, List, Tuple
 
 from .. import lib
@@ -148,7 +148,7 @@ class DistanceCache(Generic[K, V], Sized, Container):
         result = [(key1, key2, distance) for (key1, key2), distance in result_dict.items()]
         return result
 
-    def calculate_distances(self, pairs: List[Tuple[K, K]], pool: Optional[Pool] = None, overwrite: bool = False, with_progress_bar: bool = False) -> None:
+    def calculate_distances(self, pairs: List[Tuple[K, K]], pool: Optional[multiprocessing.pool.Pool] = None, overwrite: bool = False, with_progress_bar: bool = False) -> None:
         # print(f'Calculating {len(pairs)} in {pool}')
         jobs = []
         index = {}
@@ -288,7 +288,7 @@ class MinFinder(Generic[V]):
         '''Iff key is smaller than current top, insert element and remove current top; otherwise do nothing.
         Return the new top size.'''
         if len(self) == 0:
-            return
+            return math.nan
         k_top_neg, _, _ = self._heap[0]
         k_neg = -key
         if k_neg > k_top_neg:

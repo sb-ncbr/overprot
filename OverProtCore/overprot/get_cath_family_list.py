@@ -25,7 +25,7 @@ CATH_DOMAIN_LIST_URL = 'ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-r
 def download_url(url: str, output_file: FilePath) -> None:
     print(f'Downloading {url}', file=sys.stderr) 
     with request.urlopen(url) as r:
-        with output_file.open('wb') as w:
+        with output_file._open('wb') as w:
             shutil.copyfileobj(r, w)
     print('Download finished.', file=sys.stderr) 
 
@@ -54,7 +54,7 @@ def main(cath_domain_list: Union[FilePath, str], download: bool = False, url: st
     if download:
         download_url(url, cath_domain_list)
     family_sizes: Counter[str] = Counter()
-    with cath_domain_list.open() as f:
+    with cath_domain_list._open() as f:
         for line in f:
             if not line.startswith('#'):
                 domain, c, a, t, h, s, o, l, i, d, length, resolution = line.split()

@@ -32,10 +32,10 @@ def parse_args() -> Dict[str, Any]:
     args = parser.parse_args()
     return vars(args)
 
-def format_pdbs_html(family: dict, file: str, table_id: Optional[str] = None, max_rows: float = math.inf):
+def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None):
     pdbs = list(family.keys())
     n_total_rows = len(pdbs)
-    if n_total_rows > max_rows:
+    if max_rows is not None and n_total_rows > max_rows:
         pdbs = pdbs[:max_rows]
         truncated = True
     else:
@@ -58,14 +58,14 @@ def format_pdbs_html(family: dict, file: str, table_id: Optional[str] = None, ma
             print(f' <button class="btn btn-link btn-load-all">Load all {n_total_rows} PDBs...</button>', file=w)
             print('</div>', file=w)
 
-def format_pdbs_csv(family: dict, file: str):
+def format_pdbs_csv(family: dict, file: Path):
     pdb_list = list(family.keys())
     with open(file, 'w') as w:
         print('pdb', file=w)
         for pdb in pdb_list:
             print(pdb, file=w)
 
-def format_pdbs_json(family: dict, file: str):
+def format_pdbs_json(family: dict, file: Path):
     pdb_list = list(family.keys())
     lib.dump_json(pdb_list, file)
 
@@ -81,9 +81,9 @@ DOMAIN_FIELDS = [
 
 MAX_ROWS_IN_DEMO_TABLE = 50
 
-def format_domains_html(domains: List[dict], file: str, table_id: Optional[str] = None, max_rows: float = math.inf):
+def format_domains_html(domains: List[dict], file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None):
     n_total_rows = len(domains)
-    if n_total_rows > max_rows:
+    if max_rows is not None and n_total_rows > max_rows:
         domains = domains[:max_rows]
         truncated = True
     else:
@@ -113,7 +113,7 @@ def format_domains_html(domains: List[dict], file: str, table_id: Optional[str] 
             print(f' <button class="btn btn-link btn-load-all">Load all {n_total_rows} domains...</button>', file=w)
             print('</div>', file=w)
 
-def format_domains_csv(domains: List[dict], file: str):
+def format_domains_csv(domains: List[dict], file: Path):
     with open(file, 'w') as w:
         header_line = ';'.join(field for header, field in DOMAIN_FIELDS)
         print(header_line, file=w)
@@ -121,15 +121,15 @@ def format_domains_csv(domains: List[dict], file: str):
             line = ';'.join(str(dom[field] or "") for header, field in DOMAIN_FIELDS)
             print(line, file=w)
 
-def format_domains_json(domains: List[dict], file: str):
+def format_domains_json(domains: List[dict], file: Path):
     lib.dump_json(domains, file)
 
 
-def main(input_family_json: str, input_sample_json: str, 
-        pdbs_html: Optional[str] = None, pdbs_demo_html: Optional[str] = None, pdbs_json: Optional[str] = None, pdbs_csv: Optional[str] = None, 
-        domains_html: Optional[str] = None, domains_demo_html: Optional[str] = None, domains_json: Optional[str] = None, domains_csv: Optional[str] = None, 
-        sample_html: Optional[str] = None, sample_demo_html: Optional[str] = None, sample_json: Optional[str] = None, sample_csv: Optional[str] = None,
-        out_dir: Optional[str] = None) -> Optional[int]:
+def main(input_family_json: Path, input_sample_json: Path, 
+        pdbs_html: Optional[Path] = None, pdbs_demo_html: Optional[Path] = None, pdbs_json: Optional[Path] = None, pdbs_csv: Optional[Path] = None, 
+        domains_html: Optional[Path] = None, domains_demo_html: Optional[Path] = None, domains_json: Optional[Path] = None, domains_csv: Optional[Path] = None, 
+        sample_html: Optional[Path] = None, sample_demo_html: Optional[Path] = None, sample_json: Optional[Path] = None, sample_csv: Optional[Path] = None,
+        out_dir: Optional[Path] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     with open(Path(input_family_json)) as r:

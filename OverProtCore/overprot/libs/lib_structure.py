@@ -115,7 +115,7 @@ class Structure(dict):
         mask = np.logical_and.reduce((self.symbol == 'C', self.name == 'CA', self.resi != None))  # type: ignore
         result = self.filter(mask)
         if remove_repeating_resi:
-            nonrep_mask = np.ones(result.count, dtype=bool)
+            nonrep_mask = np.ones(result.count, dtype=np.bool_)
             nonrep_mask[1:] = result.resi[1:] != result.resi[:-1]
             result = result.filter(nonrep_mask)
         return result

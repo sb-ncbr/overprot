@@ -53,9 +53,9 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     # TODO add docstring
 
     # Convert to absolute paths (important when calling MAPSCI)
-    input_file = FilePath(input_file).abs()
-    input_dir = FilePath(input_dir).abs()
-    output_dir = FilePath(output_dir).abs()
+    input_file = FilePath(input_file)._abs()
+    input_dir = FilePath(input_dir)._abs()
+    output_dir = FilePath(output_dir)._abs()
 
     # Read input domain list
     domains = lib_domains.load_domain_list(input_file)
@@ -70,24 +70,24 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
         print(f'Taking all {len(domains)} domains')
 
     # Prepare input file for MAPSCI
-    output_dir.mkdir(exist_ok=True)
-    with output_dir.sub(MAPSCI_INPUT_FILE_NAME).open('w') as w:
+    output_dir._mkdir(exist_ok=True)
+    with output_dir._sub(MAPSCI_INPUT_FILE_NAME)._open('w') as w:
         for domain in domains:
             w.write(domain.name + STRUCTURE_EXT + '\n')
 
     # Run MAPSCI
-    with output_dir.sub(MAPSCI_STDOUT).open('w') as stdout_writer:
-        with output_dir.sub(MAPSCI_STDERR).open('w') as stderr_writer:
+    with output_dir._sub(MAPSCI_STDOUT)._open('w') as stdout_writer:
+        with output_dir._sub(MAPSCI_STDERR)._open('w') as stderr_writer:
             subprocess.run([MAPSCI_EXE, MAPSCI_INPUT_FILE_NAME, init, '-p', str(input_dir)], cwd=str(output_dir), stdout=stdout_writer, stderr=stderr_writer)
 
 
-    ok = output_dir.sub(MAPSCI_CONSENSUS_FILE).isfile()
+    ok = output_dir._sub(MAPSCI_CONSENSUS_FILE).is_file()
     if ok:
         print('MAPSCI OK')
     else:
         print('MAPSCI FAILED')
         try:
-            with open(output_dir.sub(MAPSCI_STDERR)) as r:
+            with open(output_dir._sub(MAPSCI_STDERR)) as r:
                 error_message = r.readlines()[-1]
         except (OSError, IndexError):
             error_message = ''
@@ -96,7 +96,7 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     # Delete rotated structure files
     if not keep_rotated:
         for domain in domains:
-            output_dir.sub(domain.name + ROTATED_EXT).rm(ignore_errors=True)
+            output_dir._sub(domain.name + ROTATED_EXT).rm(ignore_errors=True)
     
     return None
 

@@ -114,7 +114,7 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory, append_o
 
 
 def map_manual_template_to_consensus(directory: FilePath):
-    manuals = directory.parent().sub('manual*.sses.json').glob()
+    manuals = directory._parent()._sub('manual*.sses.json')._glob()
     # manuals = glob.glob(path.join(directory, '..', 'manual*.sses.json'))
     if len(manuals) == 0:
         pass
@@ -123,22 +123,22 @@ def map_manual_template_to_consensus(directory: FilePath):
     else:
         manual_file = lib.single(manuals)
         chain = get_chain_from_annotation(manual_file)
-        domain_match = re.search('^(manual.*)\.sses\.json$', manual_file.base)
+        domain_match = re.search('^(manual.*)\.sses\.json$', manual_file._base)
         assert domain_match is not None
         domain = domain_match.group(1)
-        directory.parent().sub(f'{domain}.sses.json').cp(directory.sub(f'{domain}.sses.json'))  # lib.run_command('cp', path.join(directory, '..', f'{domain}.sses.json'), path.join(directory, f'{domain}.sses.json'))
-        directory.parent().sub(f'{domain}.cif').cp(directory.sub(f'{domain}.cif'))  # lib.run_command('cp', path.join(directory, '..', f'{domain}.cif'), path.join(directory, f'{domain}.cif'))
-        directory.sub('consensus.sses.json').cp(directory.sub('consensus-template.sses.json'))  # lib.run_command('cp', path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))
+        directory._parent()._sub(f'{domain}.sses.json').cp(directory._sub(f'{domain}.sses.json'))  # lib.run_command('cp', path.join(directory, '..', f'{domain}.sses.json'), path.join(directory, f'{domain}.sses.json'))
+        directory._parent()._sub(f'{domain}.cif').cp(directory._sub(f'{domain}.cif'))  # lib.run_command('cp', path.join(directory, '..', f'{domain}.cif'), path.join(directory, f'{domain}.cif'))
+        directory._sub('consensus.sses.json').cp(directory._sub('consensus-template.sses.json'))  # lib.run_command('cp', path.join(directory, 'consensus.sses.json'), path.join(directory, 'consensus-template.sses.json'))
         stdout_file, stderr_file = get_out_err_files(directory, append=True)
         lib.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--metrictype', '3', '--verbose', directory, 'consensus', f'{domain},{chain}',
             stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
         label_mapping = {}
-        with directory.sub(f'matching-consensus-{domain}.tsv').open() as r:
+        with directory._sub(f'matching-consensus-{domain}.tsv')._open() as r:
             r.readline()  # header
             for line in r:
                 automatic, manual = line.strip().split('\t')
                 label_mapping[automatic] = manual
-        with directory.sub('consensus.sses.json').open() as r:
+        with directory._sub('consensus.sses.json')._open() as r:
             js = json.load(r)
         mapped = 0
         for sse in js['consensus']['secondary_structure_elements']:
@@ -147,11 +147,11 @@ def map_manual_template_to_consensus(directory: FilePath):
                 manual_label = label_mapping[automatic]
                 lib.insert_after(sse, 'label', [('manual_label', manual_label)])
                 mapped += 1
-        directory.sub('consensus.sses.json').dump_json(js)
+        directory._sub('consensus.sses.json').dump_json(js)
         print(f'Mapped {mapped} manual labels out of {len(label_mapping)}')
 
 def get_chain_from_annotation(annotation_file: FilePath) -> str:
-    with annotation_file.open() as r:
+    with annotation_file._open() as r:
         js = json.load(r)
     annot = next(iter(js.values()))
     chains = { sse['chain_id'] for sse in annot['secondary_structure_elements'] }

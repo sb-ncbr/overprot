@@ -62,7 +62,7 @@ def read_pdb_line(line):
 
 def read_pdb(filename: FilePath):
     table = AtomTable()
-    with filename.open() as f:
+    with filename._open() as f:
         for line in iter(f.readline, ''):
             fields = read_pdb_line(line.strip('\n'))
             if fields != None:

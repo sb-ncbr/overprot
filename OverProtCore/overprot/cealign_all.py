@@ -39,10 +39,10 @@ def main(target_file: Union[FilePath, str], sample_file: Union[FilePath, str], i
     domains = lib_domains.load_domain_list(sample_file)
     mobiles = [dom.name for dom in domains]
     in_directory_path = FilePath(in_directory)
-    out_directory_path = FilePath(out_directory).mkdir(exist_ok=True)
-    mobile_files = [in_directory_path.sub(f'{mobile}.cif') for mobile in mobiles]
-    result_files = [out_directory_path.sub(f'{mobile}.cif') for mobile in mobiles]
-    result_ttt_files = [out_directory_path.sub(f'{mobile}-ttt.csv') for mobile in mobiles]
+    out_directory_path = FilePath(out_directory)._mkdir(exist_ok=True)
+    mobile_files = [in_directory_path._sub(f'{mobile}.cif') for mobile in mobiles]
+    result_files = [out_directory_path._sub(f'{mobile}.cif') for mobile in mobiles]
+    result_ttt_files = [out_directory_path._sub(f'{mobile}-ttt.csv') for mobile in mobiles]
     lib_pymol.cealign_many(FilePath(target_file), mobile_files, result_files, ttt_files=result_ttt_files, fallback_to_dumb_align=True, show_progress_bar=progress_bar)
     return None
 

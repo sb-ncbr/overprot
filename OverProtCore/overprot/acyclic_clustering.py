@@ -282,10 +282,10 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
                 sse['rainbow_hex'] = lib_sses.pymol_spectrum_to_hex(sse['rainbow'])
                 these_sses.append(sse)
         output_json = { domain: { 'secondary_structure_elements': these_sses } }
-        directory.sub(domain+'-clust.sses.json').dump_json(output_json)
-    lib.print_matrix(lengths.transpose(), directory.sub('lengths.tsv'), row_names=new_labels, col_names=domain_names)
+        directory._sub(domain+'-clust.sses.json').dump_json(output_json)
+    lib.print_matrix(lengths.transpose(), directory._sub('lengths.tsv'), row_names=new_labels, col_names=domain_names)
     if precedence_matrix is not None:
-        lib.print_matrix(precedence_matrix, directory.sub('cluster_precedence_matrix.tsv'), row_names=new_labels, col_names=new_labels)
+        lib.print_matrix(precedence_matrix, directory._sub('cluster_precedence_matrix.tsv'), row_names=new_labels, col_names=new_labels)
 
     # Write consensus
     consensus_sses = []
@@ -319,7 +319,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
         for sse in consensus_sses:
             if sse is not None and sse['label'].startswith('E'):
                 sse['sheet_id'] = 1
-    directory.sub('consensus.sses.json').dump_json(consensus)
+    directory._sub('consensus.sses.json').dump_json(consensus)
 
     # Write statistics
     occurences = [ size / m for size in sizes ]
@@ -327,7 +327,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
     # average_lengths = [ (l if not np.isnan(l) else 0) for l in average_lengths ]
     sheet_ids = [ sse['sheet_id'] if 'sheet_id' in sse else 0 for sse in consensus_sses ]
     stat_table = np.array([sheet_ids, sizes, occurences, average_lengths, variances]).transpose()
-    lib.print_matrix(stat_table, directory.sub('statistics.tsv'), row_names=new_labels, col_names=['sheet_id', 'found_in', 'occurrence', 'average_length', 'coord_variance'])
+    lib.print_matrix(stat_table, directory._sub('statistics.tsv'), row_names=new_labels, col_names=['sheet_id', 'found_in', 'occurrence', 'average_length', 'coord_variance'])
 
     # Correlation of occurrence
     occ = np.zeros_like(lengths, dtype=np.float64)
@@ -337,7 +337,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
     # print(occ.transpose())
     # corr = np.nan_to_num(np.corrcoef(occ.transpose()))
     corr = lib.safe_corrcoef(occ.transpose())
-    lib.print_matrix(corr, directory.sub('occurrence_correlation.tsv'), row_names=new_labels, col_names=new_labels)
+    lib.print_matrix(corr, directory._sub('occurrence_correlation.tsv'), row_names=new_labels, col_names=new_labels)
     return
 
 def table_by_pdb_and_label(offsets, n_labels, labels):  # Puts sse indices into a table of lists by their PDB (given by offsets) and label
@@ -724,14 +724,14 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         raise Exception('Some of the SSE segment lengths are zero. Use newer version of secondary structure assignment with non-zero lengths.')
 
     labels = None
-    cache_file = directory.sub('labels_orig.cached.tsv')
+    cache_file = directory._sub('labels_orig.cached.tsv')
 
     # Try to load labels from a cache-file
-    if ENABLE_CACHED_LABELS and cache_file.isfile():
-        with cache_file.open() as r:
+    if ENABLE_CACHED_LABELS and cache_file.is_file():
+        with cache_file._open() as r:
             labels = np.array([ int(l) for l in r.read().split() ])
         n_clusters = max(labels) + 1
-        cluster_precedence_matrix, _, _ = lib.read_matrix(directory.sub('cluster_precedence_matrix.tsv'))
+        cluster_precedence_matrix, _, _ = lib.read_matrix(directory._sub('cluster_precedence_matrix.tsv'))
         if len(labels) == len(sses):
             print(f'\nLabels loaded from cache file "{cache_file}", no clustering performed!\n')
         else:  # Cancel the loaded labels, they are outdated.
@@ -749,10 +749,10 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
 
         # distance += lib_acyclic_clustering_simple.segment_length_difference_matrix(coordinates)  # length-difference penalty
         distance = lib_acyclic_clustering_simple.include_min_ladder_in_distance_matrix(distance, edges)
-        lib.print_matrix(distance, directory.sub('distance.tsv'))
+        lib.print_matrix(distance, directory._sub('distance.tsv'))
 
         distance_iter = lib_acyclic_clustering_simple.distance_matrix_with_iterative_superimposition_many(coordinates, type_vector, offsets, edges=edges)
-        lib.print_matrix(distance_iter, directory.sub('distance_iter.tsv'))
+        lib.print_matrix(distance_iter, directory._sub('distance_iter.tsv'))
 
         distance = distance_iter
 
@@ -817,7 +817,7 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=acs.cluster_precedence_matrix, edges=cluster_edges) 
         sizes, means, variances, covariances = sse_coords_stats(hybrids)
         print('Sorted DAG:', lib.sort_dag(range(acs.n_clusters), lambda i,j: acs.cluster_precedence_matrix[i,j]))
-        with cache_file.open('w') as w:
+        with cache_file._open('w') as w:
             w.write('\n'.join( str(l) for l in acs.labels ))
         
         labels = acs.labels
@@ -835,7 +835,7 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
     n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, cluster_precedence_matrix)
     print('ANOVA F:', lib_acyclic_clustering_simple.anova_f(coordinates, labels))
 
-    with directory.sub('labels_rematched.cached.tsv').open('w') as w:
+    with directory._sub('labels_rematched.cached.tsv')._open('w') as w:
         w.write('\n'.join( str(l) for l in labels ))
 
     lib.log('Found', n_clusters, 'clusters')
@@ -868,7 +868,7 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
         n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, cluster_precedence_matrix)
 
-        with directory.sub('labels_SSAnnot.cached.tsv').open('w') as w:
+        with directory._sub('labels_SSAnnot.cached.tsv')._open('w') as w:
             w.write('\n'.join( str(l) for l in labels ))
         
         lib.log('Found', n_clusters, 'clusters')
@@ -960,7 +960,7 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath, secstranno
     extended_coords[:, 0] = type_vector
     extended_coords[:, 1:7] = coordinates
 
-    guide_tree_children, _, _ = lib.read_matrix(directory.sub('guide_tree.children.tsv'))
+    guide_tree_children, _, _ = lib.read_matrix(directory._sub('guide_tree.children.tsv'))
 
     gac = lib_acyclic_clustering_simple.GuidedAcyclicClustering()
     gac.fit(extended_coords, guided_clustering_score_function, guided_clustering_sample_aggregation_function, offsets, guide_tree_children,
@@ -981,11 +981,11 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath, secstranno
     # Rematching with SecStrAnnotator
     if secstrannotator_rematching:
         for i in range(3):
-            directory.sub('consensus.sses.json').cp(directory.sub(f'consensus_{i}.sses.json'))
+            directory._sub('consensus.sses.json').cp(directory._sub(f'consensus_{i}.sses.json'))
             labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
             n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, gac.cluster_precedence_matrix)
 
-            with directory.sub('labels_SSAnnot.cached.tsv').open('w') as w:
+            with directory._sub('labels_SSAnnot.cached.tsv')._open('w') as w:
                 w.write('\n'.join( str(l) for l in labels ))
             
             lib.log('Found', n_clusters, 'clusters')
@@ -1076,7 +1076,7 @@ def main(directory: Union[FilePath, str],
     # TODO add docstring
 
     directory = FilePath(directory)
-    domains = lib_domains.load_domain_list(directory.sub('sample.json'))
+    domains = lib_domains.load_domain_list(directory._sub('sample.json'))
     lib.log(len(domains), 'domains')
 
     METHOD = 'guided'  # guided | simple | sides

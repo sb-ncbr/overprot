@@ -3,7 +3,7 @@ import json
 from os import path  #TODO replace by FilePath
 from collections import namedtuple  # change namedtuple to typing.NamedTuple
 import numpy as np
-from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Union
+from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Union, Iterable
 
 try:
     from pymol import cmd, querying, util, CmdException  # type: ignore
@@ -68,8 +68,8 @@ def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[
         raw_result['rotation'], raw_result['translation'] = ttt_matrix_to_rotation_translation(raw_result['rotation_matrix'])
         return CealignResult(**raw_result)
     except CmdException:
-        target_name = target_file.name
-        mobile_name = mobile_file.name
+        target_name = target_file._name
+        mobile_name = mobile_file._name
         if fallback_to_dumb_align:
             print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
             return dumb_align(target_file, mobile_file, result_file)
@@ -82,7 +82,7 @@ def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[
     # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
     # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
 
-def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result_files: Sequence[FilePath], ttt_files: Optional[Sequence[FilePath]] = None,
+def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result_files: Sequence[FilePath], ttt_files: Optional[Sequence[Optional[FilePath]]] = None,
                  fallback_to_dumb_align: bool = False, show_progress_bar: bool = False) -> None:
     '''Perform structure superimposition of each mobile to the target with cealign command.
     Save i-th transformed mobile structure into result_files[i].
@@ -104,8 +104,8 @@ def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result
                 ttt = raw_result['rotation_matrix']
                 cmd.save(result_file, obj_mobile)
             except CmdException:
-                target_name = target_file.name
-                mobile_name = mobile_file.name
+                target_name = target_file._name
+                mobile_name = mobile_file._name
                 if fallback_to_dumb_align:
                     # Cealign is expected to fail on small structures, e.g. CATH family 4.10.180.10
                     print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
@@ -133,9 +133,9 @@ def dumb_align(target_file: FilePath, mobile_file: FilePath, result_file: Option
             w.write(mobile.to_cif())
     return CealignResult(None, rmsd, ttt, R, t)
 
-def ttt_matrix_to_rotation_translation(ttt_matrix: Sequence[float]) -> RotationTranslation:
+def ttt_matrix_to_rotation_translation(flat_ttt_matrix: List[float]) -> RotationTranslation:
     '''Convert PyMOL pseudo-rotation matrix (ttt_matrix) to rotation and translation matrices (A' = rotation @ A + translation)'''
-    ttt_matrix = np.array(ttt_matrix).reshape((4,4))
+    ttt_matrix = np.array(flat_ttt_matrix).reshape((4,4))
     pretranslation = ttt_matrix[3, 0:3].reshape((3,1))
     rotation = ttt_matrix[0:3, 0:3]
     posttranslation = ttt_matrix[0:3, 3].reshape((3,1))
@@ -221,8 +221,8 @@ def create_consensus_session(consensus_structure_file: FilePath, consensus_sse_f
     obj = 'cons'
     group_name = _segment_group_name(obj)
     cmd.load(consensus_structure_file, obj)
-    if consensus_sse_file.isfile():
-        with consensus_sse_file.open() as f:
+    if consensus_sse_file.is_file():
+        with consensus_sse_file._open() as f:
             consensus = json.load(f)	
         cmd.group(group_name)
         for sse in consensus['consensus']['secondary_structure_elements']:
@@ -251,12 +251,12 @@ def create_multi_session(directory: FilePath, consensus_structure_file: Optional
         assert consensus_structure_file is not None, 'consensus_structure_file and consensus_sse_file must be both strings or both None'
         assert consensus_sse_file is not None, 'consensus_structure_file and consensus_sse_file must be both strings or both None'
         create_consensus_session(consensus_structure_file, consensus_sse_file, None, coloring=coloring)
-    domains = lib_domains.load_domain_list(directory.sub('sample.json'))
+    domains = lib_domains.load_domain_list(directory._sub('sample.json'))
     n = len(domains)
     with lib.ProgressBar((n+1)*n//2, title=f'Creating PyMOL session with {n} structures', mute = not progress_bar) as bar:  # Complexity is ~ quadratic with current PyMOL 2.3
         for i, domain in enumerate(domains):
-            cmd.load(directory.sub(domain.name+'.cif'), domain.name)
-            _color_by_annotation(domain.name, directory.sub(domain.name+'-clust.sses.json'), base_color, coloring, show_line_segments=True)
+            cmd.load(directory._sub(domain.name+'.cif'), domain.name)
+            _color_by_annotation(domain.name, directory._sub(domain.name+'-clust.sses.json'), base_color, coloring, show_line_segments=True)
             bar.step(i)
     cmd.hide()
     cmd.show('cartoon')
@@ -268,7 +268,7 @@ def create_multi_session(directory: FilePath, consensus_structure_file: Optional
         cmd.delete('all')
 
 def _color_by_annotation(domain_name: str, annotation_file: FilePath, base_color: str, coloring: Coloring, show_line_segments: bool = True):
-    with annotation_file.open() as f:
+    with annotation_file._open() as f:
         sses = json.load(f)[domain_name]['secondary_structure_elements']
     cmd.color(base_color, f'{domain_name} & symbol C')
     cmd.group(_sses_group_name(domain_name))

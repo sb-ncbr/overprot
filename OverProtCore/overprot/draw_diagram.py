@@ -606,11 +606,11 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
     directory = FilePath(directory)
 
     if output is None:
-        output = directory.sub('diagram.svg')
+        output = directory._sub('diagram.svg')
     else:
         output = FilePath(output)
 
-    table, labels, column_names = lib.read_matrix(directory.sub('statistics.tsv'))
+    table, labels, column_names = lib.read_matrix(directory._sub('statistics.tsv'))
     sheet_ids = [ int(x) for x in table[:, column_names.index('sheet_id')] ]
     occurrences = table[:, column_names.index('occurrence')]
     abs_occurrences = table[:, column_names.index('found_in')]
@@ -624,18 +624,18 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
 
     precedence: Optional[np.ndarray]
     if dag:
-        precedence, *_ = lib.read_matrix(directory.sub('cluster_precedence_matrix.tsv'))
+        precedence, *_ = lib.read_matrix(directory._sub('cluster_precedence_matrix.tsv'))
     else:
         precedence = None
 
     if shape in SIMPLE_SHAPES and json_output is None:
         cdfs = None
     else:
-        lengths, _, _ = lib.read_matrix(directory.sub('lengths.tsv'))
+        lengths, _, _ = lib.read_matrix(directory._sub('lengths.tsv'))
         cdfs = [ cdf_xy_pairs(l) for l in lengths ]
 
     try:
-        with directory.sub('consensus.sses.json').open() as r:
+        with directory._sub('consensus.sses.json')._open() as r:
             annot = json.load(r)['consensus']
         beta_connectivity = annot['beta_connectivity']
         label2manual_label = get_label2manual_label(annot)

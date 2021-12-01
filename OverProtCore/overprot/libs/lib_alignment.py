@@ -364,8 +364,8 @@ def test_edit_distance_weighted():
 def make_structure_tree(structs: List[FilePath], show_tree=False, with_cealign=True, with_iteration=True):
     structs = list(structs)
     n_structs = len(structs)
-    dirs = [struct.parent() for struct in structs]
-    names = [struct.name for struct in structs]
+    dirs = [struct._parent() for struct in structs]
+    names = [struct._name for struct in structs]
 
     for i in range(n_structs):
         try:
@@ -374,7 +374,7 @@ def make_structure_tree(structs: List[FilePath], show_tree=False, with_cealign=T
             print(names[i], file=sys.stderr)
             raise
         if not s.is_alpha_trace():
-            alpha_struct = dirs[i].sub(names[i]+'.alphas.cif')
+            alpha_struct = dirs[i]._sub(names[i]+'.alphas.cif')
             lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
             structs[i] = alpha_struct
 
@@ -413,8 +413,8 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
     structs = list(structs)
     n_structs = len(structs)
     assert n_structs > 0
-    dirs = [struct.parent() for struct in structs]
-    names = [struct.name for struct in structs]
+    dirs = [struct._parent() for struct in structs]
+    names = [struct._name for struct in structs]
     
     with Timing('Extracting alpha-traces', file=sys.stdout):
         with lib.ProgressBar(n_structs, title=f'Extracting alpha-traces for {n_structs} structures', mute = not progress_bar) as bar: 
@@ -425,7 +425,7 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
                     print(names[i], file=sys.stderr)
                     raise
                 if not s.is_alpha_trace():
-                    alpha_struct = dirs[i].sub(names[i]+'.alphas.cif')
+                    alpha_struct = dirs[i]._sub(names[i]+'.alphas.cif')
                     lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
                     structs[i] = alpha_struct
                 bar.step()
@@ -486,13 +486,13 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
     # newi = lib_clustering.children_to_newick(children, node_names=names, distances=tree_distances)
     tree = lib_clustering.PhyloTree.from_children(children, node_names=names, distances=tree_distances)
     consensus_structure = coords_dict[n_nodes-1].to_structure().to_cif()
-    newick_file = dirs[0].sub('guide_tree.newick')
-    children_file = dirs[0].sub('guide_tree.children.tsv')
-    consensus_structure_file = dirs[0].sub('consensus_structure.cif')
-    with newick_file.open('w') as w:
+    newick_file = dirs[0]._sub('guide_tree.newick')
+    children_file = dirs[0]._sub('guide_tree.children.tsv')
+    consensus_structure_file = dirs[0]._sub('consensus_structure.cif')
+    with newick_file._open('w') as w:
         w.write(str(tree))
     lib.print_matrix(children, children_file)
-    with consensus_structure_file.open('w') as w:
+    with consensus_structure_file._open('w') as w:
         w.write(consensus_structure)
     print(f'Results in {newick_file}, {children_file}, {consensus_structure_file}.')
     if show_tree:
@@ -560,8 +560,8 @@ def main(directory: Union[FilePath, str], show_tree: bool = False) -> Optional[i
     '''Foo'''
     # TODO add docstring
     directory = FilePath(directory)
-    samples =lib_domains.load_domain_list(directory.sub('sample.json'))
-    structure_files = [directory.sub(f'{domain.name}.cif') for domain in samples]
+    samples =lib_domains.load_domain_list(directory._sub('sample.json'))
+    structure_files = [directory._sub(f'{domain.name}.cif') for domain in samples]
     make_structure_tree_with_merging(structure_files, show_tree=show_tree)
     # testing_score_matrices(*structure_files[:2])
     return None

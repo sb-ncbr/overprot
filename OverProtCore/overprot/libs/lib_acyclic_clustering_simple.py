@@ -42,7 +42,7 @@ def read_sses_simple(domains: List[Domain], directory: FilePath, length_threshol
     edges = []
     # lib_sses.compute_ssa(domains, directory, skip_if_exists=True)
     for domain in domains:
-        with directory.sub(domain.name+'.sses.json').open() as f:
+        with directory._sub(domain.name+'.sses.json')._open() as f:
             annot = json.load(f)[domain.name]
         sses_here = annot['secondary_structure_elements']
         for sse in sses_here:
@@ -299,7 +299,8 @@ def include_protein_distance(sse_distance, protein_distance, offsets, overwrite=
 def dynprog_matrices(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.'''
     m, n = scores.shape
-    cumulative = np.zeros((m+1, n+1), dtype=scores.dtype)
+    score_type = scores.dtype.type
+    cumulative = np.zeros((m+1, n+1), dtype=score_type)
     direction = np.zeros((m, n), dtype=np.int32)
     for i in range(1, m+1):
         for j in range(1, n+1):
@@ -314,7 +315,7 @@ def dynprog_matrices(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 def dynprog_matrices_diagonal_method(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.
     Equivalent to dynprog_matrices(), but faster.'''
-    score_type = scores.dtype
+    score_type = scores.dtype.type
     direction_type = np.int8
     # INT_TYPE = np.int32
     m, n = scores.shape
@@ -403,13 +404,14 @@ def dynprog_align(scores: np.ndarray, include_nonmatched=False) -> Tuple[Matchin
 def dynprog_matrices_diagonal_method2(scores: np.ndarray) -> Tuple[float, np.ndarray]:
     ''' Do the same as dynprog_matrices(), but faster using numpy broadcasting (cca 4x faster on matrices 64*64)'''
     m, n = scores.shape
+    score_type = scores.dtype.type
     M, N = m+1, n+1  # size for cumulative matrices
     if m == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N), dtype=scores.dtype)
+        cumulative = np.zeros((M, N), dtype=score_type)
         direction = np.full((M, N), FROM_LEFT, dtype=np.int32)
         return 0, direction
     if n == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N), dtype=scores.dtype)
+        cumulative = np.zeros((M, N), dtype=score_type)
         direction = np.full((M, N), FROM_TOP, dtype=np.int32)
         return 0, direction
     anti_cum = Antidiagonals((M, N))
@@ -734,7 +736,7 @@ def rematch_with_SecStrAnnotator(domains: List[Domain], directory: FilePath, sse
     labels = np.full(len(sses), UNLABELLED, dtype=np.int32)
     for domain, fro, to in zip(domains, offsets[:-1], offsets[1:]):
         index = { (sses[i][lib_sses.CHAIN], sses[i][lib_sses.START], sses[i][lib_sses.END]): i for i in range(fro, to) }
-        with directory.sub(domain.name + '-annotated.sses.json').open() as r:
+        with directory._sub(domain.name + '-annotated.sses.json')._open() as r:
             annotated_sses = json.load(r)[domain.name]['secondary_structure_elements']
         for annot_sse in annotated_sses:
             key = (annot_sse[lib_sses.CHAIN], annot_sse[lib_sses.START], annot_sse[lib_sses.END])
