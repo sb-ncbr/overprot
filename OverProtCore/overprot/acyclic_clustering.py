@@ -18,6 +18,7 @@ from .libs.lib_domains import Domain
 from .libs import lib_sses
 from .libs import lib_clustering
 from .libs import lib_acyclic_clustering_simple
+from .libs.lib_logging import ProgressBar
 
 #  CONSTANTS  ################################################################################
 
@@ -41,49 +42,48 @@ def combine_distance_matrices(samples, directory: Path, length_thresholds=None, 
     sse_labels: list[str] = []
     sse_indices_in_domain = []
     n = len(samples)
-    progess_bar = lib.ProgressBar(n + n*(n-1)//2, title='Combining distance matrices').start()
-    for pdb, domain, chain, rang in samples:
-        offsets.append(len(sse_labels))
-        with open(directory / f'{domain}.sses.json') as f:
-            these_sses = json.load(f)[domain]['secondary_structure_elements']
-        if length_thresholds != None:
-            selected_indices = lib.find_indices_where(these_sses, lambda s: lib_sses.long_enough(s, length_thresholds))
-            these_sses  = [these_sses[i] for i in selected_indices]
-        else:
-            selected_indices = range(len(these_sses))
-        sse_labels.extend((domain + '_' + s['label'] for s in these_sses))
-        sse_indices_in_domain.extend(selected_indices)
-        progess_bar.step()
-    N_sses = len(sse_labels)
-    offsets.append(N_sses)
-    #lib.log('Offsets:', offsets)
+    with ProgressBar(n + n*(n-1)//2, title='Combining distance matrices') as bar:
+        for pdb, domain, chain, rang in samples:
+            offsets.append(len(sse_labels))
+            with open(directory / f'{domain}.sses.json') as f:
+                these_sses = json.load(f)[domain]['secondary_structure_elements']
+            if length_thresholds != None:
+                selected_indices = lib.find_indices_where(these_sses, lambda s: lib_sses.long_enough(s, length_thresholds))
+                these_sses  = [these_sses[i] for i in selected_indices]
+            else:
+                selected_indices = range(len(these_sses))
+            sse_labels.extend((domain + '_' + s['label'] for s in these_sses))
+            sse_indices_in_domain.extend(selected_indices)
+            bar.step()
+        N_sses = len(sse_labels)
+        offsets.append(N_sses)
+        #lib.log('Offsets:', offsets)
 
-    supermatrix = np.zeros((N_sses, N_sses))
+        supermatrix = np.zeros((N_sses, N_sses))
 
-    # Fill same-domain fields
-    pass # They will never be used
+        # Fill same-domain fields
+        pass # They will never be used
 
-    # Fill different-domain fields
-    DOMAIN = 1 # index of domain name in tuples in samples
-    for i, j in itertools.combinations_with_replacement(range(len(samples)), 2):
-        filename = directory / f'matrix-{samples[i][DOMAIN]}-{samples[j][DOMAIN]}.tsv'
-        full_ij_matrix, *_ = lib.read_matrix(filename)
-        selected_rows = sse_indices_in_domain[offsets[i]:offsets[i+1]]
-        selected_columns = sse_indices_in_domain[offsets[j]:offsets[j+1]]
-        ij_matrix = lib.submatrix_int_indexing(full_ij_matrix, selected_rows, selected_columns)
-        col_mins = np.min(np.abs(ij_matrix), 0)
-        row_mins = np.min(np.abs(ij_matrix), 1)
-        # print(col_mins)
-        # print(row_mins)
-        min_distances = np.concatenate((col_mins, row_mins))
-        protein_similarity = np.mean(min_distances)
-        # print('Protein similarity ', protein_similarity)
-        ij_matrix = ij_matrix + protein_similarity * protein_similarity_weight
-        supermatrix[offsets[i]:offsets[i+1], offsets[j]:offsets[j+1]] = ij_matrix
-        supermatrix[offsets[j]:offsets[j+1], offsets[i]:offsets[i+1]] = ij_matrix.transpose()
-        lib_sh.rm(filename, ignore_errors=True)
-        progess_bar.step()
-    progess_bar.finalize()
+        # Fill different-domain fields
+        DOMAIN = 1 # index of domain name in tuples in samples
+        for i, j in itertools.combinations_with_replacement(range(len(samples)), 2):
+            filename = directory / f'matrix-{samples[i][DOMAIN]}-{samples[j][DOMAIN]}.tsv'
+            full_ij_matrix, *_ = lib.read_matrix(filename)
+            selected_rows = sse_indices_in_domain[offsets[i]:offsets[i+1]]
+            selected_columns = sse_indices_in_domain[offsets[j]:offsets[j+1]]
+            ij_matrix = lib.submatrix_int_indexing(full_ij_matrix, selected_rows, selected_columns)
+            col_mins = np.min(np.abs(ij_matrix), 0)
+            row_mins = np.min(np.abs(ij_matrix), 1)
+            # print(col_mins)
+            # print(row_mins)
+            min_distances = np.concatenate((col_mins, row_mins))
+            protein_similarity = np.mean(min_distances)
+            # print('Protein similarity ', protein_similarity)
+            ij_matrix = ij_matrix + protein_similarity * protein_similarity_weight
+            supermatrix[offsets[i]:offsets[i+1], offsets[j]:offsets[j+1]] = ij_matrix
+            supermatrix[offsets[j]:offsets[j+1], offsets[i]:offsets[i+1]] = ij_matrix.transpose()
+            lib_sh.rm(filename, ignore_errors=True)
+            bar.step()
 
     # Print the resulting matrix to a file
     lib.print_matrix(supermatrix, directory/'distance_matrix.tsv', sse_labels, sse_labels)
@@ -178,23 +178,22 @@ def read_sses(samples, directory: Path, length_thresholds=None):
     n_helices = len(d_helices)
     n_ladders = len(d_ladders)
     n_combinations = n_helices * (n_helices - 1) // 2 + n_ladders * (n_ladders - 1) // 2
-    progess_bar = lib.ProgressBar(n_combinations, title='Making distance matrix...').start()
-    distance = np.full((n_D, n_D), QUASI_INFINITY, dtype=np.float64)
-    for i, j in itertools.combinations(d_helices, 2):
-        dist = sse_distance(coordinates[i,0:6], coordinates[j,0:6])
-        distance[i,j] = dist
-        distance[j,i] = dist
-        # lib.log('H', dist)
-        progess_bar.step()
-    for i, j in itertools.combinations(d_ladders, 2):
-        dist1 = sse_distance(coordinates[i,0:6], coordinates[j,0:6])  # distance of first sides
-        dist2 = sse_distance(coordinates[i,6:12], coordinates[j,6:12])  # distance of second sides
-        dist = 0.5 * (dist1 + dist2)
-        distance[i,j] = dist
-        distance[j,i] = dist
-        # lib.log('E', dist)
-        progess_bar.step()
-    progess_bar.finalize()
+    with ProgressBar(n_combinations, title='Making distance matrix...') as bar:
+        distance = np.full((n_D, n_D), QUASI_INFINITY, dtype=np.float64)
+        for i, j in itertools.combinations(d_helices, 2):
+            dist = sse_distance(coordinates[i,0:6], coordinates[j,0:6])
+            distance[i,j] = dist
+            distance[j,i] = dist
+            # lib.log('H', dist)
+            bar.step()
+        for i, j in itertools.combinations(d_ladders, 2):
+            dist1 = sse_distance(coordinates[i,0:6], coordinates[j,0:6])  # distance of first sides
+            dist2 = sse_distance(coordinates[i,6:12], coordinates[j,6:12])  # distance of second sides
+            dist = 0.5 * (dist1 + dist2)
+            distance[i,j] = dist
+            distance[j,i] = dist
+            # lib.log('E', dist)
+            bar.step()
 
     lib.log('Printing matrices...')
     lib.print_matrix(distance, directory/'distance.tsv')
@@ -435,56 +434,53 @@ class AcyclicClusteringWithSides:
         distance_queue = lib.PriorityQueue(( (D[i, j], (i, j)) for (i, j) in itertools.combinations(active_nodes, 2) if can_join((i, j)) ))
 
         #print('D:', D.shape, 'P:', P.shape)
-        progress_bar = lib.ProgressBar(n_D-1, title='Clustering ' + str(n_D) + ' samples')
-        progress_bar.start()
-        while len(active_nodes) >= 2:
-            best_pair = distance_queue.pop_min_which(can_join)
-            if best_pair == None:
-                break  # no joinable pairs, algorithm has converged
-            distance, (p, q) = best_pair
-            if distance > self.max_joining_distance:
-                break  # no joinable pairs with lower distance than the limit, algorithm has converged
-            p_leader, q_leader = leader[p], leader[q]
-            new_leader = min(p_leader,  q_leader)
-            new = curr_n_nodes
-            curr_n_nodes += 1
-            leader.append(p_leader)
-            members.append(members[p] + members[q])
-            children[new,:] = [p, q]
-            self.distances[new] = distance
-            active_nodes.remove(p)
-            active_nodes.remove(q)
-            active_nodes.add(new)
+        with ProgressBar(n_D-1, title='Clustering ' + str(n_D) + ' samples') as progress_bar:
+            while len(active_nodes) >= 2:
+                best_pair = distance_queue.pop_min_which(can_join)
+                if best_pair == None:
+                    break  # no joinable pairs, algorithm has converged
+                distance, (p, q) = best_pair
+                if distance > self.max_joining_distance:
+                    break  # no joinable pairs with lower distance than the limit, algorithm has converged
+                p_leader, q_leader = leader[p], leader[q]
+                new_leader = min(p_leader,  q_leader)
+                new = curr_n_nodes
+                curr_n_nodes += 1
+                leader.append(p_leader)
+                members.append(members[p] + members[q])
+                children[new,:] = [p, q]
+                self.distances[new] = distance
+                active_nodes.remove(p)
+                active_nodes.remove(q)
+                active_nodes.add(new)
 
-            # Update precedence matrix (apply transitivity)
-            #TODO remember p_active_leaders in a set variable
-            d_active_leaders = [leader[i] for i in active_nodes]
-            p_active_leaders = []
-            for i in d_active_leaders:
-                if T[i] == 0:  # helix
-                    p_active_leaders.append(d_to_p[i])
+                # Update precedence matrix (apply transitivity)
+                #TODO remember p_active_leaders in a set variable
+                d_active_leaders = [leader[i] for i in active_nodes]
+                p_active_leaders = []
+                for i in d_active_leaders:
+                    if T[i] == 0:  # helix
+                        p_active_leaders.append(d_to_p[i])
+                    else:  # ladder
+                        p_active_leaders.extend(d_to_p[i])
+                if T[new_leader] == 0:  # helix
+                    p_p = d_to_p[p_leader]
+                    p_q = d_to_p[q_leader]
+                    self.update_precedence(P, p_active_leaders, p_p, p_q)
                 else:  # ladder
-                    p_active_leaders.extend(d_to_p[i])
-            if T[new_leader] == 0:  # helix
-                p_p = d_to_p[p_leader]
-                p_q = d_to_p[q_leader]
-                self.update_precedence(P, p_active_leaders, p_p, p_q)
-            else:  # ladder
-                p_p1, p_p2 = d_to_p[p_leader]
-                p_q1, p_q2 = d_to_p[q_leader]
-                self.update_precedence(P, p_active_leaders, p_p1, p_q1)
-                self.update_precedence(P, p_active_leaders, p_p2, p_q2)
-            # Update distance matrix (calculate distances from the new cluster)
-            for i in active_nodes:
-                if i != new:
-                    i_leader = leader[i]
-                    D[new_leader, i_leader] = self.aggregate_function(D[p_leader, i_leader], len(members[p]), D[q_leader, i_leader], len(members[q]))
-                    D[i_leader, new_leader] = D[new_leader, i_leader]
-                    if can_join((i,new)):
-                        distance_queue.add(D[new_leader, i_leader], (i, new))
-            progress_bar.step()
-
-        progress_bar.finalize()
+                    p_p1, p_p2 = d_to_p[p_leader]
+                    p_q1, p_q2 = d_to_p[q_leader]
+                    self.update_precedence(P, p_active_leaders, p_p1, p_q1)
+                    self.update_precedence(P, p_active_leaders, p_p2, p_q2)
+                # Update distance matrix (calculate distances from the new cluster)
+                for i in active_nodes:
+                    if i != new:
+                        i_leader = leader[i]
+                        D[new_leader, i_leader] = self.aggregate_function(D[p_leader, i_leader], len(members[p]), D[q_leader, i_leader], len(members[q]))
+                        D[i_leader, new_leader] = D[new_leader, i_leader]
+                        if can_join((i,new)):
+                            distance_queue.add(D[new_leader, i_leader], (i, new))
+                progress_bar.step()
 
         # Filter by cluster size (number of members)
         # active_nodes = [node for node in active_nodes if len(members[node]) >= member_count_threshold]
@@ -756,7 +752,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
         # print('Table:', table)
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=acs.cluster_precedence_matrix, edges=cluster_edges) 
         sizes, means, variances, covariances = sse_coords_stats(hybrids)
-        print('Sorted DAG:', lib.sort_dag(range(acs.n_clusters), lambda i,j: acs.cluster_precedence_matrix[i,j]))
+        print('Sorted DAG:', lib_graphs.sort_dag(range(acs.n_clusters), lambda i,j: acs.cluster_precedence_matrix[i,j]))
         with open(cache_file, 'w') as w:
             w.write('\n'.join( str(l) for l in acs.labels ))
         
@@ -786,7 +782,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
     # print('Hybrids:', hybrids)
     write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
     sizes, means, variances, covariances = sse_coords_stats(hybrids)
-    print('Sorted DAG:', lib.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
+    print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
     print('Sizes:', sizes)
     
     # Calculation of self-classification probabilities
@@ -819,7 +815,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
         # print('Hybrids:', hybrids)
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
         sizes, means, variances, covariances = sse_coords_stats(hybrids)
-        print('Sorted DAG:', lib.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
+        print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
         print('Sizes:', sizes)
         
         # Calculation of self-classification probabilities
@@ -936,7 +932,7 @@ def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotato
             # print('Hybrids:', hybrids)
             write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
             sizes, means, variances, covariances = sse_coords_stats(hybrids)
-            print('Sorted DAG:', lib.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
+            print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
             print('Sizes:', sizes)
             
             # Calculation of self-classification probabilities
@@ -985,8 +981,8 @@ def run_clustering_with_sides(samples, directory: Path, protein_similarity_weigh
     write_clustered_sses(directory, [], hybrids, precedence_matrix=ac.g_precedence, edges=ac.g_edges)
     sizes, means, variances, covariances = sse_coords_stats(hybrids)
     print('G-edges:', *ac.g_edges, sep='\n')
-    print('Sorted P-DAG:', lib.sort_dag(range(ac.n_p_clusters), lambda i,j: ac.cluster_precedence_matrix[i,j]))
-    print('Sorted G-DAG:', lib.sort_dag(range(ac.n_g_clusters), lambda i,j: ac.g_precedence[i,j]))
+    print('Sorted P-DAG:', lib_graphs.sort_dag(range(ac.n_p_clusters), lambda i,j: ac.cluster_precedence_matrix[i,j]))
+    print('Sorted G-DAG:', lib_graphs.sort_dag(range(ac.n_g_clusters), lambda i,j: ac.g_precedence[i,j]))
 
     # TODO change SecStrAnnotator so it can read precedence matrix (ideally in some compressed form)
     # TODO allow filtering clusters by occurence threshold (be carefull with edges!)

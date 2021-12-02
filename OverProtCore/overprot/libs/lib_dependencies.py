@@ -1,4 +1,6 @@
-'''Library of locations of dependencies'''
+'''
+Locations of dependencies.
+'''
 
 from __future__ import annotations
 import sys

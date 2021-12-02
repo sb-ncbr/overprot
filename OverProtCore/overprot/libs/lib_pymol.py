@@ -1,3 +1,7 @@
+'''
+Functions utilizing PyMOL.
+'''
+
 from __future__ import annotations
 import sys
 import json
@@ -16,6 +20,7 @@ except ImportError:
 
 from . import lib
 from . import lib_domains
+from .lib_logging import ProgressBar
 from .lib_structure import Structure
 from . import superimpose3d
 
@@ -97,7 +102,7 @@ def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: 
     assert len(result_files) == n
     assert len(ttt_files_) == n
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
-    with lib.ProgressBar(n, title=f'Cealigning {n} structures', mute = not show_progress_bar) as bar:
+    with ProgressBar(n, title=f'Cealigning {n} structures', mute = not show_progress_bar) as bar:
         cmd.load(target_file, obj_target)
         for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files_):
             cmd.load(mobile_file, obj_mobile)
@@ -255,7 +260,7 @@ def create_multi_session(directory: Path, consensus_structure_file: Optional[Pat
         create_consensus_session(consensus_structure_file, consensus_sse_file, None, coloring=coloring)
     domains = lib_domains.load_domain_list(directory/'sample.json')
     n = len(domains)
-    with lib.ProgressBar((n+1)*n//2, title=f'Creating PyMOL session with {n} structures', mute = not progress_bar) as bar:  # Complexity is ~ quadratic with current PyMOL 2.3
+    with ProgressBar((n+1)*n//2, title=f'Creating PyMOL session with {n} structures', mute = not progress_bar) as bar:  # Complexity is ~ quadratic with current PyMOL 2.3
         for i, domain in enumerate(domains):
             cmd.load(directory/f'{domain.name}.cif', domain.name)
             _color_by_annotation(domain.name, directory/f'{domain.name}-clust.sses.json', base_color, coloring, show_line_segments=True)

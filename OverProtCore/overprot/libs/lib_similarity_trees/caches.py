@@ -3,7 +3,7 @@ import heapq
 import multiprocessing
 from typing import NamedTuple, Generic, Dict, Callable, Mapping, Iterator, Iterable, Sized, Container, Optional, List, Tuple
 
-from .. import lib
+from .. import lib_multiprocessing
 from .abstract_similarity_tree import K, V, X, Y
 
 class FunctionCache(Generic[X, Y], Mapping[X, Y]):
@@ -158,9 +158,9 @@ class DistanceCache(Generic[K, V], Sized, Container):
                 value2 = self._elements[key2]
                 name = str(i)
                 index[name] = (key1, key2)
-                job = lib.Job(name=name, func=self._distance_function, args=(value1, value2), kwargs={}, stdout=None, stderr=None)
+                job = lib_multiprocessing.Job(name=name, func=self._distance_function, args=(value1, value2), kwargs={}, stdout=None, stderr=None)
                 jobs.append(job)
-        job_results = lib.run_jobs_with_multiprocessing(jobs, n_processes=1, pool=pool, progress_bar=with_progress_bar)
+        job_results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=1, pool=pool, progress_bar=with_progress_bar)
         for result in job_results:
             key1, key2 = index[result.job.name]
             value1 = self._elements[key1]

@@ -1,3 +1,7 @@
+'''
+Manipulation with domain info (PDB ID, chain, residue ranges...)
+'''
+
 from __future__ import annotations
 import json
 from collections import defaultdict, Counter

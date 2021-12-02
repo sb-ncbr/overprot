@@ -8,14 +8,16 @@ import json
 import itertools
 import numpy as np
 from collections import defaultdict, Counter
-from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Any, overload
+from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Any, Collection, overload
 from datetime import datetime
 from numba import jit  # type: ignore
 
 from . import lib
 from . import lib_sses
+from .lib_sses import Sse, SseType, LadderType
 from . import lib_clustering
 from . import lib_graphs
+from .lib_logging import ProgressBar
 
 from . import superimpose3d
 from .lib_domains import Domain
@@ -29,17 +31,19 @@ UNLABELLED = -1  # label for samples that are not classified to any class
 NONMATCHED = -1
 FROM_DIAG, FROM_LEFT, FROM_TOP = 1, 2, 3  # FROM_DIAG will appear the worst when maximum is a tie
 
-Edge = Tuple  # [int, int, Any...]
+Edge = Tuple  #[int, int, Any, ...]
+# EdgeIIL = Tuple[int, int, LadderType]
 WeightedBetaEdge = Tuple[int, int, lib_sses.LadderType, float]
 
 Match = Tuple[int, int]
 Matching = List[Match]
 
 
-def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: Optional[Dict[str, int]] = None):
+def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: Optional[Dict[str, int]] = None
+                     )-> tuple[list[int], list[Sse], np.ndarray[np.float64], np.ndarray[np.int8], list[Edge]]:
     offsets = [0]  # counting a beta-ladder side as one SSE (for preference matrix)
     sses = []
-    edges = []
+    edges: list[Edge] = []
     # lib_sses.compute_ssa(domains, directory, skip_if_exists=True)
     for domain in domains:
         with open(directory / f'{domain.name}.sses.json') as f:
@@ -70,7 +74,7 @@ def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: 
     for i, sse in enumerate(sses):
         coordinates[i,:] = sse['start_vector'] + sse['end_vector']
 
-    type_vector = np.array([lib_sses.two_class_type_int(sse) for sse in sses ])  # type: ignore
+    type_vector = np.array([lib_sses.two_class_type_int(sse) for sse in sses], dtype=np.int8)
 
     return offsets, sses, coordinates, type_vector, edges
 
@@ -601,30 +605,28 @@ def dynprog_total_scores_each_to_each(scores, offsets):
     n = len(offsets) - 1
     total_scores = np.zeros((n, n), dtype=float)
     n_combinations = n * (n + 1) / 2
-    progess_bar = lib.ProgressBar(n_combinations, title='Dynprog...').start()
-    for i, j in itertools.combinations_with_replacement(range(n), 2):
-        ifrom, ito = offsets[i:i+2]
-        jfrom, jto = offsets[j:j+2]
-        matching, total_score = dynprog_align(scores[ifrom:ito, jfrom:jto])
-        total_scores[i, j] = total_score
-        total_scores[j, i] = total_score
-        progess_bar.step()
-    progess_bar.finalize()
+    with ProgressBar(n_combinations, title='Dynprog...') as bar:
+        for i, j in itertools.combinations_with_replacement(range(n), 2):
+            ifrom, ito = offsets[i:i+2]
+            jfrom, jto = offsets[j:j+2]
+            matching, total_score = dynprog_align(scores[ifrom:ito, jfrom:jto])
+            total_scores[i, j] = total_score
+            total_scores[j, i] = total_score
+            bar.step()
     return total_scores
 
 def dynprog_fuckup_indices_each_to_each(scores, offsets):
     n = len(offsets) - 1
     fuckups = np.empty_like(scores)
     n_combinations = n * (n + 1) / 2
-    progess_bar = lib.ProgressBar(n_combinations, title='Dynprog...').start()
-    for i, j in itertools.combinations_with_replacement(range(n), 2):
-        ifrom, ito = offsets[i:i+2]
-        jfrom, jto = offsets[j:j+2]
-        fuckup = fuckup_indices(scores[ifrom:ito, jfrom:jto])
-        fuckups[ifrom:ito, jfrom:jto] = fuckup
-        fuckups[jfrom:jto, ifrom:ito] = fuckup.transpose()
-        progess_bar.step()
-    progess_bar.finalize()
+    with ProgressBar(n_combinations, title='Dynprog...') as bar:
+        for i, j in itertools.combinations_with_replacement(range(n), 2):
+            ifrom, ito = offsets[i:i+2]
+            jfrom, jto = offsets[j:j+2]
+            fuckup = fuckup_indices(scores[ifrom:ito, jfrom:jto])
+            fuckups[ifrom:ito, jfrom:jto] = fuckup
+            fuckups[jfrom:jto, ifrom:ito] = fuckup.transpose()
+            bar.step()
     return fuckups
 
 def fuckup_indices(scores):
@@ -642,18 +644,17 @@ def dynprog_realign(scores, offsets, reference_weights=None):
     n_normal_sses = offsets[-1]
     total_scores = np.zeros((n,), dtype=float)
     new_labels = np.full((n_normal_sses,), UNLABELLED, dtype=int)
-    progess_bar = lib.ProgressBar(n, title='Dynprog realign...').start()
-    for i in range(n):
-        ifrom, ito = offsets[i:i+2]
-        sc = scores[ifrom:ito, n_normal_sses:]
-        if reference_weights is not None:
-            sc *= reference_weights
-        matching, total_score = dynprog_align(sc)
-        for normal_sse, ref_sse in matching:
-            new_labels[ifrom+normal_sse] = ref_sse
-        total_scores[i] = total_score
-        progess_bar.step()
-    progess_bar.finalize()
+    with ProgressBar(n, title='Dynprog realign...') as bar:
+        for i in range(n):
+            ifrom, ito = offsets[i:i+2]
+            sc = scores[ifrom:ito, n_normal_sses:]
+            if reference_weights is not None:
+                sc *= reference_weights
+            matching, total_score = dynprog_align(sc)
+            for normal_sse, ref_sse in matching:
+                new_labels[ifrom+normal_sse] = ref_sse
+            total_scores[i] = total_score
+            bar.step()
     return new_labels, total_scores
 
 def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_labels: np.ndarray, edges, offsets, adhesion=0, max_iterations=np.inf) -> np.ndarray:
@@ -926,10 +927,10 @@ def get_labels_from_memberlists(memberlists: List[List[int]]) -> np.ndarray:
 
 def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
     n_vertices1, n_vertices2 = scores.shape
-    precedence1 = lib.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
-    precedence2 = lib.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
-    sorted_vertices1 = lib.sort_dag(range(n_vertices1), lambda u,v: precedence1[u,v])
-    tipsets2, tipset_edges2 = lib.left_subdag_tipsets(n_vertices2, edges2, precedence_matrix=precedence2)
+    precedence1 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
+    precedence2 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
+    sorted_vertices1 = lib_graphs.sort_dag(range(n_vertices1), lambda u,v: precedence1[u,v])
+    tipsets2, tipset_edges2 = lib_graphs.left_subdag_tipsets(n_vertices2, edges2, precedence_matrix=precedence2)
     # lib.log_debug('n1 n2 m2', len(sorted_vertices1), len(tipsets2), len(tipset_edges2))
     m, n = len(sorted_vertices1) + 1, len(tipsets2)
     cumulative = np.zeros((m, n))
@@ -978,7 +979,7 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
             i -= 1
             j -= direct
     matching.reverse()
-    assert lib.are_edge_labels_unique_within_each_oriented_path(tipset_edges2)
+    assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges2)
     assert lib.are_unique(i for i, j in matching)
     assert lib.are_unique(j for i, j in matching)
     total_score = cumulative[m-1, n-1]
@@ -1025,7 +1026,7 @@ def merge_dags(n_vertices1: int, n_vertices2: int, edges1, edges2, matching: Mat
         v = vertices2_to_new[v2]
         new_edge_set.add((u,v))
     new_edges = list(new_edge_set)
-    precedence = lib.precedence_matrix_from_edges_dumb(n_vertices_new, new_edges)
+    precedence = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices_new, new_edges)
     new_edges_nonredundant = lib_graphs.Dag.from_precedence_matrix(precedence).edges  # TODO try to do this more efficiently without creating precedence matrix?
     # lib.log_debug('edges', len(edges_new), sorted(edges_new))
     # lib.log_debug('nonred_edges', len(edges_new_nonredundant), edges_new_nonredundant)
@@ -1044,18 +1045,18 @@ def merge_dags(n_vertices1: int, n_vertices2: int, edges1, edges2, matching: Mat
 def aggregate_stuff_in_merged_vertices(new_vertices: Matching, stuffs1, stuffs2, aggregation_function):
     return [stuffs1[u] if v==NONMATCHED else stuffs2[v] if u==NONMATCHED else aggregation_function(stuffs1[u], stuffs2[v]) for (u,v) in new_vertices]
 
-def local_edges_from_global_edges(global_edges: List[Edge], offsets: List[int]) -> List[List[Edge]]:
+def local_edges_from_global_edges(global_edges: Collection[Edge], offsets: list[int]) -> list[list[Edge]]:
     n = len(offsets) - 1
-    local_edges: List[List[Edge]] = [[] for i in range(n)]
+    local_edges: list[list[Edge]] = [[] for i in range(n)]
     i_structure = 0
-    for u, v, *rest in sorted(global_edges):
+    for u, v, orientation in sorted(global_edges):
         while u >= offsets[i_structure+1]:
             i_structure += 1
         fro = offsets[i_structure]
         to = offsets[i_structure+1]
         assert fro <= u < to
         assert fro <= v < to
-        local_edges[i_structure].append((u - fro, v - fro, *rest))
+        local_edges[i_structure].append((u - fro, v - fro, orientation))
     return local_edges
 
 def include_min_ladder_in_score_matrix_weighted(score: np.ndarray, weights1: np.ndarray, weights2: np.ndarray, edges1: List[Edge], edges2: List[Edge]) -> np.ndarray:
@@ -1151,8 +1152,6 @@ class AcyclicClusteringSimple:
                     return True
             return False
 
-        then = datetime.now()
-
         distance_queue: Any
         if n_D > SSE_COUNT_THRESHOLD_FOR_NUMPY_HEAP:
             lib.log('Using Numpy Heap')
@@ -1166,47 +1165,44 @@ class AcyclicClusteringSimple:
             distance_queue = lib.PriorityQueue( (D[i, j], (i, j)) for (i, j) in itertools.combinations(active_nodes, 2) if can_join((i, j)) )
         
 
-        progress_bar = lib.ProgressBar(n_D-1, title=f'Clustering {n_D} samples').start()
-        while len(active_nodes) >= 2:
-            best_pair = distance_queue.pop_min_which(can_join)
-            if best_pair == None:
-                break  # no joinable pairs, algorithm has converged
-            distance, (p, q) = best_pair
-            if distance > self.max_joining_distance:
-                break  # no joinable pairs with lower distance than the limit, algorithm has converged
-            p_leader, q_leader = leader[p], leader[q]
-            new_leader = min(p_leader,  q_leader)
-            new = curr_n_nodes
-            curr_n_nodes += 1
-            leader.append(p_leader)
-            members.append(members[p] + members[q])  # TODO this can take much memory
-            children[new,:] = [p, q]
-            self.distances[new] = distance
-            active_nodes.remove(p)
-            active_nodes.remove(q)
-            active_nodes.add(new)
+        with ProgressBar(n_D-1, title=f'Clustering {n_D} samples') as bar:
+            while len(active_nodes) >= 2:
+                best_pair = distance_queue.pop_min_which(can_join)
+                if best_pair == None:
+                    break  # no joinable pairs, algorithm has converged
+                distance, (p, q) = best_pair
+                if distance > self.max_joining_distance:
+                    break  # no joinable pairs with lower distance than the limit, algorithm has converged
+                p_leader, q_leader = leader[p], leader[q]
+                new_leader = min(p_leader,  q_leader)
+                new = curr_n_nodes
+                curr_n_nodes += 1
+                leader.append(p_leader)
+                members.append(members[p] + members[q])  # TODO this can take much memory
+                children[new,:] = [p, q]
+                self.distances[new] = distance
+                active_nodes.remove(p)
+                active_nodes.remove(q)
+                active_nodes.add(new)
 
-            # Update precedence matrix (apply transitivity)
-            active_leaders = [ leader[i] for i in active_nodes ]
-            self.update_precedence(P, active_leaders, p_leader, q_leader)
+                # Update precedence matrix (apply transitivity)
+                active_leaders = [ leader[i] for i in active_nodes ]
+                self.update_precedence(P, active_leaders, p_leader, q_leader)
 
-            # Update distance matrix (calculate distances from the new cluster)
-            for i in active_nodes:
-                if i != new:
-                    i_leader = leader[i]
-                    new_distance = self.aggregate_function(D[p_leader, i_leader], len(members[p]), D[q_leader, i_leader], len(members[q]))
-                    D[new_leader, i_leader] = new_distance
-                    D[i_leader, new_leader] = new_distance
-                    if can_join((i, new)):
-                        distance_queue.add(new_distance, (i, new))
-            progress_bar.step()
-
-        progress_bar.finalize()
-        lib.log('Clustering time:', datetime.now() - then)
+                # Update distance matrix (calculate distances from the new cluster)
+                for i in active_nodes:
+                    if i != new:
+                        i_leader = leader[i]
+                        new_distance = self.aggregate_function(D[p_leader, i_leader], len(members[p]), D[q_leader, i_leader], len(members[q]))
+                        D[new_leader, i_leader] = new_distance
+                        D[i_leader, new_leader] = new_distance
+                        if can_join((i, new)):
+                            distance_queue.add(new_distance, (i, new))
+                bar.step()
 
         # Filter by cluster size (number of members)
         active_nodes_list = [ node for node in active_nodes if len(members[node]) >= member_count_threshold ]
-        active_nodes_list = lib.sort_dag(active_nodes_list, lambda i, j: P[leader[i], leader[j]] )
+        active_nodes_list = lib_graphs.sort_dag(active_nodes_list, lambda i, j: P[leader[i], leader[j]] )
         active_leaders = [ leader[node] for node in active_nodes_list ]
         
         self.final_members = [ members[node] for node in active_nodes_list ]
@@ -1272,7 +1268,7 @@ class GuidedAcyclicClustering:
         weights = []
         precedence_edges = []
         members = []
-        beta_edges = [[(*edge, 1.0) for edge in local_edges] for local_edges in local_edges_from_global_edges(beta_connections, offsets)]  # last item (1.0) in each edge is weight
+        beta_edges: list[list[WeightedBetaEdge]] = [[(*edge, 1.0) for edge in local_edges] for local_edges in local_edges_from_global_edges(beta_connections, offsets)]  # last item (1.0) in each edge is weight
 
         # Process leaves (~sample paths)
         for i in range(n_leaves):
@@ -1285,7 +1281,7 @@ class GuidedAcyclicClustering:
             members.append([[sample] for sample in range(fro, to)])
         
         # Process internal nodes (~aggregated dags)
-        with lib.ProgressBar(n_leaves - 1, title='Guided clustering - merging nodes') as bar:
+        with ProgressBar(n_leaves - 1, title='Guided clustering - merging nodes') as bar:
             for i in range(n_leaves, 2*n_leaves - 1):
                 left, right = guide_tree_children[i]
                 coords1 = coords[left]
@@ -1323,13 +1319,13 @@ class GuidedAcyclicClustering:
         final_members = members[-1]
         final_precedence_edges = precedence_edges[-1]
         n_clusters = len(final_members)
-        cluster_precedence_matrix = lib.precedence_matrix_from_edges_dumb(n_clusters, final_precedence_edges)
+        cluster_precedence_matrix = lib_graphs.precedence_matrix_from_edges_dumb(n_clusters, final_precedence_edges)
 
-        sorted_cluster_indices = lib.sort_dag(range(n_clusters), lambda i, j: cluster_precedence_matrix[i,j])
+        sorted_cluster_indices = lib_graphs.sort_dag(range(n_clusters), lambda i, j: cluster_precedence_matrix[i,j])
         final_members = [final_members[v] for v in sorted_cluster_indices]
         old_to_new = { o: n for n, o in enumerate(sorted_cluster_indices) }
         final_precedence_edges = [(old_to_new[u], old_to_new[v], *rest) for (u, v, *rest) in final_precedence_edges]
-        cluster_precedence_matrix = lib.precedence_matrix_from_edges_dumb(n_clusters, final_precedence_edges)
+        cluster_precedence_matrix = lib_graphs.precedence_matrix_from_edges_dumb(n_clusters, final_precedence_edges)
 
         self.final_members = final_members
         self.n_clusters = n_clusters

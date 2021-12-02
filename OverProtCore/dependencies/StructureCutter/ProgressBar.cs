@@ -6,7 +6,7 @@ namespace StructureCutter
     public class ProgressBar
     {
         public const int DEFAULT_WIDTH = 100;
-        public static readonly TextWriter DEFAULT_WRITER = Console.Error;
+        public static readonly TextWriter DEFAULT_WRITER = Console.Out;
 
         public int TotalSteps { get; private set; }
         public int Width { get; private set; }

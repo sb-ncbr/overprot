@@ -1,13 +1,19 @@
+'''
+Reading structured configuration from .ini files.
+Configurations are specified by subclassing Config.
+'''
+
 import configparser
 from pathlib import Path
 from typing import List,  Dict, Optional, Literal, Final, Type, Union, get_origin, get_args, get_type_hints
 
 
-_ConfigOptionValue = Union[str, int, float, bool, List[str], List[int], List[float], List[bool]]
+_ConfigOptionValue = Union[str, int, float, bool, Path, List[str], List[int], List[float], List[bool], List[Path]]
 
 class ConfigSection(object):
     '''Represents one section of configuration like in .ini file.
-    Subclasses of ConfigSection can declare instance variables corresponding to individual options in the section, these should be of one of the types given by _ConfigOptionValue.
+    Subclasses of ConfigSection can declare instance variables corresponding to individual options in the section, 
+    these should be of one of the types given by _ConfigOptionValue.
     Instance variables with prefix _ are ignored.
     '''
 
@@ -93,6 +99,12 @@ class ConfigSection(object):
                 except ValueError:
                     value = parser.get(section, option)
                     raise ValueError(f'Option {option} in section [{section}] in file {filename} has invalid value {value}. Must be a boolean (True/False).')
+            elif option_type == Path:
+                try:
+                    typed_value = Path(parser.get(section, option))
+                except ValueError:
+                    value = parser.get(section, option)
+                    raise ValueError(f'Option {option} in section [{section}] in file {filename} has invalid value {value}. Must be a path.')
             elif get_origin(option_type) == list:
                 item_type, = get_args(option_type)
                 lines = parser.get(section, option).split('\n')

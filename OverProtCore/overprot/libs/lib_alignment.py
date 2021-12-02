@@ -13,10 +13,10 @@ import Bio  # type: ignore
 from ete3 import Tree  # type: ignore  # sudo apt install python3-pyqt5.qtsvg
 
 from . import lib
-from .lib import Timing
 from . import lib_clustering
 from . import lib_acyclic_clustering_simple
 from . import superimpose3d
+from .lib_logging import Timing, ProgressBar
 from .lib_structure import Structure
 from . import lib_pymol
 from . import lib_domains
@@ -378,13 +378,11 @@ def make_structure_tree(structs: List[Path], show_tree=False, with_cealign=True,
             structs[i] = alpha_struct
 
     distance_matrix = np.zeros((n_structs, n_structs), dtype=np.float64)
-    with Timing(f'distance_matrix {n_structs}*{n_structs}'):
-        bar = lib.ProgressBar(n_structs*(n_structs-1)//2, title=f'Calculating structure distance matrix for {n_structs} structures').start()
+    with ProgressBar(n_structs*(n_structs-1)//2, title=f'Calculating structure distance matrix for {n_structs} structures') as bar:
         for i, j in itertools.combinations(range(n_structs), 2):
             distance = dist(structs[i], structs[j], with_cealign=with_cealign, with_iteration=with_iteration)
             distance_matrix[i,j] = distance_matrix[j,i] = distance
             bar.step()
-        bar.finalize()
 
     lib.print_matrix(distance_matrix, 'tmp/distance_matrix.tsv', names, names)
 
@@ -415,27 +413,26 @@ def make_structure_tree_with_merging(structs: List[Path], show_tree=False, progr
     dirs = [struct.parent for struct in structs]
     names = [struct.stem for struct in structs]
     
-    with Timing('Extracting alpha-traces', file=sys.stdout):
-        with lib.ProgressBar(n_structs, title=f'Extracting alpha-traces for {n_structs} structures', mute = not progress_bar) as bar: 
-            for i in range(n_structs):
-                try:
-                    s = lib_pymol.read_cif(structs[i])
-                except ValueError:
-                    print(names[i], file=sys.stderr)
-                    raise
-                if not s.is_alpha_trace():
-                    alpha_struct = dirs[i] / f'{names[i]}.alphas.cif'
-                    lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
-                    structs[i] = alpha_struct
-                bar.step()
+    with ProgressBar(n_structs, title=f'Extracting alpha-traces for {n_structs} structures', mute = not progress_bar) as bar: 
+        for i in range(n_structs):
+            try:
+                s = lib_pymol.read_cif(structs[i])
+            except ValueError:
+                print(names[i], file=sys.stderr)
+                raise
+            if not s.is_alpha_trace():
+                alpha_struct = dirs[i] / f'{names[i]}.alphas.cif'
+                lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
+                structs[i] = alpha_struct
+            bar.step()
     
     coords_dict: Dict[int, WeightedCoordinates] = {}
     finder: NNTree = NNTree(edit_distance_weighted, with_nearest_pair_queue=True)
 
     insertion_order = np.random.choice(n_structs, n_structs, replace=False)
 
-    with Timing('Calculating guiding tree', file=sys.stdout):
-        with lib.ProgressBar(n_structs, title=f'Adding {n_structs} structures to {type(finder).__name__}', mute = not progress_bar) as bar:
+    with Timing('Calculating guiding tree'):
+        with ProgressBar(n_structs, title=f'Adding {n_structs} structures to {type(finder).__name__}', mute = not progress_bar) as bar:
             for i in insertion_order:
                 structfile = structs[i]
                 struct = lib_pymol.read_cif(structfile)
@@ -452,7 +449,7 @@ def make_structure_tree_with_merging(structs: List[Path], show_tree=False, progr
         children = np.full((n_nodes, 2), lib_clustering.NO_CHILD)
         tree_distances = np.full(n_nodes, 0.0) # distances between the children of each internal node
 
-        with lib.ProgressBar(n_structs-1, title=f'Merging {n_structs} structures in {type(finder).__name__}', mute = not progress_bar) as bar:
+        with ProgressBar(n_structs-1, title=f'Merging {n_structs} structures in {type(finder).__name__}', mute = not progress_bar) as bar:
             for parent in range(n_structs, n_nodes):
                 left, right, distance = finder.pop_nearest_pair() 
                 left, right = sorted((left, right))

@@ -1,8 +1,14 @@
+'''
+Graph theory and embedding directed acyclic graphs.
+'''
+
 from collections import defaultdict
 from typing import List, Dict, Set, Tuple, Iterable, Sequence, Optional, NamedTuple, Literal
 from dataclasses import dataclass, field
 import itertools
 import numpy as np
+
+from .lib_logging import Timing
 
 
 @dataclass
@@ -403,3 +409,117 @@ def _rearrange_boxes_from_middle(boxes: Sequence[Box]) -> List[Tuple[int, Box]]:
     return total
     
 
+
+class LabeledEdge(NamedTuple):
+    invertex: int
+    outvertex: int
+    label: int
+
+def sort_dag(vertices, does_precede):
+    todo = list(vertices)
+    done = []
+    while len(todo) > 0:
+        mins = [i for i in todo if not any(i!=j and does_precede(j, i) for j in todo)]
+        if len(mins)==0:
+            raise Exception('Cyclic graph.')
+        done.extend(mins)
+        todo = [i for i in todo if i not in mins]
+        # if len(mins) > 1:
+        # 	log('Sort DAG: uncomparable vertices:', *mins)
+    return done
+
+def left_subdag_tipsets(n_vertices: int, edges: List[Tuple[int,int]], precedence_matrix: Optional[np.ndarray]=None) -> Tuple[List[Tuple[int,...]], List[LabeledEdge]]:
+    '''Return the list of tipsets of all left subdags of dag H and all successor left subdag pairs (as index tuples).
+    G is a left subdag of dag H iff:
+        foreach u-v path in H. if v in G then u in G
+    Tipset of dag G is the minimal vertex subset S such that:
+        foreach u in G. exists v in S. exists path u-v
+    G, G' are a successor left subdag pair of dag H iff:
+        G, G' are left subdags of H and G can be obtained by removing one vertex from G'.
+    '''
+    vertices = range(n_vertices)
+    if precedence_matrix is None:
+        with Timing('precedence_matrix', mute=True):
+            precedence_matrix = precedence_matrix_from_edges_dumb(n_vertices, edges)
+    with Timing('left_subdag_tipsets', mute=True):
+        nontips = {u for (u, v) in edges}
+        tipset = tuple(v for v in vertices if v not in nontips)
+        active_tipsets = {tipset: 0}
+        tipset_counter = 1
+        all_tipsets: List[Tuple[int,...]] = []
+        tipset_edges = []
+        while len(active_tipsets) > 0:
+            all_tipsets.extend(active_tipsets.keys())
+            new_tipsets = {}
+            for tipset, tipset_id in active_tipsets.items():
+                incoming_edges = [(u,v) for (u,v) in edges if v in tipset]
+                for tip in tipset:
+                    potential_subtips = [u for (u,v) in incoming_edges if v == tip]
+                    subtips = []
+                    for u in potential_subtips:
+                        if any(precedence_matrix[u,v] and v != tip for v in tipset):  # TODO this will cause problem if there is subgraph [A->B, B->C, A->C]
+                            continue
+                        subtips.append(u)
+                    new_tipset = tuple(sorted(subtips + [t for t in tipset if t != tip]))
+                    if new_tipset not in new_tipsets:
+                        new_tipset_id = tipset_counter
+                        new_tipsets[new_tipset] = new_tipset_id
+                        tipset_counter += 1
+                    else:
+                        new_tipset_id = new_tipsets[new_tipset]
+                    tipset_edges.append(LabeledEdge(new_tipset_id, tipset_id, tip))
+            active_tipsets = new_tipsets
+    n_tipsets = len(all_tipsets)
+    all_tipsets = all_tipsets[::-1]
+    tipset_edges = [LabeledEdge(n_tipsets-1-i, n_tipsets-1-j, tip) for (i, j, tip) in tipset_edges]
+    assert are_edge_labels_unique_within_each_oriented_path(tipset_edges)
+    return all_tipsets, tipset_edges
+
+def are_edge_labels_unique_within_each_oriented_path(edges: List[LabeledEdge]):
+    edge_starts = {u for u, v, lab in edges}
+    edge_ends = {v for u, v, lab in edges}
+    vertices = list(edge_starts | edge_ends)
+    inflowing_labels: Dict[int, Set[int]] = {v: set() for v in vertices}
+    while True:
+        changed = False
+        for u, v, lab in edges:
+            if lab not in inflowing_labels[v]:
+                changed = True
+                inflowing_labels[v].add(lab)
+            if lab in inflowing_labels[u]:
+                return False
+        if not changed:
+            return True
+
+def precedence_matrix_from_edges_dumb(n_vertices, edges):
+    # n_vertices = len(vertices)
+    # assert all(vertices[i] < vertices[i+1] for i in range(n_vertices-1))
+    vertices = range(n_vertices)
+    precedence = np.eye(n_vertices, dtype=bool)
+    while True:
+        changed = False
+        for u, v in edges:
+            for w in vertices:
+                if not precedence[u, w] and precedence[v, w]:
+                    changed = True
+                    precedence[u, w] = True
+        if not changed:
+            break
+    for v in vertices:
+        precedence[v, v] = False
+    return precedence
+
+def test_left_subdag_tipsets():
+    # n_vertices = 10
+    # edges = [(i, i+1) for i in range(n_vertices-1)]
+    # edges = [(0,1), (1,2), (2,3), (3,4), (1,5), (1,6), (4,7), (5,7), (7,8), (6,8), (8,9)]
+    n_vertices = 13
+    edges = [(0,1), (1,2), (2,3), (3,4), (4,10), (10,11), (11,12), (1,5), (5,6), (6,4), (6,7), (7,8), (8,9), (9,11)]
+    tipsets, tipset_edges = left_subdag_tipsets(n_vertices, edges)
+    print(tipsets)
+    s = set()
+    for (i,j,tip) in tipset_edges:
+        s.add((tipsets[i], tipsets[j], tip))
+    for g, h, t in sorted(s):
+        print(f'{g} + {t} -> {h}')
+    print(len(tipsets))

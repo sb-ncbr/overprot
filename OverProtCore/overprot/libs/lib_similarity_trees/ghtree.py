@@ -9,7 +9,8 @@ import json
 
 from .abstract_similarity_tree import AbstractSimilarityTree, K, V
 from .caches import FunctionCache, DistanceCache, MinFinder
-from ..lib import PriorityQueue, ProgressBar
+from ..lib_logging import ProgressBar
+from ..lib import PriorityQueue
 
 
 OrderInParent = Literal[0, 1, 2]
@@ -69,10 +70,10 @@ class GHTree(AbstractSimilarityTree[K, V]):
         for k, v in keys_values:
             self._distance_cache.insert(k, v)
         self._root = _GHRoot()
-        bar = ProgressBar(len(elements), title=f'Bulk-loading {n} elements into GHTree').start() if with_progress_bar else None
+        bar = ProgressBar(len(elements), title=f'Bulk-loading {n} elements into GHTree').__enter__() if with_progress_bar else None
         self._root.subtree = self._create_node_from_bulk(elements, progress_bar=bar)
         if bar is not None:
-            bar.finalize()
+            bar.__exit__(None, None, None)
         # refs from the subtree to the root are set by default in _create_node_from_bulk()
         print(f'Bulk-loaded {n} elements')
     

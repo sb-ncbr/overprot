@@ -1,4 +1,6 @@
-'''Library of functions related to SSEs (secondary structure elements) and running SecStrAnnotator'''
+'''
+Functions related to SSEs (secondary structure elements) and running SecStrAnnotator
+'''
 
 from __future__ import annotations
 from pathlib import Path
@@ -8,12 +10,14 @@ import json
 import re
 import itertools
 from collections import defaultdict
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from enum import IntEnum
 
 from . import lib
 from . import lib_sh
+from . import lib_run
 from . import lib_domains
+from .lib_logging import Timing, ProgressBar
 from .lib_domains import Domain
 from .lib_dependencies import PYTHON, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
 
@@ -23,6 +27,8 @@ CHAIN = 'chain_id'
 START = 'start'
 END = 'end' # TODO move these into a separate module, which can then be imported as 'from sse_field_names import *'
 
+
+Sse = Dict[str, Any]
 
 class SseType(IntEnum):
     HELIX = 0
@@ -54,15 +60,14 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
         lib.log(f'Skipping SSA computation (all files already exist)')
     else:
         stdout_file, stderr_file = get_out_err_files(directory, append=append_outputs)
-        with lib.Timing('SSA'):
-            with lib.ProgressBar(len(domains), title='Computing SSA', mute = not progress_bar) as bar:
-                for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
-                    append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
-                    append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
-                    lib.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
-                        stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
-                    lib_sh.mv(detected_file, sse_file)
-                    bar.step()
+        with ProgressBar(len(domains), title='Computing SSA', mute = not progress_bar) as bar:
+            for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
+                append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
+                append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
+                lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
+                    stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+                lib_sh.mv(detected_file, sse_file)
+                bar.step()
 
     failed_domains = [domain.name for domain, sse_file in zip(domains, sse_files) if not sse_file.is_file()]
     if len(failed_domains) > 0:
@@ -75,11 +80,11 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
 def compute_distance_matrices(samples, directory: Path, append_outputs: bool = True):
     stdout_file, stderr_file = get_out_err_files(directory, append=append_outputs)
     n = len(samples)
-    with lib.ProgressBar(n*(n-1)//2, title='Computing distance matrices') as bar:
+    with ProgressBar(n*(n-1)//2, title='Computing distance matrices') as bar:
         for i, j in itertools.combinations_with_replacement(range(len(samples)), 2):
             pi, di, ci, ri = samples[i]
             pj, dj, cj, rj = samples[j]
-            lib.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--matching', 'none', directory, f'{di},{ci},{ri}' , f'{dj},{cj},{rj}', stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+            lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--matching', 'none', directory, f'{di},{ci},{ri}' , f'{dj},{cj},{rj}', stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
             lib_sh.mv(directory/'metric_matrix.tsv', directory/f'matrix-{di}-{dj}.tsv')
             lib_sh.rm(directory/f'alignment-{di}-{dj}.json', ignore_errors=True)
             lib_sh.rm(directory/f'{dj}-detected.sses.json', ignore_errors=True)
@@ -92,7 +97,7 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, ap
     shutil.copy(directory/'consensus.sses.json', directory/'consensus-template.sses.json')
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
     print('Running SecStrAnnotator:')
-    lib.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
+    lib_run.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
         '--dll', SECSTRANNOTATOR_DLL, 
         '--threads', '8', 
         '--options', f'{options} ', 
@@ -126,7 +131,7 @@ def map_manual_template_to_consensus(directory: Path):
         lib_sh.cp(directory.parent/f'{domain}.cif', directory/f'{domain}.cif')
         lib_sh.cp(directory/'consensus.sses.json', directory/'consensus-template.sses.json')
         stdout_file, stderr_file = get_out_err_files(directory, append=True)
-        lib.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--metrictype', '3', '--verbose', directory, 'consensus', f'{domain},{chain}',
+        lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--metrictype', '3', '--verbose', directory, 'consensus', f'{domain},{chain}',
             stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
         label_mapping = {}
         with open(directory/f'matching-consensus-{domain}.tsv') as r:

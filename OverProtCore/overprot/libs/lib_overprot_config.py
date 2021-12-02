@@ -1,3 +1,7 @@
+'''
+Configuration for overprot.py
+'''
+
 from typing import List, Literal
 
 from .lib_config import ConfigSection, Config

@@ -1,23 +1,19 @@
-'''Library of general-purpose functions'''
+'''
+General-purpose functions.
+'''
+# TODO break into smaller modules
 
 from __future__ import annotations
 from pathlib import Path
 import sys
-import shutil
 import json
 import re
-from datetime import datetime
 import heapq
 import numpy as np
 import itertools
-import subprocess
 from contextlib import contextmanager
-import multiprocessing
-import multiprocessing.pool  # needed for type annotations
 import hashlib
 from typing import List, Tuple, Dict, Set, Iterable, TypeVar, Optional, NamedTuple, Generic, Callable, TextIO, Any, Literal, Sequence, Mapping
-
-from .lib_dependencies import DOTNET
 
 
 K = TypeVar('K')
@@ -35,30 +31,6 @@ def log(*args, **kwargs):
 def log_debug(*args, **kwargs):
     print(*args, **kwargs)
     sys.stdout.flush()  # necessary when importing pymol because it somehow fucks up stdout
-
-def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None, stderr: Optional[str] = None, 
-                appendout: bool = False, appenderr: bool = False, timing: bool = False) -> int:
-    out_mode = 'a' if appendout else 'w'
-    err_mode = 'a' if appenderr else 'w'
-    arglist = list(map(str, args))
-    with maybe_open(stdin, 'r', default=sys.stdin) as stdin_handle:
-        with maybe_open(stdout, out_mode, default=sys.stdout) as stdout_handle: 
-            with maybe_open(stderr, err_mode, default=sys.stderr) as stderr_handle:
-                normal_streams = hasattr(stdout_handle, 'fileno') and hasattr(stderr_handle, 'fileno')
-
-                with Timing(f'Run command "{arglist[0]} ..."', mute = not timing):
-                    if normal_streams:
-                        process = subprocess.run(arglist, check=True, stdin=stdin_handle, stdout=stdout_handle, stderr=stderr_handle)
-                    else:
-                        process = subprocess.run(arglist, check=True, stdin=stdin_handle, capture_output=True)
-                        stdout_handle.write(consolidate_string(process.stdout.decode('utf8')))
-                        stderr_handle.write(consolidate_string(process.stderr.decode('utf8')))
-    return process.returncode
-
-def run_dotnet(dll: Path, *args, **run_command_kwargs):
-    if not dll.is_file():  # dotnet returns random exit code, if the DLL is not found ¯\_(ツ)_/¯
-        raise FileNotFoundError(dll)
-    run_command(DOTNET, dll, *args, **run_command_kwargs)
 
 def clear_file(filename: str) -> None:
     '''Remove all text from a file (or create empty file if does not exist).'''
@@ -297,120 +269,6 @@ def create_lookup(array):
         result[elem] = i
     return result
 
-def sort_dag(vertices, does_precede):
-    todo = list(vertices)
-    done = []
-    while len(todo) > 0:
-        mins = [i for i in todo if not any(i!=j and does_precede(j, i) for j in todo)]
-        if len(mins)==0:
-            raise Exception('Cyclic graph.')
-        done.extend(mins)
-        todo = [i for i in todo if i not in mins]
-        # if len(mins) > 1:
-        # 	log('Sort DAG: uncomparable vertices:', *mins)
-    return done
-
-class LabeledEdge(NamedTuple):
-    invertex: int
-    outvertex: int
-    label: int
-
-def left_subdag_tipsets(n_vertices: int, edges: List[Tuple[int,int]], precedence_matrix: Optional[np.ndarray]=None) -> Tuple[List[Tuple[int,...]], List[LabeledEdge]]:
-    '''Return the list of tipsets of all left subdags of dag H and all successor left subdag pairs (as index tuples).
-    G is a left subdag of dag H iff:
-        foreach u-v path in H. if v in G then u in G
-    Tipset of dag G is the minimal vertex subset S such that:
-        foreach u in G. exists v in S. exists path u-v
-    G, G' are a successor left subdag pair of dag H iff:
-        G, G' are left subdags of H and G can be obtained by removing one vertex from G'.
-    '''
-    vertices = range(n_vertices)
-    if precedence_matrix is None:
-        with Timing('precedence_matrix', mute=True):
-            precedence_matrix = precedence_matrix_from_edges_dumb(n_vertices, edges)
-    with Timing('left_subdag_tipsets', mute=True):
-        nontips = {u for (u, v) in edges}
-        tipset = tuple(v for v in vertices if v not in nontips)
-        active_tipsets = {tipset: 0}
-        tipset_counter = 1
-        all_tipsets: List[Tuple[int,...]] = []
-        tipset_edges = []
-        while len(active_tipsets) > 0:
-            all_tipsets.extend(active_tipsets.keys())
-            new_tipsets = {}
-            for tipset, tipset_id in active_tipsets.items():
-                incoming_edges = [(u,v) for (u,v) in edges if v in tipset]
-                for tip in tipset:
-                    potential_subtips = [u for (u,v) in incoming_edges if v == tip]
-                    subtips = []
-                    for u in potential_subtips:
-                        if any(precedence_matrix[u,v] and v != tip for v in tipset):  # TODO this will cause problem if there is subgraph [A->B, B->C, A->C]
-                            continue
-                        subtips.append(u)
-                    new_tipset = tuple(sorted(subtips + [t for t in tipset if t != tip]))
-                    if new_tipset not in new_tipsets:
-                        new_tipset_id = tipset_counter
-                        new_tipsets[new_tipset] = new_tipset_id
-                        tipset_counter += 1
-                    else:
-                        new_tipset_id = new_tipsets[new_tipset]
-                    tipset_edges.append(LabeledEdge(new_tipset_id, tipset_id, tip))
-            active_tipsets = new_tipsets
-    n_tipsets = len(all_tipsets)
-    all_tipsets = all_tipsets[::-1]
-    tipset_edges = [LabeledEdge(n_tipsets-1-i, n_tipsets-1-j, tip) for (i, j, tip) in tipset_edges]
-    assert are_edge_labels_unique_within_each_oriented_path(tipset_edges)
-    return all_tipsets, tipset_edges
-
-def are_edge_labels_unique_within_each_oriented_path(edges: List[LabeledEdge]):
-    edge_starts = {u for u, v, lab in edges}
-    edge_ends = {v for u, v, lab in edges}
-    vertices = list(edge_starts | edge_ends)
-    inflowing_labels: Dict[int, Set[int]] = {v: set() for v in vertices}
-    while True:
-        changed = False
-        for u, v, lab in edges:
-            if lab not in inflowing_labels[v]:
-                changed = True
-                inflowing_labels[v].add(lab)
-            if lab in inflowing_labels[u]:
-                return False
-        if not changed:
-            return True
-
-def precedence_matrix_from_edges_dumb(n_vertices, edges):
-    # n_vertices = len(vertices)
-    # assert all(vertices[i] < vertices[i+1] for i in range(n_vertices-1))
-    vertices = range(n_vertices)
-    precedence = np.eye(n_vertices, dtype=bool)
-    while True:
-        changed = False
-        for u, v in edges:
-            for w in vertices:
-                if not precedence[u, w] and precedence[v, w]:
-                    changed = True
-                    precedence[u, w] = True
-        if not changed:
-            break
-    for v in vertices:
-        precedence[v, v] = False
-    return precedence
-
-def test_left_subdag_tipsets():
-    # n_vertices = 10
-    # edges = [(i, i+1) for i in range(n_vertices-1)]
-    # edges = [(0,1), (1,2), (2,3), (3,4), (1,5), (1,6), (4,7), (5,7), (7,8), (6,8), (8,9)]
-    n_vertices = 13
-    edges = [(0,1), (1,2), (2,3), (3,4), (4,10), (10,11), (11,12), (1,5), (5,6), (6,4), (6,7), (7,8), (8,9), (9,11)]
-    tipsets, tipset_edges = left_subdag_tipsets(n_vertices, edges)
-    print(tipsets)
-    s = set()
-    for (i,j,tip) in tipset_edges:
-        s.add((tipsets[i], tipsets[j], tip))
-    for g, h, t in sorted(s):
-        print(f'{g} + {t} -> {h}')
-    print(len(tipsets))
-
 def safe_mean(X, axis=None, fallback_value=0.0):
     '''Same as numpy.mean, but on empty slices returns fallback_value instead of NaN; does not throw any warning.'''
     if not hasattr(X, 'size'):
@@ -483,107 +341,6 @@ def matrix_from_function(shape: Tuple[int, ...], function: Callable, dtype=float
             for idcs in itertools.product(*(range(n) for n in shape)):
                 matrix[idcs] = function(*idcs) if idcs[-2] != idcs[-1] else diag_value
     return matrix
-
-@contextmanager
-def maybe_open(filename: Optional[str], *args, default=None, **kwargs):
-    if filename is not None:
-        f = open(filename, *args, **kwargs)
-        has_opened = True
-    else:
-        f = default
-        if f is not None:
-            f.flush()
-        has_opened = False
-    try:
-        yield f
-    except Exception:
-        raise
-    finally:
-        if has_opened:
-            f.close()
-
-
-class ProgressBar_Old:
-    def __init__(self, n_steps, width=100, title='', writer=sys.stdout):
-        self.n_steps = n_steps # expected number of steps
-        self.width = width
-        self.title = (' '+title+' ')[0:min(len(title)+2, width)]
-        self.writer = writer
-        self.done = 0 # number of completed steps
-        self.shown = 0 # number of shown symbols
-    def start(self):
-        self.writer.write('|' + self.title + '_'*(self.width-len(self.title)) + '|\n')
-        self.writer.write('|')
-        self.writer.flush()
-        return self
-    def step(self, n_steps=1):
-        self.done = min(self.done + n_steps, self.n_steps)
-        new_shown = int(self.width * self.done / self.n_steps if self.n_steps > 0 else self.width)
-        self.writer.write('*' * (new_shown-self.shown))
-        self.writer.flush()
-        self.shown = new_shown
-    def finalize(self):
-        self.step(self.n_steps - self.done)
-        self.writer.write('|\n')
-        self.writer.flush()
-
-
-class ProgressBar:
-    DONE_SYMBOL = '█'
-    TODO_SYMBOL = '-'
-
-    def __init__(self, n_steps: int, *, width: Optional[int] = None, 
-                 title: str = '', prefix: Optional[str] = None, suffix: Optional[str] = None, 
-                 writer: TextIO|Literal['stdout', 'stderr'] = 'stdout', mute: bool = False):
-        self.n_steps = n_steps # expected number of steps
-        self.prefix = prefix + ' ' if prefix is not None else ''
-        self.suffix = ' ' + suffix if suffix is not None else ''
-        self.width = width if width is not None else shutil.get_terminal_size().columns
-        self.width -= len(self.prefix) + len(self.suffix) + 10  # self.width -= len(prefix) + len(suffix) + 8
-        self.title = (' '+title+' ')[0:min(len(title)+2, self.width)]
-        self.writer = sys.stdout if writer == 'stdout' else sys.stderr if writer == 'stderr' else writer  # writer if writer is not None else sys.stdout
-        self.done = 0 # number of completed steps
-        self.shown = 0 # number of shown symbols
-        self.mute = mute
-
-    def __enter__(self):
-        self.start()
-        return self
-    
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.finalize(completed = exc_type is None)
-
-    def start(self):
-        if not self.mute:
-            self.writer.write(' ' * len(self.prefix))
-            self.writer.write('┌' + self.title + '─'*(self.width-len(self.title)) + '┐\n')
-            self.writer.flush()
-            self.step(0, force=True)
-        return self
-
-    def step(self, n_steps=1, force=False):
-        if not self.mute:
-            if n_steps == 0 and not force:
-                return
-            self.done = min(self.done + n_steps, self.n_steps)
-            try:
-                progress = self.done / self.n_steps
-            except ZeroDivisionError:
-                progress = 1.0
-            new_shown = int(self.width * progress)
-            if new_shown != self.shown or force:
-                self.writer.write(f'\r{self.prefix}└')
-                self.writer.write(self.DONE_SYMBOL * new_shown + self.TODO_SYMBOL * (self.width - new_shown))
-                self.writer.write(f'┘ {int(100*progress):>3}%{self.suffix} ')
-                self.writer.flush()
-                self.shown = new_shown  
-
-    def finalize(self, completed=True):
-        if not self.mute:
-            if completed:
-                self.step(self.n_steps - self.done)
-            self.writer.write('\n')
-            self.writer.flush()
 
 class Counter(Generic[K]):
     def __init__(self):
@@ -704,38 +461,6 @@ class NumpyMinHeap:
         return None
 
 
-class Timing:
-    def __init__(self, name: Optional[str] = None, file: TextIO|Literal['stdout', 'stderr'] = 'stderr', mute=False):
-        self.name = name
-        self.file = sys.stdout if file == 'stdout' else sys.stderr if file == 'stderr' else file
-        self.mute = mute
-        self.time = None
-    def __enter__(self):
-        self.t0 = datetime.now()
-        return self
-    def __exit__(self, *args):
-        dt = datetime.now() - self.t0
-        self.time = dt
-        if not self.mute:
-            if self.name is not None:
-                message = f'Timing: {self.name}: {dt}'
-            else:
-                message = f'Timing: {dt}'
-            print(message, file=self.file)
-
-
-
-class Tee:
-    def __init__(self, *outputs: TextIO):
-        self.outputs  = outputs
-    def write(self, *args, **kwargs):
-        for out in self.outputs:
-            out.write(*args, **kwargs)
-    def flush(self, *args, **kwargs):
-        for out in self.outputs:
-            out.flush(*args, **kwargs)
-
-
 def dump_json(obj: object, file: TextIO|Path, minify: bool = False) -> None:
     is_writer = hasattr(file, 'write')
     options: Dict[str, object]
@@ -750,159 +475,6 @@ def dump_json(obj: object, file: TextIO|Path, minify: bool = False) -> None:
         with open(file, 'w') as w:  # type: ignore
             json.dump(obj, w, **options)  # type: ignore
             w.write('\n')
-
-def consolidate_file(infile: Path, outfile: Path) -> None:
-    '''Remove "erased lines" from a text file, 
-    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
-    CR = ord(b'\r')
-    LF = ord(b'\n')
-    with open(infile, 'rb') as r:
-        original = r.read().replace(b'\r\n', b'\n')
-    current_line = []
-    with open(outfile, 'wb') as w:
-        for byte in original:
-            if byte == LF:
-                current_line.append(byte)
-                w.write(bytes(current_line))
-                current_line.clear()
-            elif byte == CR:
-                current_line.clear()
-            else:
-                current_line.append(byte)
-        w.write(bytes(current_line))
-
-def consolidate_string(original: str) -> str:
-    '''Remove "erased lines" from a text file, 
-    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
-    CR = '\r'
-    LF = '\n'
-    result = []
-    current_line = []
-    for char in original:
-        if char == LF:
-            current_line.append(char)
-            result.extend(current_line)
-            current_line.clear()
-        elif char == CR:
-            current_line.clear()
-        else:
-            current_line.append(char)
-    result.extend(current_line)
-    return ''.join(result)
-
-class RedirectIO:
-    def __init__(self, stdin: Optional[Path] = None, stdout: Optional[Path] = None, stderr: Optional[Path] = None, 
-                 tee_stdout: Optional[Path] = None, tee_stderr: Optional[Path] = None, 
-                 append_stdout: bool = False, append_stderr: bool = False):
-        assert stdout is None or tee_stdout is None, f'Cannot specify both stdout and tee_stdout'
-        assert stderr is None or tee_stderr is None, f'Cannot specify both stderr and tee_stderr'
-        self.new_in_file = stdin
-        self.new_out_file = stdout
-        self.new_err_file = stderr
-        self.tee_out_file = tee_stdout
-        self.tee_err_file = tee_stderr
-        self.append_stdout = append_stdout
-        self.append_stderr = append_stderr
-
-    def __enter__(self):
-        out_mode = 'a' if self.append_stdout else 'w'
-        err_mode = 'a' if self.append_stderr else 'w'
-        if self.new_in_file is not None:
-            self.new_in = open(self.new_in_file, 'r')
-            self.old_in = sys.stdin
-            sys.stdin = self.new_in
-        if self.new_out_file is not None:
-            self.new_out = open(self.new_out_file, out_mode)
-            self.old_out = sys.stdout
-            sys.stdout = self.new_out
-        if self.new_err_file is not None:
-            self.new_err = open(self.new_err_file, err_mode)
-            self.old_err = sys.stderr
-            sys.stderr = self.new_err
-        if self.tee_out_file is not None:
-            self.new_out = Tee(sys.stdout, open(self.tee_out_file, out_mode))
-            self.old_out = sys.stdout
-            sys.stdout = self.new_out
-        if self.tee_err_file is not None:
-            self.new_err = Tee(sys.stderr, open(self.tee_err_file, err_mode))
-            self.old_err = sys.stderr
-            sys.stderr = self.new_err
-
-    def __exit__(self, exctype, excinst, exctb):
-        if self.new_in_file is not None:
-            sys.stdin = self.old_in
-            self.new_in.close()
-        if self.new_out_file is not None:
-            sys.stdout = self.old_out
-            self.new_out.close()
-            consolidate_file(self.new_out_file, self.new_out_file)
-        if self.new_err_file is not None:
-            sys.stderr = self.old_err
-            self.new_err.close()
-            consolidate_file(self.new_err_file, self.new_err_file)
-        if self.tee_out_file is not None:
-            sys.stdout = self.old_out
-            self.new_out.outputs[1].close()
-            consolidate_file(self.tee_out_file, self.tee_out_file)
-        if self.tee_err_file is not None:
-            sys.stderr = self.old_err
-            self.new_err.outputs[1].close()
-            consolidate_file(self.tee_err_file, self.tee_err_file)
-
-class Job(NamedTuple):
-    name: str
-    func: Callable
-    args: Sequence
-    kwargs: Mapping
-    stdout: Optional[Path]
-    stderr: Optional[Path]
-
-class JobResult(NamedTuple):
-    job: Job
-    result: Any
-    worker: str
-
-def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, 
-        callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.pool.Pool] = None) -> List[JobResult]:
-    '''Run jobs (i.e. call job.func(*job.args, **job.kwargs)) in n_processes processes. 
-    Standard output and standard error output are saved in files job.stdout and job.stderr.
-    Default n_processes: number of CPUs.
-    If n_processes==1, then run jobs sequentially without starting new processes (useful for debugging).'''
-    if n_processes is None and pool is None:
-        n_processes = multiprocessing.cpu_count()
-    n_jobs = len(jobs)
-    results = []
-    with ProgressBar(n_jobs, title=f'Running {n_jobs} jobs in {n_processes} processes', mute = not progress_bar) as bar:
-        if pool is not None:
-            result_iterator = pool.imap_unordered(_run_job, jobs)
-            for result in result_iterator:
-                if callback is not None:
-                    callback(result)
-                results.append(result)
-                bar.step()
-        elif n_processes == 1:
-            for job in jobs:
-                result = _run_job(job)
-                if callback is not None:
-                    callback(result)
-                results.append(result)
-                bar.step()
-        else:
-            with multiprocessing.Pool(n_processes) as ad_hoc_pool:
-                result_iterator = ad_hoc_pool.imap_unordered(_run_job, jobs)
-                for result in result_iterator:
-                    if callback is not None:
-                        callback(result)
-                    results.append(result)
-                    bar.step()
-    return results
-    
-def _run_job(job: Job) -> JobResult:
-    worker = multiprocessing.current_process().name
-    with RedirectIO(stdout=job.stdout, stderr=job.stderr):
-        result = job.func(*job.args, **job.kwargs)
-    return JobResult(job=job, result=result, worker=worker)
-
 
 
 def test_NumpyMinHeap():

@@ -1,3 +1,8 @@
+'''
+Wrappers for shell-like functions from os, shutil...
+(mv, cp, rm, ls...)
+'''
+
 from __future__ import annotations
 from pathlib import Path
 import shutil
@@ -35,7 +40,7 @@ def rm(*paths: Path, recursive: bool = False, ignore_errors: bool = False) -> No
             path.unlink()
 
 def ls(directory: Path, recursive: bool = False, only_files: bool = False, only_dirs: bool = False) -> list[Path]:
-    '''List files in this directory or [] if self is not a directory.'''
+    '''List files in this directory or [] if self is not a directory. ($ ls [-R] directory)'''
     if recursive:
         result = list(_ls_recursive(directory))
     elif directory.is_dir():

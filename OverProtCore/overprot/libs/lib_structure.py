@@ -1,3 +1,7 @@
+'''
+Representation of protein structures (sets of atoms in 3D)
+'''
+
 from __future__ import annotations
 import numpy as np
 from pathlib import Path

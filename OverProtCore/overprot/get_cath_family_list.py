@@ -14,6 +14,7 @@ from urllib import request
 from typing import Dict, Any, Optional, Counter
 
 from .libs import lib
+from .libs.lib_io import RedirectIO
 
 #  CONSTANTS  ################################################################################
 
@@ -62,7 +63,7 @@ def main(cath_domain_list: Path, download: bool = False, url: str = CATH_DOMAIN_
         families = [fam for fam, size in family_sizes.most_common()]
     else:
         families = sorted(family_sizes.keys())
-    with lib.RedirectIO(stdout=output):
+    with RedirectIO(stdout=output):
         print(*families, sep='\n')
     return 0
 

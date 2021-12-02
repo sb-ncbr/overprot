@@ -17,6 +17,7 @@ import shutil
 
 from .libs import lib
 from .libs import lib_sh
+from .libs import lib_multiprocessing
 from . import get_cath_family_list
 from . import overprot
 
@@ -39,7 +40,7 @@ def process_family(family: str, sample_size: int|str|None, directory: Path, conf
         print(error, file=sys.stderr)
         return error
 
-def family_callback(result: lib.JobResult, directory: Path):
+def family_callback(result: lib_multiprocessing.JobResult, directory: Path):
     family = result.job.name
     error = result.result
     with contextlib.suppress(OSError):
@@ -140,7 +141,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
     (directory/'succeeded_families.txt').write_text('')
     (directory/'errors.txt').write_text('')
     jobs = [
-        lib.Job(
+        lib_multiprocessing.Job(
             name=family, 
             func=process_family, 
             args=(family, sample_size, directory/'families'/family),
@@ -148,7 +149,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
             stdout=current_dir/f'{family}-out.txt',
             stderr=current_dir/f'{family}-err.txt'
         ) for family in families]
-    results = lib.run_jobs_with_multiprocessing(jobs, n_processes=None, progress_bar=True, 
+    results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=None, progress_bar=True, 
         callback = lambda res: family_callback(res, directory))
     lib_sh.rm(current_dir, recursive=True, ignore_errors=True)
     if collect:
