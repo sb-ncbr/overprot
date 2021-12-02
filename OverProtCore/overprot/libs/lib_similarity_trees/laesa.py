@@ -1,18 +1,13 @@
 '''VPT, Vantage Point Tree'''
 
 import math
-import statistics
-from datetime import timedelta
-from typing import Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
-from dataclasses import dataclass, field
+from typing import List, Tuple, Callable, Sequence, Iterable
 import numpy as np
-import json
 from multiprocessing import Pool
 
 from .abstract_similarity_tree import AbstractSimilarityTree, K, V
 from .caches import FunctionCache, DistanceCache, MinFinder
-from .. import lib
-from ..lib import PriorityQueue, ProgressBar, Timing
+from ..lib import ProgressBar
 
 
 ZERO_ELEMENT = '-'
@@ -63,7 +58,7 @@ class LAESA(AbstractSimilarityTree[K, V]):
         '''Decide if element is present in the tree'''
         return element in self._elements
 
-    def _get_distance_to_value(self, key1: K, value2: K) -> float:
+    def _get_distance_to_value(self, key1: K, value2: V) -> float:
         return self._distance_cache.get_distance_to_value(key1, value2)
 
     def get_distance(self, key1: K, key2: K) -> float:
@@ -114,7 +109,7 @@ class LAESA(AbstractSimilarityTree[K, V]):
         for ip, pivot in enumerate(self._pivots):
             current_range = min(besties.bubble_in(d_q_p[ip], pivot), the_range)
         
-        best_order = np.argsort(d_q_e_low)
+        best_order: np.ndarray[int] = np.argsort(d_q_e_low)  # type: ignore
         for ie in best_order:
             if d_q_e_low[ie] > current_range*TOLERANCE_RATIO:
                 break
@@ -142,38 +137,3 @@ class LAESA(AbstractSimilarityTree[K, V]):
                     return False
         return True
     
-    def save(self, file: str, with_cache: bool = False, **json_kwargs) -> None:
-        js = {
-            'TYPE': 'MVPT', 
-            'ARITY': self._K, 
-            'LEAF_SIZE': self._leaf_size, 
-            'root': self._node_to_json(self._root),
-            'distance_cache': self._distance_cache.json() if with_cache else []
-        }
-        kwargs = {'indent': 1}
-        kwargs.update(json_kwargs)
-        with open(file, 'w') as w:
-            json.dump(js, w, **kwargs)
-
-    @staticmethod
-    def load(file: str, distance_function: Callable[[V, V], float], get_value: Callable[[K], V]) -> 'MVPTree[K, V]':
-        with open(file) as r:
-            js = json.load(r)
-        assert isinstance(js, dict)
-        leaf_size = js['LEAF_SIZE']
-        arity = js['ARITY']
-        result = MVPTree[K, V](distance_function, arity=arity, leaf_size=leaf_size)
-        root = result._node_from_json(js['root'])
-        result._root = root
-        forks, leaves = result.get_forks_and_leaves()
-        for fork in forks:
-            if fork.pivot != ZERO_ELEMENT:
-                result._elements.add(fork.pivot)
-        for leaf in leaves:
-            for elem in leaf.elements:
-                result._elements.add(elem)
-        for elem in result._elements:
-            result._distance_cache.insert(elem, get_value(elem))
-        for k1, k2, dist in js['distance_cache']:
-            result._distance_cache.set_distance(k1, k2, dist)
-        return result

@@ -1,10 +1,7 @@
 '''Library of general-purpose functions'''
 
-
-import os
-from os import path
+from __future__ import annotations
 from pathlib import Path
-import glob
 import sys
 import shutil
 import json
@@ -14,13 +11,11 @@ import heapq
 import numpy as np
 import itertools
 import subprocess
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 import multiprocessing
 import multiprocessing.pool  # needed for type annotations
 import hashlib
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import List, Tuple, Dict, Set, Iterable, Iterator, TypeVar, Union, Optional, NamedTuple, Generic, Callable, TextIO, Any, Literal, Sequence, Mapping, Final, Type, get_origin, get_args, get_type_hints
+from typing import List, Tuple, Dict, Set, Iterable, TypeVar, Optional, NamedTuple, Generic, Callable, TextIO, Any, Literal, Sequence, Mapping
 
 from .lib_dependencies import DOTNET
 
@@ -60,18 +55,10 @@ def run_command(*args, stdin: Optional[str] = None, stdout: Optional[str] = None
                         stderr_handle.write(consolidate_string(process.stderr.decode('utf8')))
     return process.returncode
 
-def run_dotnet(dll: str, *args, **run_command_kwargs):
-    if not os.path.isfile(dll):  # dotnet returns random exit code, if the DLL is not found ¯\_(ツ)_/¯
+def run_dotnet(dll: Path, *args, **run_command_kwargs):
+    if not dll.is_file():  # dotnet returns random exit code, if the DLL is not found ¯\_(ツ)_/¯
         raise FileNotFoundError(dll)
     run_command(DOTNET, dll, *args, **run_command_kwargs)
-
-def try_remove_file(filename: str) -> bool:
-    '''Try to remove a file ($ rm -f filename). Return True if the file has been successfully removed, False otherwise.'''
-    try:
-        os.remove(filename)
-        return True
-    except OSError:
-        return False
 
 def clear_file(filename: str) -> None:
     '''Remove all text from a file (or create empty file if does not exist).'''
@@ -162,8 +149,8 @@ def invert_offsets(offsets):  # Produces inverse mapping for offsets, e.g. [0, 3
             result.append(i)
     return result
 
-def read_matrix(filename: 'FilePath', sep='\t', dtype=None) -> Tuple[np.ndarray, List[str], List[str]]:
-    with filename._open() as f:
+def read_matrix(filename: Path, sep='\t', dtype=None) -> Tuple[np.ndarray, List[str], List[str]]:
+    with open(filename) as f:
         col_names = None
         row_names = []
         values = []
@@ -547,7 +534,7 @@ class ProgressBar:
 
     def __init__(self, n_steps: int, *, width: Optional[int] = None, 
                  title: str = '', prefix: Optional[str] = None, suffix: Optional[str] = None, 
-                 writer: Union[TextIO, Literal['stdout', 'stderr']] = 'stdout', mute: bool = False):
+                 writer: TextIO|Literal['stdout', 'stderr'] = 'stdout', mute: bool = False):
         self.n_steps = n_steps # expected number of steps
         self.prefix = prefix + ' ' if prefix is not None else ''
         self.suffix = ' ' + suffix if suffix is not None else ''
@@ -718,7 +705,7 @@ class NumpyMinHeap:
 
 
 class Timing:
-    def __init__(self, name: Optional[str] = None, file: Union[TextIO, Literal['stdout', 'stderr']] = 'stderr', mute=False):
+    def __init__(self, name: Optional[str] = None, file: TextIO|Literal['stdout', 'stderr'] = 'stderr', mute=False):
         self.name = name
         self.file = sys.stdout if file == 'stdout' else sys.stderr if file == 'stderr' else file
         self.mute = mute
@@ -749,145 +736,7 @@ class Tee:
             out.flush(*args, **kwargs)
 
 
-
-@dataclass
-class FilePath(os.PathLike, object):
-    '''Represents a path to a file or directory.
-    full = dir/base = dir/name+ext
-    '''
-    _full: str  # full path
-    _dir: str  # full directory path
-    _base: str  # basename
-    _name: str  # basename without extension
-    _ext: str  # extension
-
-    def __init__(self, the_path: Union[str, 'FilePath'], *subpaths: Union[str, 'FilePath']):
-        self._full = path.join(str(the_path), *map(str, subpaths))
-        self._dir, self._base = path.split(self._full)
-        self._name, self._ext = path.splitext(self._base)
-
-    def __repr__(self) -> str:
-        full_path = self._full.rstrip('/')
-        d = '/' if self.is_dir() else ''
-        return f'FilePath({full_path}{d})'
-    
-    def __str__(self) -> str:
-        full_path = self._full.rstrip('/')
-        d = '/' if self.is_dir() else ''
-        return f'{full_path}{d}'
-    
-    def __fspath__(self) -> str:
-        return str(self)
-
-    @staticmethod
-    def _string(file_path: Union['FilePath', str, None]) -> Optional[str]:
-        return str(file_path) if file_path is not None else None
-
-    def _abs(self) -> 'FilePath':
-        '''Get equivalent absolute path'''
-        pwd = os.getcwd()
-        return FilePath(pwd, self)
-
-    def _parent(self) -> 'FilePath':
-        '''Get path to the parent directory'''
-        return FilePath(self._dir)
-
-    def _sub(self, *paths: str) -> 'FilePath':
-        '''Create path relative to self (self/*paths)'''
-        return FilePath(self._full, *paths)
-
-    def is_dir(self) -> bool:
-        '''Is a directory?'''
-        return path.isdir(self._full)
-
-    def is_file(self) -> bool:
-        '''Is a file?'''
-        return path.isfile(self._full)
-
-    def exists(self) -> bool:
-        '''Exists?'''
-        return path.exists(self._full)
-
-    def ls(self, recursive: bool = False, only_files: bool = False, only_dirs: bool = False) -> List['FilePath']:
-        '''List files in this directory or [] if self is not a directory.'''
-        if recursive:
-            result = list(self._ls_recursive())
-        else:
-            result = []
-            if self.is_dir():
-                for file in os.listdir(self._full):
-                    result.append(FilePath(self._full, file))
-        if only_files:
-            result = [f for f in result if f.is_file()]
-        if only_dirs:
-            result = [f for f in result if f.is_dir()]
-        return result
-    
-    def _ls_recursive(self, include_self: bool = False) -> Iterator['FilePath']:
-        if include_self:
-            yield self
-        if self.is_dir():
-            for file in self.ls():
-                yield from file._ls_recursive(include_self=True)
-
-    def _mkdir(self, *paths: str, **makedirs_kwargs) -> 'FilePath':
-        '''Make directory self/*paths'''
-        result = self._sub(*paths)
-        os.makedirs(result._full, **makedirs_kwargs)
-        return result
-    
-    def mv(self, dest: 'FilePath') -> 'FilePath':
-        '''Move a file or directory ($ mv self dest)'''
-        new_path = shutil.move(self._full, dest._full)
-        return FilePath(new_path)
-
-    def cp(self, dest: 'FilePath') -> 'FilePath':
-        if self.is_dir():
-            new_path = shutil.copytree(self._full, dest._full)
-        else:
-            new_path = shutil.copy(self._full, dest._full)
-        return FilePath(new_path)
-
-    def rm(self, recursive: bool = False, ignore_errors: bool = False) -> None:
-        '''Remove this file or empty directory ($ rm self || rmdir self).
-        If recursive, remove also non-empty directories ($ rm -r self).
-        '''
-        if ignore_errors:
-            with suppress(OSError):
-                return self.rm(recursive=recursive, ignore_errors=False)
-        if self.is_dir():
-            if recursive:
-                shutil.rmtree(self._full)
-            else:
-                os.rmdir(self._full)
-        else:
-            os.remove(self._full)
-
-    def _open(self, *args, **kwargs) -> TextIO:  #TODO replace by .write, .append, .dump_json, .load_json where possible
-        '''Open file and return its file handle (like open(self)).'''
-        return open(self._full, *args, **kwargs)
-    
-    def clear(self) -> 'FilePath':
-        '''Remove all text from a file (or create empty file if does not exist).'''
-        with self._open('w'):
-            pass
-        return self
-
-    def _glob(self, **kwargs) -> List['FilePath']:
-        matches = glob.glob(self._full, **kwargs)
-        return [FilePath(match) for match in matches]
-
-    def archive_to(self, dest: 'FilePath') -> 'FilePath':
-        fmt = dest._ext.lstrip('.')
-        archive = shutil.make_archive(str(dest._parent()._sub(dest._name)), fmt, str(self))
-        return FilePath(archive)
-
-    def dump_json(self, obj: object, minify: bool = False) -> 'FilePath':
-        dump_json(obj, self, minify=minify)
-        return self
-
-
-def dump_json(obj: object, file: Union[TextIO, str, os.PathLike], minify: bool = False) -> None:
+def dump_json(obj: object, file: TextIO|Path, minify: bool = False) -> None:
     is_writer = hasattr(file, 'write')
     options: Dict[str, object]
     if minify:
@@ -902,7 +751,7 @@ def dump_json(obj: object, file: Union[TextIO, str, os.PathLike], minify: bool =
             json.dump(obj, w, **options)  # type: ignore
             w.write('\n')
 
-def consolidate_file(infile: Union[str, FilePath], outfile: Union[str, FilePath]) -> None:
+def consolidate_file(infile: Path, outfile: Path) -> None:
     '''Remove "erased lines" from a text file, 
     e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
     CR = ord(b'\r')
@@ -942,16 +791,16 @@ def consolidate_string(original: str) -> str:
     return ''.join(result)
 
 class RedirectIO:
-    def __init__(self, stdin: Union[FilePath, str, None] = None, stdout: Union[FilePath, str, None] = None, stderr: Union[FilePath, str, None] = None, 
-                 tee_stdout: Union[FilePath, str, None] = None, tee_stderr: Union[FilePath, str, None] = None, 
+    def __init__(self, stdin: Optional[Path] = None, stdout: Optional[Path] = None, stderr: Optional[Path] = None, 
+                 tee_stdout: Optional[Path] = None, tee_stderr: Optional[Path] = None, 
                  append_stdout: bool = False, append_stderr: bool = False):
         assert stdout is None or tee_stdout is None, f'Cannot specify both stdout and tee_stdout'
         assert stderr is None or tee_stderr is None, f'Cannot specify both stderr and tee_stderr'
-        self.new_in_file = FilePath._string(stdin)
-        self.new_out_file = FilePath._string(stdout)
-        self.new_err_file = FilePath._string(stderr)
-        self.tee_out_file = FilePath._string(tee_stdout)
-        self.tee_err_file = FilePath._string(tee_stderr)
+        self.new_in_file = stdin
+        self.new_out_file = stdout
+        self.new_err_file = stderr
+        self.tee_out_file = tee_stdout
+        self.tee_err_file = tee_stderr
         self.append_stdout = append_stdout
         self.append_stderr = append_stderr
 
@@ -1000,14 +849,13 @@ class RedirectIO:
             self.new_err.outputs[1].close()
             consolidate_file(self.tee_err_file, self.tee_err_file)
 
-
 class Job(NamedTuple):
     name: str
     func: Callable
     args: Sequence
     kwargs: Mapping
-    stdout: Optional[FilePath]
-    stderr: Optional[FilePath]
+    stdout: Optional[Path]
+    stderr: Optional[Path]
 
 class JobResult(NamedTuple):
     job: Job

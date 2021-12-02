@@ -7,13 +7,13 @@ Example usage:
 # TODO add description and example usage in docstring
 
 import argparse
+from pathlib import Path
 import json
 import requests
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional
 
 from .libs import lib_domains
 from .libs import lib
-from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
 
@@ -37,17 +37,17 @@ def is_obsolete(pdb: str) -> bool:
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('sample_json', help='Input file with domains', type=str)
-    parser.add_argument('missing_list', help='File with the list of missing (possibly obsolete) PDB structures', type=str)
-    parser.add_argument('output_sample_json', help='Output file with non-obsolete domains', type=str)
-    parser.add_argument('output_missing_list', help='Filename for the list of missing non-obsolete PDB structures', type=str)
+    parser.add_argument('sample_json', help='Input file with domains', type=Path)
+    parser.add_argument('missing_list', help='File with the list of missing (possibly obsolete) PDB structures', type=Path)
+    parser.add_argument('output_sample_json', help='Output file with non-obsolete domains', type=Path)
+    parser.add_argument('output_missing_list', help='Filename for the list of missing non-obsolete PDB structures', type=Path)
     # TODO add command line arguments
     args = parser.parse_args()
     return vars(args)
 
 
-def main(sample_json: Union[FilePath, str], missing_list: Union[FilePath, str], 
-         output_sample_json: Union[FilePath, str], output_missing_list: Union[FilePath, str]) -> Optional[int]:
+def main(sample_json: Path, missing_list: Path, 
+         output_sample_json: Path, output_missing_list: Path) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     domains = lib_domains.load_domain_list(sample_json)

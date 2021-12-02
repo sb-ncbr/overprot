@@ -1,8 +1,8 @@
 import sys
 import argparse
-import json
+from pathlib import Path
 from collections import defaultdict
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Tuple, List, Dict, Any, Optional
 import itertools
 import numpy as np  # type: ignore
 from matplotlib import pyplot as plt  # type: ignore
@@ -13,7 +13,7 @@ import Bio  # type: ignore
 from ete3 import Tree  # type: ignore  # sudo apt install python3-pyqt5.qtsvg
 
 from . import lib
-from .lib import FilePath, Timing
+from .lib import Timing
 from . import lib_clustering
 from . import lib_acyclic_clustering_simple
 from . import superimpose3d
@@ -236,7 +236,7 @@ def matrix_overview(matrix):
     plt.plot(matrix.min(0))
     plt.show()
 
-def print_alignment(structA: Structure, structB: Structure, matching: List[Tuple[int, int]], filename: str):
+def print_alignment(structA: Structure, structB: Structure, matching: List[Tuple[int, int]], filename: Path):
     NONMATCHED = lib_acyclic_clustering_simple.NONMATCHED
     out_aln = {'aligned_residues': [(structA.chain[i], int(structA.resi[i]), structB.chain[j], int(structB.resi[j])) for i, j in matching if i != NONMATCHED and j!= NONMATCHED]}
     lib.dump_json(out_aln, filename)
@@ -250,7 +250,7 @@ def eucldist_dynprog_score_matrix(struct1: Structure, struct2: Structure, match_
     eucldist = np.sqrt(sqdist)
     return (match_value - eucldist) / match_value
 
-def dist(structfileA: FilePath, structfileB: FilePath, with_cealign=True, with_iteration=True):
+def dist(structfileA: Path, structfileB: Path, with_cealign=True, with_iteration=True):
     '''Calculate edit-distance of two structures. If with_cealign==False, assume that the structures are pre-aligned and skip cealign step.
     Prototype!
     '''
@@ -361,11 +361,10 @@ def test_edit_distance_weighted():
         lib.log_debug(matching[i], coordsAB.coords[:,i], coordsAB.relative_weights[i])
 
 
-def make_structure_tree(structs: List[FilePath], show_tree=False, with_cealign=True, with_iteration=True):
+def make_structure_tree(structs: List[Path], show_tree=False, with_cealign=True, with_iteration=True):
     structs = list(structs)
     n_structs = len(structs)
-    dirs = [struct._parent() for struct in structs]
-    names = [struct._name for struct in structs]
+    names = [struct.stem for struct in structs]
 
     for i in range(n_structs):
         try:
@@ -374,7 +373,7 @@ def make_structure_tree(structs: List[FilePath], show_tree=False, with_cealign=T
             print(names[i], file=sys.stderr)
             raise
         if not s.is_alpha_trace():
-            alpha_struct = dirs[i]._sub(names[i]+'.alphas.cif')
+            alpha_struct = structs[i].parent / f'{names[i]}.alphas.cif'
             lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
             structs[i] = alpha_struct
 
@@ -409,12 +408,12 @@ def make_structure_tree(structs: List[FilePath], show_tree=False, with_cealign=T
     plt.show()
     return ac.children
 
-def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, progress_bar=False):
+def make_structure_tree_with_merging(structs: List[Path], show_tree=False, progress_bar=False):
     structs = list(structs)
     n_structs = len(structs)
     assert n_structs > 0
-    dirs = [struct._parent() for struct in structs]
-    names = [struct._name for struct in structs]
+    dirs = [struct.parent for struct in structs]
+    names = [struct.stem for struct in structs]
     
     with Timing('Extracting alpha-traces', file=sys.stdout):
         with lib.ProgressBar(n_structs, title=f'Extracting alpha-traces for {n_structs} structures', mute = not progress_bar) as bar: 
@@ -425,7 +424,7 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
                     print(names[i], file=sys.stderr)
                     raise
                 if not s.is_alpha_trace():
-                    alpha_struct = dirs[i]._sub(names[i]+'.alphas.cif')
+                    alpha_struct = dirs[i] / f'{names[i]}.alphas.cif'
                     lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
                     structs[i] = alpha_struct
                 bar.step()
@@ -449,8 +448,6 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
         # lib.print_matrix(distance_matrix, 'tmp/distance_matrix.tsv', names, names)
         # return
 
-        # lib.dump_json(finder._tree.json(), path.join(dirs[0], 'nn-tree.json'))
-        
         n_nodes = 2*n_structs - 1
         children = np.full((n_nodes, 2), lib_clustering.NO_CHILD)
         tree_distances = np.full(n_nodes, 0.0) # distances between the children of each internal node
@@ -486,13 +483,13 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
     # newi = lib_clustering.children_to_newick(children, node_names=names, distances=tree_distances)
     tree = lib_clustering.PhyloTree.from_children(children, node_names=names, distances=tree_distances)
     consensus_structure = coords_dict[n_nodes-1].to_structure().to_cif()
-    newick_file = dirs[0]._sub('guide_tree.newick')
-    children_file = dirs[0]._sub('guide_tree.children.tsv')
-    consensus_structure_file = dirs[0]._sub('consensus_structure.cif')
-    with newick_file._open('w') as w:
+    newick_file = dirs[0]/'guide_tree.newick'
+    children_file = dirs[0]/'guide_tree.children.tsv'
+    consensus_structure_file = dirs[0]/'consensus_structure.cif'
+    with open(newick_file, 'w') as w:
         w.write(str(tree))
     lib.print_matrix(children, children_file)
-    with consensus_structure_file._open('w') as w:
+    with open(consensus_structure_file, 'w') as w:
         w.write(consensus_structure)
     print(f'Results in {newick_file}, {children_file}, {consensus_structure_file}.')
     if show_tree:
@@ -506,7 +503,7 @@ def make_structure_tree_with_merging(structs: List[FilePath], show_tree=False, p
     # plt.show()
     return children
 
-def testing_score_matrices(struct1: FilePath, struct2: FilePath):
+def testing_score_matrices(struct1: Path, struct2: Path):
     # s1 = fake_read_cif(struct)
     s1 = lib_pymol.read_cif(struct1, only_polymer=True)
     assert s1.is_alpha_trace()
@@ -549,19 +546,17 @@ def testing_score_matrices(struct1: FilePath, struct2: FilePath):
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('directory', help='Directory with sample.json and structure files', type=str)
+    parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
     parser.add_argument('--show_tree', help='Show the guide tree with ete3', action='store_true')
-    # parser.add_argument('structs', help='mmCIF of the second structure', type=str, nargs='*')
     args = parser.parse_args()
     return vars(args)
 
 
-def main(directory: Union[FilePath, str], show_tree: bool = False) -> Optional[int]:
+def main(directory: Path, show_tree: bool = False) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
-    directory = FilePath(directory)
-    samples =lib_domains.load_domain_list(directory._sub('sample.json'))
-    structure_files = [directory._sub(f'{domain.name}.cif') for domain in samples]
+    samples =lib_domains.load_domain_list(directory/'sample.json')
+    structure_files = [directory/f'{domain.name}.cif' for domain in samples]
     make_structure_tree_with_merging(structure_files, show_tree=show_tree)
     # testing_score_matrices(*structure_files[:2])
     return None

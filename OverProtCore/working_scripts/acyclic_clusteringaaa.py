@@ -6,6 +6,7 @@
 import json
 import os
 from os import path
+from pathlib import Path
 import sys
 import numpy as np
 import argparse
@@ -22,7 +23,7 @@ from libs import lib_clustering
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory', help='Directory with sample.json and structure files', type=str)
+parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
 parser.add_argument('--run_ssa', help='Run cytos.exe to calculate distance matrices and calculate precedence matrix', action='store_true')
 parser.add_argument('--run_annotator', help='Run cytos.exe to calculate distance matrices and calculate precedence matrix', action='store_true')
 parser.add_argument('--run_distance_from_alignment', help='Calculate distance matrices assuming multiple structural alignment', action='store_true')

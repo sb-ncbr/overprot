@@ -2,7 +2,7 @@
 
 import sys
 import re
-import requests
+from pathlib import Path
 import json
 import argparse
 import math
@@ -12,7 +12,7 @@ from collections import defaultdict
 #  PARSE ARGUMENTS  ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('dali_file', help='Column-based file with result of DALI structural search', type=str)
+parser.add_argument('dali_file', help='Column-based file with result of DALI structural search', type=Path)
 parser.add_argument('--max_loop', help='Maximum number of contiguous unmatched residues to be included in the domain (default: infinity)', type=int, default=math.inf)
 args = parser.parse_args()
 

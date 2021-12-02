@@ -1,9 +1,10 @@
+from __future__ import annotations
 import json
 from collections import defaultdict, Counter
-from typing import Optional, Dict, List, Tuple, Union
+from pathlib import Path
+from typing import Optional, Dict, List, Tuple
 
 from .constants import DOMAIN_NAME, PDB, CHAIN, RANGES, AUTH_CHAIN, AUTH_RANGES, UNIPROT_ID
-from .lib import FilePath
 from . import lib
 
 
@@ -67,7 +68,7 @@ class Domain(dict):
         return new_domain
 
 
-def load_domain_list(filename: Union[FilePath, str]) -> List[Domain]:
+def load_domain_list(filename: Path) -> list[Domain]:
     try: 
         result = _load_domain_list_JSON(filename, by_pdb=False)
     except json.JSONDecodeError:
@@ -75,7 +76,7 @@ def load_domain_list(filename: Union[FilePath, str]) -> List[Domain]:
     assert isinstance(result, list)
     return result
 
-def load_domain_list_by_pdb(filename: Union[FilePath, str]) -> Dict[str, List[Domain]]:
+def load_domain_list_by_pdb(filename: Path) -> Dict[str, List[Domain]]:
     try: 
         result = _load_domain_list_JSON(filename, by_pdb=True)
     except json.JSONDecodeError:
@@ -83,7 +84,7 @@ def load_domain_list_by_pdb(filename: Union[FilePath, str]) -> Dict[str, List[Do
     assert isinstance(result, dict)
     return result
 
-def save_domain_list(domains: Union[List[Domain], Dict[str, List[Domain]]], filename: Union[FilePath, str], by_pdb: Optional[bool] = None) -> None:
+def save_domain_list(domains: list[Domain] | dict[str, list[Domain]], filename: Path, by_pdb: Optional[bool] = None) -> None:
     assert isinstance(domains, (list, dict))
     if isinstance(domains, list) and by_pdb == True:
         domains = _group_domains_by_pdb(domains)
@@ -91,14 +92,7 @@ def save_domain_list(domains: Union[List[Domain], Dict[str, List[Domain]]], file
         domains = _ungroup_domains_by_pdb(domains)
     lib.dump_json(domains, filename)
 
-# def load_domain_list_by_pdb(filename: Union[FilePath, str]) -> Dict[str, List[Domain]]:
-#     with open(filename) as f:
-#         obj = json.load(f)
-#     assert isinstance(obj, dict)
-#     domains_by_pdb = { pdb: [Domain.from_dict(dom) for dom in doms] for pdb, doms in sorted(obj.items()) }
-#     return domains_by_pdb
-
-def _load_domain_list_JSON(filename: Union[FilePath, str], by_pdb: bool) -> Union[List[Domain], Dict[str, List[Domain]]]:
+def _load_domain_list_JSON(filename: Path, by_pdb: bool) -> List[Domain] | Dict[str, List[Domain]]:
     with open(filename) as f:
         obj = json.load(f)
     if isinstance(obj, list):
@@ -116,7 +110,7 @@ def _load_domain_list_JSON(filename: Union[FilePath, str], by_pdb: bool) -> Unio
     else:
         raise TypeError('JSON file must contain List[Domain] or Dict[str, List[Domain]]')
 
-def _load_domain_list_TXT(filename: Union[FilePath, str], by_pdb: bool) -> Union[List[Domain], Dict[str, List[Domain]]]:
+def _load_domain_list_TXT(filename: Path, by_pdb: bool) -> List[Domain] | Dict[str, List[Domain]]:
     domains = []
     domain_counter: Dict[Tuple[str, str], int] = Counter()
     with open(filename) as f:

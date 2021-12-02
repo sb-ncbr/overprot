@@ -6,12 +6,12 @@ Example usage:
 '''
 # TODO add description and example usage in docstring
 
-import numpy as np
 import argparse
-from typing import Dict, Any, Optional, Union
+from pathlib import Path
+import numpy as np
+from typing import Dict, Any, Optional
 
 from .libs import superimpose3d
-from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
 
@@ -60,9 +60,9 @@ def read_pdb_line(line):
     z = line[46:54]
     return (hetatm, int(index), name, resn, chain, int(resi), altloc, float(x), float(y), float(z))
 
-def read_pdb(filename: FilePath):
+def read_pdb(filename: Path):
     table = AtomTable()
-    with filename._open() as f:
+    with open(filename) as f:
         for line in iter(f.readline, ''):
             fields = read_pdb_line(line.strip('\n'))
             if fields != None:
@@ -82,7 +82,7 @@ def read_pdb(filename: FilePath):
 def group_pdb_text(is_hetatm):
     return 'HETATM' if is_hetatm else 'ATOM'
 
-def print_cif_minimal(atom_table, filename: Union[FilePath, str], structure_name='structure'):
+def print_cif_minimal(atom_table, filename: Path, structure_name='structure'):
     table = atom_table
     fields_values = [ ('group_PDB', ['HETATM' if het else 'ATOM' for het in table.hetatm]), 
                     ('id', table.index), ('type_symbol', table.symbol), ('label_atom_id', table.name), ('label_alt_id', table.altloc), 
@@ -114,16 +114,15 @@ def apply_laying_rotation_translation(atoms: AtomTable) -> None:
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_pdb', help='Consensus PDB from MAPSCI', type=str)
-    parser.add_argument('output_cif', help='File for CIF output', type=str)
+    parser.add_argument('input_pdb', help='Consensus PDB from MAPSCI', type=Path)
+    parser.add_argument('output_cif', help='File for CIF output', type=Path)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(input_pdb: Union[FilePath, str], output_cif: Union[FilePath, str]) -> Optional[int]:
+def main(input_pdb: Path, output_cif: Path) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
-    input_pdb = FilePath(input_pdb)
     atoms = read_pdb(input_pdb)
     atoms.entity = [DEFAULT_ENTITY] * atoms.count()
     atoms.chain = [DEFAULT_CHAIN] * atoms.count()

@@ -1,11 +1,12 @@
 
 import argparse
+from pathlib import Path
 import numpy as np
 from libs import lib_acyclic_clustering_simple
 
 parser = argparse.ArgumentParser()
-parser.add_argument('labels1', help='File with labels (one integer per line)', type=str)
-parser.add_argument('labels2', help='File with labels (one integer per line)', type=str)
+parser.add_argument('labels1', help='File with labels (one integer per line)', type=Path)
+parser.add_argument('labels2', help='File with labels (one integer per line)', type=Path)
 parser.add_argument('--strict', help='Do not match classes, require exactly the same label', action='store_true')
 parser.add_argument('--remove_unclassified', help='Do not match classes, require exactly the same label', action='store_true')
 args = parser.parse_args()

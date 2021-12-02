@@ -1,6 +1,7 @@
 # Creates intersection of input domain ranges with observed residues from PDBe API. Input and output is in JSON format { pdb: [[domain_name, chain, range]] }.
 
 import sys
+from pathlib import Path
 import requests
 import json
 import argparse
@@ -12,7 +13,7 @@ from collections import defaultdict
 DEFAULT_API_URL = 'https://www.ebi.ac.uk/pdbe/api/pdb/entry/polymer_coverage'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('input_domains', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=str)
+parser.add_argument('input_domains', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=Path)
 parser.add_argument('--source', help='URL with PDBeAPI server for Observed residues (default = ' + DEFAULT_API_URL + ')', default=DEFAULT_API_URL)
 parser.add_argument('--min_residues', help='Remove domains with less than this number of residues (default: 0)', type=int, default=0)
 args = parser.parse_args()

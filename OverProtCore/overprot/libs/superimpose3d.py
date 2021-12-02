@@ -1,6 +1,6 @@
 import numpy
 from numpy import linalg
-from typing import Any, List, Dict, Tuple, Union
+from typing import Any, List, Dict, Tuple
 
 def optimal_rotation(A: numpy.ndarray, B: numpy.ndarray, allow_mirror: bool=False, weights: numpy.ndarray=None) -> numpy.ndarray:
     ''' A, B - matrices 3*n, weights - vector n, result - matrix 3*3

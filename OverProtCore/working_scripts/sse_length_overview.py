@@ -1,5 +1,6 @@
 # Generates a simple diagram of occurrence and length of SSEs (height and width of the rectangles).
 
+from pathlib import Path
 import numpy as np
 import argparse
 import svgwrite as svg
@@ -12,7 +13,7 @@ import glob
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory', help='Directory with annotation files *-annotated.sses.json', type=str)
+parser.add_argument('directory', help='Directory with annotation files *-annotated.sses.json', type=Path)
 parser.add_argument('label', help='SSE label to select', type=str)
 args = parser.parse_args()
 

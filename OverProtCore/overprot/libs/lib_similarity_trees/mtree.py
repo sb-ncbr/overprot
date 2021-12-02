@@ -1,5 +1,6 @@
 '''M-tree with Delete'''
 
+from __future__ import annotations
 from typing import NamedTuple, Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Iterable, Iterator, Any, Counter, ClassVar
 from dataclasses import dataclass, field
 import itertools
@@ -374,7 +375,7 @@ class MTree(AbstractSimilarityTree[K, V]):
     def _calculate_rc_upper_bound(self, pivot: Optional[K], children: _Node[K]) -> float:
         return max(self.get_distance(pivot, child.pivot) + child.rc for child in children)
 
-    def _link(self, parent: _ForkEntry[K], child: Union[_ForkEntry[K], _LeafEntry[K]]) -> None:
+    def _link(self, parent: _ForkEntry[K], child: _ForkEntry[K]|_LeafEntry[K]) -> None:
         if isinstance(child, _ForkEntry):
             assert isinstance(parent.children, _Fork), 'Cannot link fork entry into leaf'
             parent.children.append(child)

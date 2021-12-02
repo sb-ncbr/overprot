@@ -1,7 +1,8 @@
+from __future__ import annotations
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Any, Union
+from typing import Dict, List, Any
 
 
 _SHORT2LONG = {'X': 'XXX', 'A': 'ALA', 'C': 'CYS', 'D': 'ASP', 'E': 'GLU', 'F': 'PHE', 'G': 'GLY', 
@@ -84,7 +85,7 @@ class Structure(dict):
         if len(set(lengths)) != 1:
             raise ValueError(f'All arguments must have the same length (encountered lengths: {lengths})')
     
-    def add_field(self, field_name: str, values: Union[List[Any], np.ndarray]) -> None:
+    def add_field(self, field_name: str, values: List[Any]|np.ndarray) -> None:
         assert len(values) == self.count
         self[field_name] = np.array(values)
 

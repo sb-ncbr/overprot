@@ -1,6 +1,6 @@
 '''Bubble tree?'''
 
-from typing import Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
+from typing import Generic, TypeVar, List, Tuple, Dict, Set, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
 from dataclasses import dataclass, field
 import numpy as np
 import json

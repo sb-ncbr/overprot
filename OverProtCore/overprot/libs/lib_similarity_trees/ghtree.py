@@ -1,5 +1,6 @@
 '''GHT, Generalized Hyperplane Tree'''
 
+from __future__ import annotations
 import math
 import itertools
 from typing import Generic, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
@@ -18,29 +19,28 @@ SECOND_CHILD: Final = 2
 
 @dataclass
 class _GHRoot(Generic[K]):
-    subtree: Union['_GHFork[K]', '_GHLeaf[K]'] = field(repr=False)
+    subtree: '_GHFork[K]' | '_GHLeaf[K]' = field(repr=False)
     def __init__(self):
         self.subtree = _GHLeaf(parent=self)
 
 @dataclass
 class _GHFork(Generic[K]):
-    parent: Union['_GHRoot[K]', '_GHFork[K]'] = field(repr=False)
+    parent: '_GHRoot[K]' | '_GHFork[K]' = field(repr=False)
     order_in_parent: OrderInParent  # 1 if this is the first child of the parent, 2 if this is the second child of the parent, 0 if the parent is root
     pivot1: K
     pivot2: K
-    subtree1: Union['_GHFork[K]', '_GHLeaf[K]'] = field(repr=False)
-    subtree2: Union['_GHFork[K]', '_GHLeaf[K]'] = field(repr=False)
+    subtree1: '_GHFork[K]' | '_GHLeaf[K]' = field(repr=False)
+    subtree2: '_GHFork[K]' | '_GHLeaf[K]' = field(repr=False)
     rc1: float = 0.0
     rc2: float = 0.0
 
 @dataclass
 class _GHLeaf(Generic[K]):
-    parent: Union['_GHRoot[K]', '_GHFork[K]'] = field(repr=False)
+    parent: '_GHRoot[K]' | '_GHFork[K]' = field(repr=False)
     order_in_parent: OrderInParent = ONLY_CHILD  # 1 if this is the first child of the parent, 2 if this is the second child of the parent, 0 if the parent is root
     elements: List[K] = field(default_factory=list)
 
 _GHNode = Union[_GHRoot[K], _GHFork[K], _GHLeaf[K]]
-
 
 REUSE_PIVOTS = True
 
@@ -84,7 +84,7 @@ class GHTree(AbstractSimilarityTree[K, V]):
         self._distance_cache.insert(key, value)
         self._insert_to_node(self._root, key)
     
-    def _create_node_from_bulk(self, elements: List[K], progress_bar: Optional[ProgressBar] = None, pivot1: Optional[K] = None) -> Union[_GHFork, _GHLeaf]:
+    def _create_node_from_bulk(self, elements: List[K], progress_bar: Optional[ProgressBar] = None, pivot1: Optional[K] = None) -> _GHFork|_GHLeaf:
         if len(elements) <= self._leaf_size:
             if progress_bar is not None:
                 progress_bar.step(len(elements))
@@ -425,7 +425,7 @@ class GHTree(AbstractSimilarityTree[K, V]):
         # TODO using cheaper distance approximations
         besties = MinFinder[K](n=k)
         query_dist = FunctionCache[K, float](lambda key: self._distance_cache.get_distance_to_value(key, query_value))
-        queue: List[Union[_GHFork, _GHLeaf]] = []
+        queue: List[_GHFork|_GHLeaf] = []
         queue.append(self._root.subtree)
         while len(queue) > 0:
             node = queue.pop()
@@ -474,7 +474,7 @@ class GHTree(AbstractSimilarityTree[K, V]):
         QPS = False
         besties = MinFinder[K](n=k)
         query_dist = FunctionCache[K, float](lambda key: self._distance_cache.get_distance_to_value(key, query_value))
-        queue = PriorityQueue[float, Union[_GHFork, _GHLeaf]]()
+        queue: PriorityQueue[float, _GHFork|_GHLeaf] = PriorityQueue()
         queue.add(0.0, self._root.subtree)
         while not queue.is_empty():
             best = queue.pop_min()

@@ -1,11 +1,10 @@
 '''VPT, Vantage Point Tree'''
 
+from __future__ import annotations
 import math
 import statistics
-from typing import Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Callable, Final, Iterator, Any, Counter, Sequence, Literal, Deque, Iterable
+from typing import Generic, Collection, List, Tuple, Dict, Set, Union, Optional, Callable, Iterator, Sequence
 from dataclasses import dataclass, field
-import numpy as np
-import json
 
 from .abstract_similarity_tree import AbstractSimilarityTree, K, V
 from .caches import FunctionCache, DistanceCache, MinFinder
@@ -106,7 +105,7 @@ class VPTree(AbstractSimilarityTree[K, V]):
         d_max, pivot = max((self.get_distance(parent_pivot, k), k) for k in elements)
         return pivot
 
-    def _select_pivot2(self, elements: List[K], ancestor_pivots: Iterable[K]) -> K:
+    def _select_pivot2(self, elements: List[K], ancestor_pivots: Collection[K]) -> K:
         if len(ancestor_pivots) == 0:
             ancestor_pivots = (elements[0],)
         d_max, pivot = max((min(self.get_distance(a, k) for a in ancestor_pivots), k) for k in elements)
@@ -151,7 +150,7 @@ class VPTree(AbstractSimilarityTree[K, V]):
         {self.leaf_distances(leaves)}'''
         return result
     
-    def leaf_diameters(self, leaves: List[_VPLeaf]) -> None:
+    def leaf_diameters(self, leaves: List[_VPLeaf]) -> str:
         diameters = []
         for leaf in leaves:
             n = len(leaf.elements)
@@ -159,8 +158,8 @@ class VPTree(AbstractSimilarityTree[K, V]):
             diameters.append(diameter)
         return f'leaf diameters: {min(diameters):.3f}-{max(diameters):.3f}, mean: {statistics.mean(diameters):.3f} median: {statistics.median(diameters):.3f}'
 
-    def leaf_distances(self, leaves: List[_VPLeaf]) -> None:
-        dists = []
+    def leaf_distances(self, leaves: List[_VPLeaf]) -> str:
+        dists: list[float] = []
         for leaf in leaves:
             n = len(leaf.elements)
             dists.extend(self.get_distance(leaf.elements[i], leaf.elements[j]) for i in range(n) for j in range(i))

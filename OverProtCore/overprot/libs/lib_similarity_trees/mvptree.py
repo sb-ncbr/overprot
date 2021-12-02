@@ -7,7 +7,8 @@ from typing import Generic, TypeVar, List, Tuple, Dict, Set, Union, Optional, Ca
 from dataclasses import dataclass, field
 import numpy as np
 import json
-from multiprocessing import Pool
+from multiprocessing import Pool, pool
+
 
 from .abstract_similarity_tree import AbstractSimilarityTree, K, V
 from .caches import FunctionCache, DistanceCache, MinFinder
@@ -73,7 +74,7 @@ class MVPTree(AbstractSimilarityTree[K, V]):
         self._elements.update(elements)
         if root_element is not None:
             self._distance_cache.insert(*root_element)
-            root_pivot, _ = root_element
+            root_pivot: Optional[K] = root_element[0]
         else:
             root_pivot = None
         for k, v in keys_values:
@@ -87,7 +88,7 @@ class MVPTree(AbstractSimilarityTree[K, V]):
         if bar is not None:
             bar.finalize()
     
-    def _create_node_from_bulk(self, elements: List[K], pivot: Optional[K] = None, parent_pivot: Optional[K] = None, progress_bar: Optional[ProgressBar] = None, pool: Optional[Pool] = None) -> _MVPNode[K]:
+    def _create_node_from_bulk(self, elements: List[K], pivot: Optional[K] = None, parent_pivot: Optional[K] = None, progress_bar: Optional[ProgressBar] = None, pool: Optional[pool.Pool] = None) -> _MVPNode[K]:
         if len(elements) <= self._leaf_size:
             new_leaf = _MVPLeaf(parent=None, elements=elements)
             if progress_bar is not None:
@@ -115,8 +116,8 @@ class MVPTree(AbstractSimilarityTree[K, V]):
         d_max, pivot = max((self.get_distance(parent_pivot, k), k) for k in elements)
         return pivot
 
-    def _partition(self, pivot: K, elements: List[K], pool: Optional[Pool] = None) -> Tuple[List[List[K]], List[float]]:
-        bins = [[] for i in range(self._K)]
+    def _partition(self, pivot: K, elements: List[K], pool: Optional[pool.Pool] = None) -> Tuple[List[List[K]], List[float]]:
+        bins: list[list[K]] = [[] for i in range(self._K)]
         self._distance_cache.calculate_distances([(pivot, elem) for elem in elements], pool=pool)
         distances = [self.get_distance(pivot, elem) for elem in elements]
         rs = statistics.quantiles(distances, n=self._K)
@@ -147,7 +148,7 @@ class MVPTree(AbstractSimilarityTree[K, V]):
             bins[the_bin].append(elem)
         return bins, rs
 
-    def _get_distance_to_value(self, key1: K, value2: K) -> float:
+    def _get_distance_to_value(self, key1: K, value2: V) -> float:
         # if key1 == ZERO_ELEMENT:
         #     return self._distance_from_zero(value2)
         # else:
@@ -175,7 +176,7 @@ class MVPTree(AbstractSimilarityTree[K, V]):
         {self._distance_cache.get_statistics()}'''
         return result
     
-    def leaf_diameters(self, leaves: List[_MVPLeaf]) -> None:
+    def leaf_diameters(self, leaves: List[_MVPLeaf]) -> str:
         diameters = []
         for leaf in leaves:
             n = len(leaf.elements)
@@ -183,8 +184,8 @@ class MVPTree(AbstractSimilarityTree[K, V]):
             diameters.append(diameter)
         return f'leaf diameters: {min(diameters):.3f}-{max(diameters):.3f}, mean: {statistics.mean(diameters):.3f} median: {statistics.median(diameters):.3f}'
 
-    def leaf_distances(self, leaves: List[_MVPLeaf]) -> None:
-        dists = []
+    def leaf_distances(self, leaves: List[_MVPLeaf]) -> str:
+        dists: list[float] = []
         for leaf in leaves:
             n = len(leaf.elements)
             dists.extend(self.get_distance(leaf.elements[i], leaf.elements[j]) for i in range(n) for j in range(i))
@@ -316,7 +317,7 @@ class MVPTree(AbstractSimilarityTree[K, V]):
         kwargs = {'indent': 1}
         kwargs.update(json_kwargs)
         with open(file, 'w') as w:
-            json.dump(js, w, **kwargs)
+            json.dump(js, w, **kwargs)  # type: ignore
 
     @staticmethod
     def load(file: str, distance_function: Callable[[V, V], float], get_value: Callable[[K], V]) -> 'MVPTree[K, V]':

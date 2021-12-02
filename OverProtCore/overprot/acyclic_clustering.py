@@ -2,18 +2,18 @@
 Performs clustering of SSEs from a set of domains, preserving SSE order and type.
 '''
 
+from __future__ import annotations
 import json
-from os import path
-import sys
+from pathlib import Path
 import numpy as np
 import argparse
 import itertools
-from typing import Optional, Literal, Dict, Any, List, Union
+from typing import Optional, Literal, Dict, Any, List
 
 from .libs import lib
+from .libs import lib_sh
 from .libs import lib_graphs
 from .libs import lib_domains
-from .libs.lib import FilePath
 from .libs.lib_domains import Domain
 from .libs import lib_sses
 from .libs import lib_clustering
@@ -36,15 +36,15 @@ ENABLE_CACHED_LABELS = False  # True
 
 #  FUNCTIONS  ################################################################################
 
-def combine_distance_matrices(samples, directory, length_thresholds=None, protein_similarity_weight=0):
+def combine_distance_matrices(samples, directory: Path, length_thresholds=None, protein_similarity_weight=0):
     offsets = []
-    sse_labels = []
+    sse_labels: list[str] = []
     sse_indices_in_domain = []
     n = len(samples)
-    progess_bar = lib.ProgressBar(n + n*(n-1)/2, title='Combining distance matrices').start()
+    progess_bar = lib.ProgressBar(n + n*(n-1)//2, title='Combining distance matrices').start()
     for pdb, domain, chain, rang in samples:
         offsets.append(len(sse_labels))
-        with open(path.join(directory, domain+'.sses.json')) as f:
+        with open(directory / f'{domain}.sses.json') as f:
             these_sses = json.load(f)[domain]['secondary_structure_elements']
         if length_thresholds != None:
             selected_indices = lib.find_indices_where(these_sses, lambda s: lib_sses.long_enough(s, length_thresholds))
@@ -66,8 +66,8 @@ def combine_distance_matrices(samples, directory, length_thresholds=None, protei
     # Fill different-domain fields
     DOMAIN = 1 # index of domain name in tuples in samples
     for i, j in itertools.combinations_with_replacement(range(len(samples)), 2):
-        filename = path.join(directory, 'matrix-'+samples[i][DOMAIN]+'-'+samples[j][DOMAIN]+'.tsv')
-        full_ij_matrix, *_ = read_matrix(filename)
+        filename = directory / f'matrix-{samples[i][DOMAIN]}-{samples[j][DOMAIN]}.tsv'
+        full_ij_matrix, *_ = lib.read_matrix(filename)
         selected_rows = sse_indices_in_domain[offsets[i]:offsets[i+1]]
         selected_columns = sse_indices_in_domain[offsets[j]:offsets[j+1]]
         ij_matrix = lib.submatrix_int_indexing(full_ij_matrix, selected_rows, selected_columns)
@@ -81,28 +81,28 @@ def combine_distance_matrices(samples, directory, length_thresholds=None, protei
         ij_matrix = ij_matrix + protein_similarity * protein_similarity_weight
         supermatrix[offsets[i]:offsets[i+1], offsets[j]:offsets[j+1]] = ij_matrix
         supermatrix[offsets[j]:offsets[j+1], offsets[i]:offsets[i+1]] = ij_matrix.transpose()
-        run_command('rm', '-f', filename)
+        lib_sh.rm(filename, ignore_errors=True)
         progess_bar.step()
     progess_bar.finalize()
 
     # Print the resulting matrix to a file
-    lib.print_matrix(supermatrix, path.join(directory, 'distance_matrix.tsv'), sse_labels, sse_labels)
+    lib.print_matrix(supermatrix, directory/'distance_matrix.tsv', sse_labels, sse_labels)
 
-def read_sses(samples, directory, length_thresholds=None):
+def read_sses(samples, directory: Path, length_thresholds=None):
     # if length_thresholds is not None and length_thresholds != {'H':0,'E':0}:
     # 	raise NotImplementedError()
     p_offsets = []  # counting a beta-ladder side as one SSE (for preference matrix)
     d_offsets = []  # counting a beta ladder as one SSE (for distance matrix)
-    p_sses = []
+    p_sses: list[dict] = []
     p_duplicates = []
-    d_to_p = []  # pair of sides for a ladder / helix for a helix
+    d_to_p: list[int|tuple[int,int]] = []  # pair of sides for a ladder / helix for a helix
     ladder_orientations = []  # 1 for parallel, -1 for antiparallel, 0 for helix
     d_helices = []
     d_ladders = []
     for pdb, domain, chain, rang in samples:
         p_offsets.append(len(p_sses))
         d_offsets.append(len(d_to_p))
-        with open(path.join(directory, domain+'.sses.json')) as f:
+        with open(directory/f'{domain}.sses.json') as f:
             annot = json.load(f)[domain]
         sses = annot['secondary_structure_elements']
         connectivity = annot['beta_connectivity']
@@ -112,7 +112,7 @@ def read_sses(samples, directory, length_thresholds=None):
         sses = [sse for sse in sses if lib_sses.long_enough(sse, length_thresholds)]
         labels = [sse['label'] for sse in sses]
         connectivity = lib.unique(conn for conn in connectivity if conn[0] in labels and conn[1] in labels)
-        ladder_counter = lib.Counter() # number of ladders for each strand
+        ladder_counter = lib.Counter[str]() # number of ladders for each strand
         for side1, side2, orientation in connectivity:
             ladder_counter.add(side1)
             ladder_counter.add(side2)
@@ -155,27 +155,31 @@ def read_sses(samples, directory, length_thresholds=None):
     n_P = len(p_sses)
 
     lib.log('Making precedence matrix...')
-    precedence = np.zeros((n_P, n_P), dtype=bool)
+    precedence = np.zeros((n_P, n_P), dtype=np.bool_)
     for p in range(len(samples)):
         for i, j in itertools.combinations(range(p_offsets[p], p_offsets[p+1]), 2):
             if p_sses[i] != p_sses[j]:  # filter out cases when a strwith_cealignides
                 precedence[i, j] = True
 
     lib.log('Extracting coordinates...')
-    coordinates = np.zeros((n_D, 12), dtype=float)
+    coordinates = np.zeros((n_D, 12), dtype=np.float64)
     for i in d_helices:
-        helix = p_sses[d_to_p[i]]
+        ip = d_to_p[i]
+        assert isinstance(ip, int)
+        helix = p_sses[ip]
         coordinates[i,:] = helix['start_vector'] + helix['end_vector'] + [0]*6
     for i in d_ladders:
-        p1, p2 = d_to_p[i]
+        ips = d_to_p[i]
+        assert isinstance(ips, tuple)
+        p1, p2 = ips
         side1, side2 = p_sses[p1], p_sses[p2]
         coordinates[i,:] = side1['start_vector'] + side1['end_vector'] + side2['start_vector'] + side2['end_vector']
 
     n_helices = len(d_helices)
     n_ladders = len(d_ladders)
-    n_combinations = n_helices * (n_helices - 1) / 2 + n_ladders * (n_ladders - 1) / 2
+    n_combinations = n_helices * (n_helices - 1) // 2 + n_ladders * (n_ladders - 1) // 2
     progess_bar = lib.ProgressBar(n_combinations, title='Making distance matrix...').start()
-    distance = np.full((n_D, n_D), QUASI_INFINITY, dtype=float)  # np.zeros((n_D, n_D), dtype=float)
+    distance = np.full((n_D, n_D), QUASI_INFINITY, dtype=np.float64)
     for i, j in itertools.combinations(d_helices, 2):
         dist = sse_distance(coordinates[i,0:6], coordinates[j,0:6])
         distance[i,j] = dist
@@ -193,8 +197,8 @@ def read_sses(samples, directory, length_thresholds=None):
     progess_bar.finalize()
 
     lib.log('Printing matrices...')
-    lib.print_matrix(distance, path.join(directory, 'distance.tsv'))
-    lib.print_matrix(precedence, path.join(directory, 'precedence.tsv'))
+    lib.print_matrix(distance, directory/'distance.tsv')
+    lib.print_matrix(precedence, directory/'precedence.tsv')
 
     return p_offsets, d_offsets, p_sses, d_to_p, ladder_orientations, coordinates, distance, precedence, p_duplicates
 
@@ -227,36 +231,7 @@ def make_precedence_matrix(names):
             precedence[i, j] = True
     return precedence
 
-def write_clustered_sses_old(directory, original_labels, new_labels):
-    domains, offsets = get_offsets(original_labels, key=lambda name: name.split('_')[0])
-    n_clusts = max(new_labels)+1
-    lengths = np.zeros((n_clusts, len(domains)), dtype=int)
-    row_names = ['']*n_clusts
-    types = {}
-    for d, domain in enumerate(domains):
-        with open(path.join(directory, domain+'.sses.json')) as f:
-            sses = json.load(f)[domain]['secondary_structure_elements']
-        sse_lookup = create_lookup((sse['label'] for sse in sses))
-        new_sses = []
-        for i in range(offsets[d], offsets[d+1]):
-            orig_label = original_labels[i].split('_')[1]
-            new_label = new_labels[i]
-            sse = sses[sse_lookup[orig_label]]
-            typ = lib_sses.two_class_type(sse)
-            sse['label'] = typ + str(new_label)
-            row_names[new_label] = sse['label']
-            sse['color'] = lib_sses.hash_color(new_label)
-            new_sses.append(sse)
-            lengths[new_label, d] = lib_sses.length(sse)
-            if new_label not in types:
-                types[new_label] = typ
-            elif types[new_label] != typ:
-                sys.stderr.write('WARNING: Conflict in types in cluster ' + str(new_label) + '\n')
-        output_json = { domain: { 'secondary_structure_elements': new_sses } }
-        lib.dump_json(output_json, path.join(directory, domain+'-clust.sses.json'))
-    lib.print_matrix(lengths, path.join(directory, 'lengths.tsv'), row_names=row_names, col_names=domains)
-
-def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table, precedence_matrix=None, edges=None):
+def write_clustered_sses(directory: Path, domain_names: List[str], sse_table, precedence_matrix=None, edges=None):
     sizes, means, variances, covariances = sse_coords_stats(sse_table)
     rainbow_colors = lib_sses.spectrum_colors_weighted(sizes)
 
@@ -282,10 +257,10 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
                 sse['rainbow_hex'] = lib_sses.pymol_spectrum_to_hex(sse['rainbow'])
                 these_sses.append(sse)
         output_json = { domain: { 'secondary_structure_elements': these_sses } }
-        directory._sub(domain+'-clust.sses.json').dump_json(output_json)
-    lib.print_matrix(lengths.transpose(), directory._sub('lengths.tsv'), row_names=new_labels, col_names=domain_names)
+        lib.dump_json(output_json, directory / f'{domain}-clust.sses.json')
+    lib.print_matrix(lengths.transpose(), directory/'lengths.tsv', row_names=new_labels, col_names=domain_names)
     if precedence_matrix is not None:
-        lib.print_matrix(precedence_matrix, directory._sub('cluster_precedence_matrix.tsv'), row_names=new_labels, col_names=new_labels)
+        lib.print_matrix(precedence_matrix, directory/'cluster_precedence_matrix.tsv', row_names=new_labels, col_names=new_labels)
 
     # Write consensus
     consensus_sses = []
@@ -319,7 +294,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
         for sse in consensus_sses:
             if sse is not None and sse['label'].startswith('E'):
                 sse['sheet_id'] = 1
-    directory._sub('consensus.sses.json').dump_json(consensus)
+    lib.dump_json(consensus, directory/'consensus.sses.json')
 
     # Write statistics
     occurences = [ size / m for size in sizes ]
@@ -327,7 +302,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
     # average_lengths = [ (l if not np.isnan(l) else 0) for l in average_lengths ]
     sheet_ids = [ sse['sheet_id'] if 'sheet_id' in sse else 0 for sse in consensus_sses ]
     stat_table = np.array([sheet_ids, sizes, occurences, average_lengths, variances]).transpose()
-    lib.print_matrix(stat_table, directory._sub('statistics.tsv'), row_names=new_labels, col_names=['sheet_id', 'found_in', 'occurrence', 'average_length', 'coord_variance'])
+    lib.print_matrix(stat_table, directory/'statistics.tsv', row_names=new_labels, col_names=['sheet_id', 'found_in', 'occurrence', 'average_length', 'coord_variance'])
 
     # Correlation of occurrence
     occ = np.zeros_like(lengths, dtype=np.float64)
@@ -337,7 +312,7 @@ def write_clustered_sses(directory: FilePath, domain_names: List[str], sse_table
     # print(occ.transpose())
     # corr = np.nan_to_num(np.corrcoef(occ.transpose()))
     corr = lib.safe_corrcoef(occ.transpose())
-    lib.print_matrix(corr, directory._sub('occurrence_correlation.tsv'), row_names=new_labels, col_names=new_labels)
+    lib.print_matrix(corr, directory/'occurrence_correlation.tsv', row_names=new_labels, col_names=new_labels)
     return
 
 def table_by_pdb_and_label(offsets, n_labels, labels):  # Puts sse indices into a table of lists by their PDB (given by offsets) and label
@@ -570,31 +545,6 @@ class AcyclicClusteringWithSides:
         lengths = np.zeros((len(sorted_halfnodes), len(domains)), dtype=int)
         names = []
         inv_p_offsets = lib.invert_offsets(p_offsets)
-        # for i, (node, side) in enumerate(sorted_halfnodes):
-        # 	typ = T[leader[node]]
-        # 	typ_str = 'A' if typ==-1 else 'P' if typ==1 else 'H'
-        # 	if side==0:
-        # 		num = i
-        # 	else:
-        # 		num = next(( j for j, (nod, sid) in enumerate(sorted_halfnodes) if nod==node and sid==0 ))
-        # 	name = typ_str + str(num)
-        # 	names.append(name)
-        # 	for member in members[node]:
-        # 		p = d_to_p[member] if typ==0 else d_to_p[member][side]
-        # 		i_domain = inv_p_offsets[p]
-        # 		lengths[i, i_domain] = lib_sses.length(p_sses[p])
-        # lib.print_matrix(lengths, path.join(args.directory, 'lengths.tsv'), row_names=names, col_names=domains)
-        # lib.print_matrix(ac.cluster_precedence_matrix, path.join(args.directory, 'cluster_precedence_matrix.tsv'), row_names=names, col_names=names)
-        #TODO move the previous block out of this function
-        return
-
-    # def filter_d_clusters_by_member_count(self, member_count_threshold):
-    # 	indices = [i for i, mems in enumerate(self.final_d_members) if len(mems) >= member_count_threshold]
-    # 	backmap = { old: new for new, old in enumerate(indices) }
-    # 	self.cluster_distance_matrix = lib.submatrix(self.cluster_distance_matrix, indices, indices)
-    # 	self.d_labels = [(lab if lab in indices else -1) for lab in self.d_labels]
-    # 	self.edges
-    # 	pass
     
     def group_p_duplicates(self, p_duplicates, duplicity_threshold):
         had_achtung = False
@@ -715,7 +665,7 @@ class AcyclicClusteringWithSides:
                 P[i, j] = True
 
 
-def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurrence: float = 0.0, secstrannotator_rematching: bool = False, fallback: Optional[float] = None) -> None:
+def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence: float = 0.0, secstrannotator_rematching: bool = False, fallback: Optional[float] = None) -> None:
     domain_names = [dom.name for dom in domains]
     offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering_simple.read_sses_simple(domains, directory)
     n_structures = len(offsets) - 1
@@ -724,14 +674,14 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         raise Exception('Some of the SSE segment lengths are zero. Use newer version of secondary structure assignment with non-zero lengths.')
 
     labels = None
-    cache_file = directory._sub('labels_orig.cached.tsv')
+    cache_file = directory/'labels_orig.cached.tsv'
 
     # Try to load labels from a cache-file
     if ENABLE_CACHED_LABELS and cache_file.is_file():
-        with cache_file._open() as r:
+        with open(cache_file) as r:
             labels = np.array([ int(l) for l in r.read().split() ])
         n_clusters = max(labels) + 1
-        cluster_precedence_matrix, _, _ = lib.read_matrix(directory._sub('cluster_precedence_matrix.tsv'))
+        cluster_precedence_matrix, _, _ = lib.read_matrix(directory/'cluster_precedence_matrix.tsv')
         if len(labels) == len(sses):
             print(f'\nLabels loaded from cache file "{cache_file}", no clustering performed!\n')
         else:  # Cancel the loaded labels, they are outdated.
@@ -749,10 +699,10 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
 
         # distance += lib_acyclic_clustering_simple.segment_length_difference_matrix(coordinates)  # length-difference penalty
         distance = lib_acyclic_clustering_simple.include_min_ladder_in_distance_matrix(distance, edges)
-        lib.print_matrix(distance, directory._sub('distance.tsv'))
+        lib.print_matrix(distance, directory/'distance.tsv')
 
         distance_iter = lib_acyclic_clustering_simple.distance_matrix_with_iterative_superimposition_many(coordinates, type_vector, offsets, edges=edges)
-        lib.print_matrix(distance_iter, directory._sub('distance_iter.tsv'))
+        lib.print_matrix(distance_iter, directory/'distance_iter.tsv')
 
         distance = distance_iter
 
@@ -796,16 +746,6 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
 
         distance_final /= lib.each_to_each(np.minimum, segment_lengths)
 
-        #region Prints matrices
-        # lib.print_matrix(distance, path.join(directory, 'distance.tsv'))
-        # lib.print_matrix(distance_ladders, path.join(directory, 'distance_ladders.tsv'))
-        # lib.print_matrix(fuckup, path.join(directory, 'fuckup.tsv'))
-        # lib.print_matrix(total_dynprog_scores, path.join(directory, 'total_dynprog_scores.tsv'), row_names=domain_names, col_names=domain_names)
-        # lib.print_matrix(distance[offsets[0]:offsets[1], offsets[1]:offsets[2]], path.join(directory, 'distance_one.tsv'))
-        # lib.print_matrix(distance_ladders[offsets[0]:offsets[1], offsets[1]:offsets[2]], path.join(directory, 'distance_ladders_one.tsv'))
-        # lib.print_matrix(fuckup[offsets[0]:offsets[1], offsets[1]:offsets[2]], path.join(directory, 'fuckup_one.tsv'))
-        #endregion
-
         acs = lib_acyclic_clustering_simple.AcyclicClusteringSimple(aggregate_function=lib_clustering.average_linkage_aggregate_function,  max_joining_distance=np.inf)
         acs.fit(distance_final, precedence, type_vector=type_vector, domain_names=domain_names, p_offsets=offsets, member_count_threshold=0, output_dir=directory)
 
@@ -817,7 +757,7 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=acs.cluster_precedence_matrix, edges=cluster_edges) 
         sizes, means, variances, covariances = sse_coords_stats(hybrids)
         print('Sorted DAG:', lib.sort_dag(range(acs.n_clusters), lambda i,j: acs.cluster_precedence_matrix[i,j]))
-        with cache_file._open('w') as w:
+        with open(cache_file, 'w') as w:
             w.write('\n'.join( str(l) for l in acs.labels ))
         
         labels = acs.labels
@@ -835,7 +775,7 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
     n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, cluster_precedence_matrix)
     print('ANOVA F:', lib_acyclic_clustering_simple.anova_f(coordinates, labels))
 
-    with directory._sub('labels_rematched.cached.tsv')._open('w') as w:
+    with open(directory/'labels_rematched.cached.tsv', 'w') as w:
         w.write('\n'.join( str(l) for l in labels ))
 
     lib.log('Found', n_clusters, 'clusters')
@@ -868,8 +808,8 @@ def run_simple_clustering(domains: List[Domain], directory: FilePath, min_occurr
         labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
         n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, cluster_precedence_matrix)
 
-        with directory._sub('labels_SSAnnot.cached.tsv')._open('w') as w:
-            w.write('\n'.join( str(l) for l in labels ))
+        with open(directory/'labels_SSAnnot.cached.tsv', 'w') as w:
+            w.write('\n'.join(str(l) for l in labels))
         
         lib.log('Found', n_clusters, 'clusters')
         table = table_by_pdb_and_label(offsets, n_clusters, labels)
@@ -946,7 +886,7 @@ def guided_clustering_sample_aggregation_function(coords1, weight1, coords2, wei
     coords = (coords1 * weight1 + coords2 * weight2) / weight
     return coords, weight
 
-def run_guided_clustering(domains: List[Domain], directory: FilePath, secstrannotator_rematching: bool = False, fallback: Optional[float] = 0) -> None:
+def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotator_rematching: bool = False, fallback: Optional[float] = 0) -> None:
     domain_names = [domain.name for domain in domains]
     offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering_simple.read_sses_simple(domains, directory)
     n_structures = len(offsets) - 1
@@ -960,7 +900,7 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath, secstranno
     extended_coords[:, 0] = type_vector
     extended_coords[:, 1:7] = coordinates
 
-    guide_tree_children, _, _ = lib.read_matrix(directory._sub('guide_tree.children.tsv'))
+    guide_tree_children, _, _ = lib.read_matrix(directory/'guide_tree.children.tsv')
 
     gac = lib_acyclic_clustering_simple.GuidedAcyclicClustering()
     gac.fit(extended_coords, guided_clustering_score_function, guided_clustering_sample_aggregation_function, offsets, guide_tree_children,
@@ -981,11 +921,11 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath, secstranno
     # Rematching with SecStrAnnotator
     if secstrannotator_rematching:
         for i in range(3):
-            directory._sub('consensus.sses.json').cp(directory._sub(f'consensus_{i}.sses.json'))
+            lib_sh.cp(directory / 'consensus.sses.json', directory / f'consensus_{i}.sses.json')
             labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
             n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, gac.cluster_precedence_matrix)
 
-            with directory._sub('labels_SSAnnot.cached.tsv')._open('w') as w:
+            with open(directory/'labels_SSAnnot.cached.tsv', 'w') as w:
                 w.write('\n'.join( str(l) for l in labels ))
             
             lib.log('Found', n_clusters, 'clusters')
@@ -1014,13 +954,13 @@ def run_guided_clustering(domains: List[Domain], directory: FilePath, secstranno
     return
 
 
-def run_clustering_with_sides(samples, directory, protein_similarity_weight=0, length_thresholds=None):
+def run_clustering_with_sides(samples, directory: Path, protein_similarity_weight=0, length_thresholds=None):
 
     p_offsets, d_offsets, p_sses, d_to_p, type_vector, coordinates, distance_matrix, precedence_matrix, p_duplicates = read_sses(samples, directory, length_thresholds=length_thresholds)
 
     # Include global protein-protein similarity into the distance matrix
     if protein_similarity_weight != 0:
-        protein_similarity_matrix, _, _ = read_matrix(path.join(directory, 'mapsci_score_matrix.tsv'))
+        protein_similarity_matrix, _, _ = lib.read_matrix(directory/'mapsci_score_matrix.tsv')
         mean_similarity = np.mean(protein_similarity_matrix.flatten())
         protein_similarity_matrix /= mean_similarity
         print('Max MASPCI score:', np.max(protein_similarity_matrix.flatten()))
@@ -1032,7 +972,7 @@ def run_clustering_with_sides(samples, directory, protein_similarity_weight=0, l
 
     # Run clustering
     ac = AcyclicClusteringWithSides(aggregate_function=lib_clustering.average_linkage_aggregate_function, max_joining_distance=np.inf)
-    ac.fit(distance_matrix, precedence_matrix, d_to_p, type_vector=type_vector, domains=domain_names, p_offsets=p_offsets, member_count_threshold=0)
+    ac.fit(distance_matrix, precedence_matrix, d_to_p, type_vector=type_vector, domains=None, p_offsets=p_offsets, member_count_threshold=0)
 
     # TODO debug filtering clusters by member_count_threshold + computation of length
 
@@ -1042,7 +982,7 @@ def run_clustering_with_sides(samples, directory, protein_similarity_weight=0, l
     hybrids = make_hybrid_sses_from_table(table, p_sses)
     print('Table:', table)
     print('Hybrids:', hybrids)
-    write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=ac.g_precedence, edges=ac.g_edges)
+    write_clustered_sses(directory, [], hybrids, precedence_matrix=ac.g_precedence, edges=ac.g_edges)
     sizes, means, variances, covariances = sse_coords_stats(hybrids)
     print('G-edges:', *ac.g_edges, sep='\n')
     print('Sorted P-DAG:', lib.sort_dag(range(ac.n_p_clusters), lambda i,j: ac.cluster_precedence_matrix[i,j]))
@@ -1057,7 +997,7 @@ def run_clustering_with_sides(samples, directory, protein_similarity_weight=0, l
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('directory', help='Directory with sample.json and structure files', type=str)
+    parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
     parser.add_argument('--force_ssa', help='Run SecStrAnnotator to calculate secondary structure assignment files even if they already exist', action='store_true')
     parser.add_argument('--secstrannotator_rematching', help='Run 1 iteration of final rematching with SecStrAnnotator', action='store_true')
     parser.add_argument('--min_length_h', help='Minimal length of a helix to be considered', type=int, default=0)
@@ -1069,14 +1009,13 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(directory: Union[FilePath, str],
+def main(directory: Path,
          force_ssa: bool = False, secstrannotator_rematching: bool = False, min_length_h: int = 0, min_length_e: int = 0, 
          protsim: float = 0, min_occurrence: float = 0, fallback: Optional[float] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
 
-    directory = FilePath(directory)
-    domains = lib_domains.load_domain_list(directory._sub('sample.json'))
+    domains = lib_domains.load_domain_list(directory/'sample.json')
     lib.log(len(domains), 'domains')
 
     METHOD = 'guided'  # guided | simple | sides

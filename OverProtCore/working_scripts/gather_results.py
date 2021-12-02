@@ -11,9 +11,9 @@ def make_archive(src: Path, dest: Path) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(description='Zip all input_dir/families/*/results --> output_dir/results-*.zip; copy input_dir/families/*/results/consensus.png --> png_dir/*.png')
-    parser.add_argument('input_dir', type=str)
-    parser.add_argument('output_dir', type=str)
-    parser.add_argument('-p', '--png_dir', type=str, default=None)
+    parser.add_argument('input_dir', type=Path)
+    parser.add_argument('output_dir', type=Path)
+    parser.add_argument('-p', '--png_dir', type=Path, default=None)
     args = parser.parse_args()
 
     input_dir = args.input_dir

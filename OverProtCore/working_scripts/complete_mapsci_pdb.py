@@ -3,9 +3,7 @@
 #     cytos.exe
 #     script_align.py
 
-import json
-import os
-from os import path
+from pathlib import Path
 import sys
 import numpy as np
 import argparse
@@ -16,7 +14,7 @@ import re
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('input_pdb', help='Consensus PDB from MAPSCI', type=str)
+parser.add_argument('input_pdb', help='Consensus PDB from MAPSCI', type=Path)
 args = parser.parse_args()
 
 with open(args.input_pdb) as f:

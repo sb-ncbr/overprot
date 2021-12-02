@@ -1,9 +1,8 @@
 import argparse
 import json
 import shutil
-import math
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List, Literal
+from typing import Dict, Any, Optional, List
 
 from .libs import lib
 
@@ -14,21 +13,21 @@ from .libs import lib
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_family_json', help='Input family.json', type=str)
-    parser.add_argument('input_sample_json', help='Input sample.json', type=str)
-    parser.add_argument('--pdbs_html', help='Output pdbs.html', type=str)
-    parser.add_argument('--pdbs_demo_html', help='Output pdbs-demo.html (limited number of rows)', type=str)
-    parser.add_argument('--pdbs_json', help='Output pdbs.json', type=str)
-    parser.add_argument('--pdbs_csv', help='Output pdbs.csv', type=str)
-    parser.add_argument('--domains_html', help='Output domains.html', type=str)
-    parser.add_argument('--domains_demo_html', help='Output domains-demo.html (limited number of rows)', type=str)
-    parser.add_argument('--domains_json', help='Output domains.json', type=str)
-    parser.add_argument('--domains_csv', help='Output domains.csv', type=str)
-    parser.add_argument('--sample_html', help='Output sample.html', type=str)
-    parser.add_argument('--sample_demo_html', help='Output sample-demo.html (limited number of rows)', type=str)
-    parser.add_argument('--sample_json', help='Output sample.json', type=str)
-    parser.add_argument('--sample_csv', help='Output sample.csv', type=str)
-    parser.add_argument('--out_dir', help='Output directory for all output file, overrides all other options', type=str)
+    parser.add_argument('input_family_json', help='Input family.json', type=Path)
+    parser.add_argument('input_sample_json', help='Input sample.json', type=Path)
+    parser.add_argument('--pdbs_html', help='Output pdbs.html', type=Path)
+    parser.add_argument('--pdbs_demo_html', help='Output pdbs-demo.html (limited number of rows)', type=Path)
+    parser.add_argument('--pdbs_json', help='Output pdbs.json', type=Path)
+    parser.add_argument('--pdbs_csv', help='Output pdbs.csv', type=Path)
+    parser.add_argument('--domains_html', help='Output domains.html', type=Path)
+    parser.add_argument('--domains_demo_html', help='Output domains-demo.html (limited number of rows)', type=Path)
+    parser.add_argument('--domains_json', help='Output domains.json', type=Path)
+    parser.add_argument('--domains_csv', help='Output domains.csv', type=Path)
+    parser.add_argument('--sample_html', help='Output sample.html', type=Path)
+    parser.add_argument('--sample_demo_html', help='Output sample-demo.html (limited number of rows)', type=Path)
+    parser.add_argument('--sample_json', help='Output sample.json', type=Path)
+    parser.add_argument('--sample_csv', help='Output sample.csv', type=Path)
+    parser.add_argument('--out_dir', help='Output directory for all output file, overrides all other options', type=Path)
     args = parser.parse_args()
     return vars(args)
 

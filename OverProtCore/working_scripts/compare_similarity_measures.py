@@ -1,8 +1,7 @@
 
 import json
-import os
 from os import path
-import sys
+from pathlib import Path
 import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
@@ -13,7 +12,7 @@ from libs import lib_acyclic_clustering_simple
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory', help='Directory with sample.json and structure files', type=str)
+parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
 args = parser.parse_args()
 directory = args.directory
 

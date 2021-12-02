@@ -11,15 +11,14 @@ import argparse
 import json
 import re
 import sys
-from os import path
+from pathlib import Path
 from collections import defaultdict
 import numpy as np
-from typing import Dict, Any, Optional, Final, Literal, Union, get_args
+from typing import Dict, Any, Optional, Final, Literal, get_args
 import svgwrite as svg  # type: ignore
 
 from .libs import lib
 from .libs import lib_graphs
-from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
 
@@ -537,7 +536,7 @@ def get_label2manual_label(annotation):
             d[sse['label']] = sse['manual_label']
     return d
 
-def print_json(filename: FilePath, n_structures, labels, occurrences, avg_lengths, precedence_edges,
+def print_json(filename: Path, n_structures, labels, occurrences, avg_lengths, precedence_edges,
         beta_connectivity=None,
         sheet_ids=None,
         cdfs=None,
@@ -583,34 +582,31 @@ def remove_self_connections(beta_connectivity, print_warnings=False):
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('directory', help='Directory with the input files (statistics.tsv, consensus.sses.json, cluster_precedence_matrix.tsv)', type=str)
+    parser.add_argument('directory', help='Directory with the input files (statistics.tsv, consensus.sses.json, cluster_precedence_matrix.tsv)', type=Path)
     parser.add_argument('--dag', help='Draw the diagram as a DAG instead of a path (requires cluster_precedence_matrix.tsv)', action='store_true')
     parser.add_argument('--shape', help='Specify shape of SSEs', type=str, choices=SHAPES, default=DEFAULT_SHAPE)
     parser.add_argument('--connectivity', help='Draw arcs to show connectivity of beta-strands (antiparallel connections = up, parallel connections = down)', action='store_true')
     parser.add_argument('--occurrence_threshold', help='Do not show SSEs with lower relative occurrence', type=float, default=0.0)
     parser.add_argument('--heatmap', help='Colour the SSEs based on their variance of coordinates', action='store_true')
-    parser.add_argument('--output', help='Output SVG file (default: <directory>/diagram.svg)', type=str, default=None)
-    parser.add_argument('--json_output', help='Output JSON file with preprocessed info (default: no output)', type=str, default=None)
+    parser.add_argument('--output', help='Output SVG file (default: <directory>/diagram.svg)', type=Path, default=None)
+    parser.add_argument('--json_output', help='Output JSON file with preprocessed info (default: no output)', type=Path, default=None)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFAULT_SHAPE, connectivity: bool = False, occurrence_threshold: float = 0.0, 
-        heatmap: bool = False, output: Union[FilePath, str, None] = None, json_output: Union[FilePath, str, None] = None) -> Optional[int]:
+def main(directory: Path, dag: bool = False, shape: Shape = DEFAULT_SHAPE, connectivity: bool = False, occurrence_threshold: float = 0.0, 
+        heatmap: bool = False, output: Optional[Path] = None, json_output: Optional[Path] = None) -> Optional[int]:
     # TODO add parameters
     '''Foo'''
     # TODO add docstring
     pass
     # TODO add implementation
     
-    directory = FilePath(directory)
 
     if output is None:
-        output = directory._sub('diagram.svg')
-    else:
-        output = FilePath(output)
+        output = directory/'diagram.svg'
 
-    table, labels, column_names = lib.read_matrix(directory._sub('statistics.tsv'))
+    table, labels, column_names = lib.read_matrix(directory/'statistics.tsv')
     sheet_ids = [ int(x) for x in table[:, column_names.index('sheet_id')] ]
     occurrences = table[:, column_names.index('occurrence')]
     abs_occurrences = table[:, column_names.index('found_in')]
@@ -624,18 +620,18 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
 
     precedence: Optional[np.ndarray]
     if dag:
-        precedence, *_ = lib.read_matrix(directory._sub('cluster_precedence_matrix.tsv'))
+        precedence, *_ = lib.read_matrix(directory/'cluster_precedence_matrix.tsv')
     else:
         precedence = None
 
     if shape in SIMPLE_SHAPES and json_output is None:
         cdfs = None
     else:
-        lengths, _, _ = lib.read_matrix(directory._sub('lengths.tsv'))
+        lengths, _, _ = lib.read_matrix(directory/'lengths.tsv')
         cdfs = [ cdf_xy_pairs(l) for l in lengths ]
 
     try:
-        with directory._sub('consensus.sses.json')._open() as r:
+        with open(directory/'consensus.sses.json') as r:
             annot = json.load(r)['consensus']
         beta_connectivity = annot['beta_connectivity']
         label2manual_label = get_label2manual_label(annot)
@@ -652,7 +648,7 @@ def main(directory: Union[FilePath, str], dag: bool = False, shape: Shape = DEFA
             edges = lib_graphs.Dag.from_precedence_matrix(precedence).edges
         else:
             edges = [(i, i+1) for i in range(len(labels)-1)]
-        print_json(FilePath(json_output), n_structures, labels, occurrences, avg_lengths, edges,
+        print_json(json_output, n_structures, labels, occurrences, avg_lengths, edges,
             beta_connectivity=beta_connectivity,
             sheet_ids=sheet_ids,
             cdfs=cdfs,

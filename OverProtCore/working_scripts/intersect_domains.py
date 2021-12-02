@@ -1,6 +1,7 @@
 # Creates intersection of input domain ranges from two files. Input and output is in JSON format { pdb: [[domain_name, chain, range]] }.
 
 import sys
+from pathlib import Path
 import requests
 import json
 import argparse
@@ -10,8 +11,8 @@ from collections import defaultdict
 #  PARSE ARGUMENTS  ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('input_domains_1', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=str)
-parser.add_argument('input_domains_2', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=str)
+parser.add_argument('input_domains_1', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=Path)
+parser.add_argument('input_domains_2', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=Path)
 args = parser.parse_args()
 
 input_domains_file_1 = args.input_domains_1

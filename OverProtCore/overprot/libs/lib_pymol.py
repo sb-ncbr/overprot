@@ -1,9 +1,10 @@
+from __future__ import annotations
 import sys
 import json
-from os import path  #TODO replace by FilePath
+from pathlib import Path
 from collections import namedtuple  # change namedtuple to typing.NamedTuple
 import numpy as np
-from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Union, Iterable
+from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Iterable
 
 try:
     from pymol import cmd, querying, util, CmdException  # type: ignore
@@ -16,7 +17,6 @@ except ImportError:
 from . import lib
 from . import lib_domains
 from .lib_structure import Structure
-from .lib import FilePath
 from . import superimpose3d
 
 
@@ -25,14 +25,14 @@ CealignResult = namedtuple('CealignResult', ['alignment_length', 'RMSD', 'rotati
 RotationTranslation = namedtuple('RotationTranslation', ['rotation', 'translation'])
 
 
-def extract_alpha_trace(input_structfile: FilePath, output_structfile: FilePath) -> None:
+def extract_alpha_trace(input_structfile: Path, output_structfile: Path) -> None:
     obj = 'obj_alpha'
     cmd.load(input_structfile, obj)
     cmd.remove(f'{obj} and not (symbol C and name CA and not hetatm)')
     cmd.save(output_structfile, obj)
     cmd.delete(obj)
 
-def cealign_old(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath] = None) -> CealignResult:
+def cealign_old(target_file: Path, mobile_file: Path, result_file: Optional[Path] = None) -> CealignResult:
     '''Perform structure superimposition with cealign command and return details.
     If result_file is not None, save transformed mobile structure.'''
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
@@ -52,7 +52,7 @@ def cealign_old(target_file: FilePath, mobile_file: FilePath, result_file: Optio
     # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
     # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
 
-def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath] = None, fallback_to_dumb_align: bool = False) -> CealignResult:
+def cealign(target_file: Path, mobile_file: Path, result_file: Optional[Path] = None, fallback_to_dumb_align: bool = False) -> CealignResult:
     '''Perform structure superimposition with cealign command and return details.
     If result_file is not None, save transformed mobile structure.'''
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
@@ -68,8 +68,8 @@ def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[
         raw_result['rotation'], raw_result['translation'] = ttt_matrix_to_rotation_translation(raw_result['rotation_matrix'])
         return CealignResult(**raw_result)
     except CmdException:
-        target_name = target_file._name
-        mobile_name = mobile_file._name
+        target_name = target_file.stem
+        mobile_name = mobile_file.stem
         if fallback_to_dumb_align:
             print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
             return dumb_align(target_file, mobile_file, result_file)
@@ -82,30 +82,32 @@ def cealign(target_file: FilePath, mobile_file: FilePath, result_file: Optional[
     # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
     # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
 
-def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result_files: Sequence[FilePath], ttt_files: Optional[Sequence[Optional[FilePath]]] = None,
+def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: Sequence[Path], ttt_files: Optional[Sequence[Path]] = None,
                  fallback_to_dumb_align: bool = False, show_progress_bar: bool = False) -> None:
     '''Perform structure superimposition of each mobile to the target with cealign command.
     Save i-th transformed mobile structure into result_files[i].
     Save i-th transformation matrix (PyMOL-style TTT matrix) into ttt_files[i].
     If fallback_to_super, try to use super command if cealign fails.'''
     n = len(mobile_files)
-    assert len(result_files) == n
+    ttt_files_: Sequence[Path|None]
     if ttt_files is not None:
-        assert len(ttt_files) == n
+        ttt_files_ = ttt_files
     else:
-        ttt_files = [None] * n
+        ttt_files_ = [None] * n
+    assert len(result_files) == n
+    assert len(ttt_files_) == n
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
     with lib.ProgressBar(n, title=f'Cealigning {n} structures', mute = not show_progress_bar) as bar:
         cmd.load(target_file, obj_target)
-        for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files):
+        for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files_):
             cmd.load(mobile_file, obj_mobile)
             try:
                 raw_result = cmd.cealign(obj_target, obj_mobile)
                 ttt = raw_result['rotation_matrix']
                 cmd.save(result_file, obj_mobile)
             except CmdException:
-                target_name = target_file._name
-                mobile_name = mobile_file._name
+                target_name = target_file.stem
+                mobile_name = mobile_file.stem
                 if fallback_to_dumb_align:
                     # Cealign is expected to fail on small structures, e.g. CATH family 4.10.180.10
                     print(f'Warning: cealign({target_name}, {mobile_name}) failed, falling back to dumb_align (internal method)', file=sys.stderr)
@@ -120,7 +122,7 @@ def cealign_many(target_file: FilePath, mobile_files: Sequence[FilePath], result
             bar.step()
         cmd.delete(obj_target)
 
-def dumb_align(target_file: FilePath, mobile_file: FilePath, result_file: Optional[FilePath]) -> CealignResult:
+def dumb_align(target_file: Path, mobile_file: Path, result_file: Optional[Path]) -> CealignResult:
     target = read_cif(target_file, only_polymer=True)
     mobile = read_cif(mobile_file, only_polymer=True)
     T = target.coords[:, target.name=='CA']
@@ -150,7 +152,7 @@ def rotation_translation_to_ttt_matrix(rot_trans: RotationTranslation) -> List[f
     result[3, 3] = 1.0
     return list(result.reshape((16,)))
 
-def read_cif(structfile: FilePath, only_polymer=False):
+def read_cif(structfile: Path, only_polymer=False):
     obj = 'obj_read_cif'
     cmd.load(structfile, obj)
     symbol = np.array(querying.cif_get_array(obj, '_atom_site.type_symbol'))
@@ -183,9 +185,9 @@ def read_cif(structfile: FilePath, only_polymer=False):
     return result
     # TODO test on more entries (possible with multiple states), maybe the atom order will be wrong
 
-def create_alignment_session(structfileA: str, structfileB: str, alignment_file: str, output_session_file: str):
-    objA = path.splitext(path.basename(structfileA))[0]
-    objB = path.splitext(path.basename(structfileB))[0]
+def create_alignment_session(structfileA: Path, structfileB: Path, alignment_file: Path, output_session_file: Path):
+    objA = structfileA.stem
+    objB = structfileB.stem
     obj_aln = 'alignment'
     with open(alignment_file) as f:
         alignment = json.load(f)
@@ -214,15 +216,15 @@ _MIN_DASH_RADIUS = 0.0  # 0.1  # when radius is dependent on occurrence
 _MAX_DASH_RADIUS = 1.5
 _DEFAULT_DASH_RADIUS = 0.25
 
-def create_consensus_session(consensus_structure_file: FilePath, consensus_sse_file: FilePath, 
-                             out_session_file: Optional[FilePath], coloring: Coloring = 'rainbow', 
-                             out_image_file: Optional[FilePath] = None, image_size: Union[Tuple[int, int], Tuple[int], Tuple[()]] = ()) -> None:
+def create_consensus_session(consensus_structure_file: Path, consensus_sse_file: Path, 
+                             out_session_file: Optional[Path], coloring: Coloring = 'rainbow', 
+                             out_image_file: Optional[Path] = None, image_size: Tuple[int, int] | Tuple[int] | Tuple[()] = ()) -> None:
     '''image_size is either (width, height) or (width,) (height is scaled) or () (default size)'''
     obj = 'cons'
     group_name = _segment_group_name(obj)
     cmd.load(consensus_structure_file, obj)
     if consensus_sse_file.is_file():
-        with consensus_sse_file._open() as f:
+        with open(consensus_sse_file) as f:
             consensus = json.load(f)	
         cmd.group(group_name)
         for sse in consensus['consensus']['secondary_structure_elements']:
@@ -244,19 +246,19 @@ def create_consensus_session(consensus_structure_file: FilePath, consensus_sse_f
         cmd.save(out_session_file)
         cmd.delete('all')
 
-def create_multi_session(directory: FilePath, consensus_structure_file: Optional[FilePath], 
-                         consensus_sse_file: Optional[FilePath], out_session_file: Optional[FilePath],  
+def create_multi_session(directory: Path, consensus_structure_file: Optional[Path], 
+                         consensus_sse_file: Optional[Path], out_session_file: Optional[Path],  
                          coloring: Coloring = 'rainbow', base_color: str = 'gray80', progress_bar: bool = False):
     if consensus_structure_file is not None or consensus_sse_file is not None:
         assert consensus_structure_file is not None, 'consensus_structure_file and consensus_sse_file must be both strings or both None'
         assert consensus_sse_file is not None, 'consensus_structure_file and consensus_sse_file must be both strings or both None'
         create_consensus_session(consensus_structure_file, consensus_sse_file, None, coloring=coloring)
-    domains = lib_domains.load_domain_list(directory._sub('sample.json'))
+    domains = lib_domains.load_domain_list(directory/'sample.json')
     n = len(domains)
     with lib.ProgressBar((n+1)*n//2, title=f'Creating PyMOL session with {n} structures', mute = not progress_bar) as bar:  # Complexity is ~ quadratic with current PyMOL 2.3
         for i, domain in enumerate(domains):
-            cmd.load(directory._sub(domain.name+'.cif'), domain.name)
-            _color_by_annotation(domain.name, directory._sub(domain.name+'-clust.sses.json'), base_color, coloring, show_line_segments=True)
+            cmd.load(directory/f'{domain.name}.cif', domain.name)
+            _color_by_annotation(domain.name, directory/f'{domain.name}-clust.sses.json', base_color, coloring, show_line_segments=True)
             bar.step(i)
     cmd.hide()
     cmd.show('cartoon')
@@ -267,8 +269,8 @@ def create_multi_session(directory: FilePath, consensus_structure_file: Optional
         cmd.save(out_session_file)
         cmd.delete('all')
 
-def _color_by_annotation(domain_name: str, annotation_file: FilePath, base_color: str, coloring: Coloring, show_line_segments: bool = True):
-    with annotation_file._open() as f:
+def _color_by_annotation(domain_name: str, annotation_file: Path, base_color: str, coloring: Coloring, show_line_segments: bool = True):
+    with open(annotation_file) as f:
         sses = json.load(f)[domain_name]['secondary_structure_elements']
     cmd.color(base_color, f'{domain_name} & symbol C')
     cmd.group(_sses_group_name(domain_name))

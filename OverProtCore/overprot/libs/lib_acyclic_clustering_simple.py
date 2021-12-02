@@ -1,18 +1,18 @@
 '''AcyclicClusteringSimple and related functions'''
 
 
-from os import path
+from __future__ import annotations
 import sys
+from pathlib import Path
 import json
 import itertools
 import numpy as np
 from collections import defaultdict, Counter
-from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Union, overload
+from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Any, overload
 from datetime import datetime
 from numba import jit  # type: ignore
 
 from . import lib
-from .lib import FilePath
 from . import lib_sses
 from . import lib_clustering
 from . import lib_graphs
@@ -36,13 +36,13 @@ Match = Tuple[int, int]
 Matching = List[Match]
 
 
-def read_sses_simple(domains: List[Domain], directory: FilePath, length_thresholds: Optional[Dict[str, int]] = None):
+def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: Optional[Dict[str, int]] = None):
     offsets = [0]  # counting a beta-ladder side as one SSE (for preference matrix)
     sses = []
     edges = []
     # lib_sses.compute_ssa(domains, directory, skip_if_exists=True)
     for domain in domains:
-        with directory._sub(domain.name+'.sses.json')._open() as f:
+        with open(directory / f'{domain.name}.sses.json') as f:
             annot = json.load(f)[domain.name]
         sses_here = annot['secondary_structure_elements']
         for sse in sses_here:
@@ -97,7 +97,7 @@ def edge_lists_from_edges(n_vertices: int, edges: List[Edge]) -> List[List[Edge]
         edge_lists[v].append((v, u, *rest))
     return edge_lists
 
-def cluster_edges(edges: List[Edge], labels: Union[Sequence[int], np.ndarray], threshold=0.5) -> List[Edge]:
+def cluster_edges(edges: List[Edge], labels: Sequence[int]|np.ndarray, threshold=0.5) -> List[Edge]:
     vertex_counter: Dict[int, int] = defaultdict(int)
     for li in labels:
         if li != UNLABELLED:
@@ -731,12 +731,12 @@ def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_l
     lib.log('Iterative rematching iterations:', iterations)
     return labels[final]
 
-def rematch_with_SecStrAnnotator(domains: List[Domain], directory: FilePath, sses, offsets, extra_options='') -> np.ndarray:
+def rematch_with_SecStrAnnotator(domains: List[Domain], directory: Path, sses, offsets, extra_options='') -> np.ndarray:
     lib_sses.annotate_all_with_SecStrAnnotator(domains, directory, extra_options=extra_options)
     labels = np.full(len(sses), UNLABELLED, dtype=np.int32)
     for domain, fro, to in zip(domains, offsets[:-1], offsets[1:]):
         index = { (sses[i][lib_sses.CHAIN], sses[i][lib_sses.START], sses[i][lib_sses.END]): i for i in range(fro, to) }
-        with directory._sub(domain.name + '-annotated.sses.json')._open() as r:
+        with open(directory / f'{domain.name}-annotated.sses.json') as r:
             annotated_sses = json.load(r)[domain.name]['secondary_structure_elements']
         for annot_sse in annotated_sses:
             key = (annot_sse[lib_sses.CHAIN], annot_sse[lib_sses.START], annot_sse[lib_sses.END])
@@ -1108,7 +1108,8 @@ class AcyclicClusteringSimple:
         self.aggregate_function = aggregate_function
         self.max_joining_distance = max_joining_distance
 
-    def fit(self, distance_matrix, precedence_matrix, type_vector=None, domain_names=None, p_offsets=None, member_count_threshold=0, sses=None, output_dir=None):
+    def fit(self, distance_matrix, precedence_matrix, type_vector=None, domain_names=None, p_offsets=None, 
+            member_count_threshold=0, sses=None, output_dir: Optional[Path]=None):
         # only samples with the same type can be linked
         n_D = distance_matrix.shape[0] # number of samples = number of leaves
         # assert n_D > 0
@@ -1139,7 +1140,7 @@ class AcyclicClusteringSimple:
         active_nodes = set(range(n_D))
         D = distance_matrix # no copying (to spare memory)
         P = precedence_matrix # no copying (to spare memory)
-        T = type_vector if type_vector is not None else np.zeros(n_D, dtype=int) # type vector
+        T = type_vector if type_vector is not None else np.zeros(n_D, dtype=np.int8) # type vector
 
         def can_join(ij):
             i, j = ij
@@ -1152,9 +1153,10 @@ class AcyclicClusteringSimple:
 
         then = datetime.now()
 
+        distance_queue: Any
         if n_D > SSE_COUNT_THRESHOLD_FOR_NUMPY_HEAP:
             lib.log('Using Numpy Heap')
-            type_counts = Counter(type_vector)
+            type_counts: dict[int, int] = Counter(type_vector)
             # capacity = m * (m-1)
             capacity = sum( c*(c-1) for c in type_counts.values() )  # TODO this capacity guess might not be sufficient!!! (use better guess or dynamic allocation)
             distance_queue = lib.NumpyMinHeap((2,), int, capacity, key_type=float, 
@@ -1203,13 +1205,13 @@ class AcyclicClusteringSimple:
         lib.log('Clustering time:', datetime.now() - then)
 
         # Filter by cluster size (number of members)
-        active_nodes = [ node for node in active_nodes if len(members[node]) >= member_count_threshold ]
-        active_nodes = lib.sort_dag(active_nodes, lambda i, j: P[leader[i], leader[j]] )
-        active_leaders = [ leader[node] for node in active_nodes ]
+        active_nodes_list = [ node for node in active_nodes if len(members[node]) >= member_count_threshold ]
+        active_nodes_list = lib.sort_dag(active_nodes_list, lambda i, j: P[leader[i], leader[j]] )
+        active_leaders = [ leader[node] for node in active_nodes_list ]
         
-        self.final_members = [ members[node] for node in active_nodes ]
+        self.final_members = [ members[node] for node in active_nodes_list ]
         
-        self.n_clusters = len(active_nodes)
+        self.n_clusters = len(active_nodes_list)
         self.labels = np.full(n_D, UNLABELLED)
         for label in range(self.n_clusters):
             self.labels[self.final_members[label]] = label
@@ -1219,18 +1221,18 @@ class AcyclicClusteringSimple:
 
         names = [ ('H' if type_vector[l] == 0 else 'E') + str(i) for i, l in enumerate(active_leaders) ]
         if sses is not None:
-            lengths = np.zeros((len(active_nodes), len(domain_names)), dtype=int)
+            lengths = np.zeros((len(active_nodes_list), len(domain_names)), dtype=np.int32)
             for i_domain in range(len(domain_names)):
                 fro, to = p_offsets[i_domain:i_domain+2]
                 for i_sse in range(fro, to):
                     label = self.labels[i_sse]
                     if label != UNLABELLED:  # label UNLABELLED means excluded (too small) cluster
-                        lengths[label, i_domain] = lengths(sses[i_sse])
+                        lengths[label, i_domain] = sses[i_sse]['length']
             if output_dir is not None:
-                lib.print_matrix(lengths, path.join(output_dir, 'lengths.tsv'), row_names=names, col_names=domain_names)
+                lib.print_matrix(lengths, output_dir/'lengths.tsv', row_names=names, col_names=domain_names)
         if output_dir is not None:
-            lib.print_matrix(self.cluster_distance_matrix, path.join(output_dir, 'cluster_distance_matrix.tsv'), row_names=names, col_names=names)
-            lib.print_matrix(self.cluster_precedence_matrix, path.join(output_dir, 'cluster_precedence_matrix.tsv'), row_names=names, col_names=names)
+            lib.print_matrix(self.cluster_distance_matrix, output_dir/'cluster_distance_matrix.tsv', row_names=names, col_names=names)
+            lib.print_matrix(self.cluster_precedence_matrix, output_dir/'cluster_precedence_matrix.tsv', row_names=names, col_names=names)
 
         return
 

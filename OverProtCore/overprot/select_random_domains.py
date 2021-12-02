@@ -6,17 +6,15 @@ Example usage:
 '''
 # TODO add description and example usage in docstring
 
-import json
-import os
-from os import path
+from __future__ import annotations
 import sys
+from pathlib import Path
 import argparse
 import numpy as np
-from typing import Dict, Any, Optional, Union, Literal
+from typing import Dict, Any, Optional
 
 from .libs import lib_domains
 from .libs import lib
-from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
 
@@ -30,22 +28,17 @@ RANDOMIZE_DOMAINS_WITHIN_PDB = False
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('domain_file', help='JSON file with format {pdb: [[domain_name, chain, range]]}', type=str)
-    # parser.add_argument('directory', help='Directory to save samples.json and downloaded PDB files', type=str)
+    parser.add_argument('domain_file', help='JSON file with format {pdb: [[domain_name, chain, range]]}', type=Path)
     parser.add_argument('--size', help="Size of the selected sample (integer or 'all')", type=str, default='all')
     parser.add_argument('--or_all', help='Select all domains if the number of domains is smaller than the requested size (otherwise would raise an error)', action='store_true')
     parser.add_argument('--unique_pdb', help='Take only the first domain listed for each PDB code', action='store_true')
     parser.add_argument('--unique_uniprot', help='Take only the first domain listed for each UniProtID (input must be sorted by UniProtID)', action='store_true')
-    # parser.add_argument('--download', help='Fetch PDB files for selected domains (requires pymol module)', action='store_true')
-    # parser.add_argument('--copy_from', help='Copy PDB files for selected domains from specified directory', type=str, default=None)
-    # parser.add_argument('--cif', help='Use CIF format instead of PDB.', action='store_true')
     args = parser.parse_args()
     return vars(args)
-    # TODO add mutually exclusive group
 
 
-def main(domain_file: Union[FilePath, str], 
-         size: Union[int, str, None] = 'all', or_all: bool = False,
+def main(domain_file: Path, 
+         size: int|str|None = 'all', or_all: bool = False,
          unique_pdb: bool = False, unique_uniprot: bool = False) -> Optional[int]:
     '''Select a random sample from a set of domains.'''
     

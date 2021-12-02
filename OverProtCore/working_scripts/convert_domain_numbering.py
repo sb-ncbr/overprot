@@ -1,6 +1,7 @@
 # Creates intersection of input domain ranges with observed residues from PDBe API. Input and output is in JSON format { pdb: [[domain_name, chain, range]] }.
 
 import sys
+from pathlib import Path
 import requests
 import json
 import argparse
@@ -14,7 +15,7 @@ DEFAULT_STATUS_API_URL = 'https://www.ebi.ac.uk/pdbe/api/pdb/entry/status/'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('conversion', help='Conversion direction', type=str, choices=['auth2label', 'label2auth'])
-parser.add_argument('input_domains', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=str)
+parser.add_argument('input_domains', help='JSON file with input domains in format { pdb: [[domain_name, chain, range]] }', type=Path)
 parser.add_argument('--source', help='URL with PDBeAPI server for List of residues (default = ' + DEFAULT_RESIDUE_LISTING_API_URL + ')', default=DEFAULT_RESIDUE_LISTING_API_URL)
 parser.add_argument('--ignore_obsolete', help='Ignore obsolete entries without raising error', action='store_true')
 parser.add_argument('--insertion_warnings', help='Print warnings when residues with insertion codes are found', action='store_true')

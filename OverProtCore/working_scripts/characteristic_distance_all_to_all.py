@@ -6,6 +6,7 @@
 import json
 import os
 from os import path
+from pathlib import Path
 import sys
 import numpy as np
 import argparse
@@ -19,7 +20,7 @@ import subprocess
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory', help='Directory with sample.json and structure files', type=str)
+parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
 args = parser.parse_args()
 
 QUASI_INFINITY = 1e6

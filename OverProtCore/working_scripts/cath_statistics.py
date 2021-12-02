@@ -1,16 +1,14 @@
 # Calculate some overview of CATH number of families, domains etc.
 
-import json
-import os
-from os import path
 import argparse
+from pathlib import Path
 from collections import defaultdict
 from matplotlib import pyplot as plt
 
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('cath_domain_list', help='CATH domain list file (like ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-release/cath-classification-data/cath-domain-list.txt)', type=str)
+parser.add_argument('cath_domain_list', help='CATH domain list file (like ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-release/cath-classification-data/cath-domain-list.txt)', type=Path)
 args = parser.parse_args()
 
 cath_domain_list_file = args.cath_domain_list

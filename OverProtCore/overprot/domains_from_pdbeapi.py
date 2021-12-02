@@ -106,7 +106,7 @@ def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('accession', help='"accession" argument to PDBe API SIFTS Mappings, e.g. Pfam accession or CATH cathcode.', type=str)
-    parser.add_argument('--source', help='URL with PDBeAPI server (default = ' + DEFAULT_API_URL + ')', default=DEFAULT_API_URL)
+    parser.add_argument('--source', help=f'URL with PDBeAPI server (default = {DEFAULT_API_URL})', default=DEFAULT_API_URL)
     parser.add_argument('--join_domains_in_chain', help='Join all domains in one chain if their names are not provided by the source', action='store_true')
     parser.add_argument('--chain_change_warning', help='Print warning if struct_asym_id != chain_id (label_ vs auth_ chain numbering)', action='store_true')
     args = parser.parse_args()

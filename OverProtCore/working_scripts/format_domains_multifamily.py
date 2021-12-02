@@ -13,11 +13,11 @@ from overprot import format_domains
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('data_dir', help='Data directory from overprot_multifamily.py', type=str)
+    parser.add_argument('data_dir', help='Data directory from overprot_multifamily.py', type=Path)
     args = parser.parse_args()
     return vars(args)
 
-def main(data_dir: str) -> Optional[int]:
+def main(data_dir: Path) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     family_dirs = [d for d in Path(data_dir, 'families').iterdir() if d.is_dir()]

@@ -8,12 +8,11 @@ Example usage:
 
 import sys
 import argparse
-import json
-from typing import Dict, Any, Optional, Union
+from pathlib import Path
+from typing import Dict, Any, Optional
 
 from .libs import lib_domains
 from .libs import lib
-from .libs.lib import FilePath
 
 #  CONSTANTS  ################################################################################
 
@@ -26,13 +25,12 @@ from .libs.lib import FilePath
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_file', help='JSON file with domain list', type=str)
-    # TODO add command line arguments
+    parser.add_argument('input_file', help='JSON file with domain list', type=Path)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(input_file: Union[FilePath, str]) -> Optional[int]:
+def main(input_file: Path) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
     domains = lib_domains.load_domain_list(input_file)

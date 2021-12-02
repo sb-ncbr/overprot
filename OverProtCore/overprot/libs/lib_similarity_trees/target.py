@@ -37,7 +37,7 @@ class Target(Generic[K, V]):
     def kNN_query_by_value(self, query_value: V, k: int) -> List[Tuple[float, K]]:
         query_length = self._length_function(query_value)
         the_bin = self._get_bin(query_length)
-        queue = PriorityQueue()
+        queue = PriorityQueue[float, int]()
         for i, (low, high) in enumerate(self._bins):
             dmin = 0.0 if i == the_bin else min(abs(low - query_length), abs(high-1 - query_length))  # high-1 because length must be int ;)
             dmin = dmin / 2  # because of how distance_function works (abs(m-n)/2 <= distance <= (m+n)/2))

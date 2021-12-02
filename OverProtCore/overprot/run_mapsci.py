@@ -8,11 +8,12 @@ Example usage:
 
 import subprocess
 import argparse
-from typing import Dict, Any, Optional, Literal, Final, Union
+from pathlib import Path
+from typing import Dict, Any, Optional, Literal, Final
 
 from .libs import lib
+from .libs import lib_sh
 from .libs import lib_domains
-from .libs.lib import FilePath
 from .libs.lib_dependencies import MAPSCI_EXE
 
 #  CONSTANTS  ################################################################################
@@ -36,9 +37,9 @@ ROTATED_EXT = '.pdb.rot'
 def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_file', help='File with the list of protein domains in format [[pdb, domain_name, chain, range]]', type=str)
-    parser.add_argument('input_dir', help='Directory with input PDB files, named <domain_name>.pdb', type=str)
-    parser.add_argument('output_dir', help='Directory for output', type=str)
+    parser.add_argument('input_file', help='File with the list of protein domains in format [[pdb, domain_name, chain, range]]', type=Path)
+    parser.add_argument('input_dir', help='Directory with input PDB files, named <domain_name>.pdb', type=Path)
+    parser.add_argument('output_dir', help='Directory for output', type=Path)
     parser.add_argument('--init', help=f'Initial consensus selection method (default: {DEFAULT_INIT}, fastest: median, see MAPSCI documentation)', type=str, choices=['center', 'minmax', 'median'], default='center')
     parser.add_argument('--n_max', help=f'Maximum number of input domains. If there are more input domains, then N_MAX domains are selected randomly. Default: {N_MAX_ALL} (always take all).', type=int, default=N_MAX_ALL)
     parser.add_argument('--keep_rotated', help=f'Do not delete the rotated structure files ({ROTATED_EXT}) produced by MAPSCII', action='store_true')
@@ -46,16 +47,16 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], output_dir: Union[FilePath, str], 
+def main(input_file: Path, input_dir: Path, output_dir: Path, 
          init: Literal['center', 'minmax', 'median'] = DEFAULT_INIT, 
          n_max: int = N_MAX_ALL, keep_rotated: bool = False) -> Optional[int]:
     '''Prepare MAPSCI input file and run MAPSCI'''
     # TODO add docstring
 
     # Convert to absolute paths (important when calling MAPSCI)
-    input_file = FilePath(input_file)._abs()
-    input_dir = FilePath(input_dir)._abs()
-    output_dir = FilePath(output_dir)._abs()
+    input_file = input_file.resolve()
+    input_dir = input_dir.resolve()
+    output_dir = output_dir.resolve()
 
     # Read input domain list
     domains = lib_domains.load_domain_list(input_file)
@@ -70,24 +71,24 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
         print(f'Taking all {len(domains)} domains')
 
     # Prepare input file for MAPSCI
-    output_dir._mkdir(exist_ok=True)
-    with output_dir._sub(MAPSCI_INPUT_FILE_NAME)._open('w') as w:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with open(output_dir/MAPSCI_INPUT_FILE_NAME, 'w') as w:
         for domain in domains:
             w.write(domain.name + STRUCTURE_EXT + '\n')
 
     # Run MAPSCI
-    with output_dir._sub(MAPSCI_STDOUT)._open('w') as stdout_writer:
-        with output_dir._sub(MAPSCI_STDERR)._open('w') as stderr_writer:
+    with open(output_dir/MAPSCI_STDOUT, 'w') as stdout_writer:
+        with open(output_dir/MAPSCI_STDERR, 'w') as stderr_writer:
             subprocess.run([MAPSCI_EXE, MAPSCI_INPUT_FILE_NAME, init, '-p', str(input_dir)], cwd=str(output_dir), stdout=stdout_writer, stderr=stderr_writer)
 
 
-    ok = output_dir._sub(MAPSCI_CONSENSUS_FILE).is_file()
+    ok = (output_dir/MAPSCI_CONSENSUS_FILE).is_file()
     if ok:
         print('MAPSCI OK')
     else:
         print('MAPSCI FAILED')
         try:
-            with open(output_dir._sub(MAPSCI_STDERR)) as r:
+            with open(output_dir/MAPSCI_STDERR) as r:
                 error_message = r.readlines()[-1]
         except (OSError, IndexError):
             error_message = ''
@@ -96,7 +97,7 @@ def main(input_file: Union[FilePath, str], input_dir: Union[FilePath, str], outp
     # Delete rotated structure files
     if not keep_rotated:
         for domain in domains:
-            output_dir._sub(domain.name + ROTATED_EXT).rm(ignore_errors=True)
+            lib_sh.rm(output_dir / (domain.name+ROTATED_EXT), ignore_errors=True)
     
     return None
 

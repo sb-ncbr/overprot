@@ -1,5 +1,6 @@
 import configparser
-from typing import List,  Dict, Union, Optional, Literal, Final, Type, get_origin, get_args, get_type_hints
+from pathlib import Path
+from typing import List,  Dict, Optional, Literal, Final, Type, Union, get_origin, get_args, get_type_hints
 
 
 _ConfigOptionValue = Union[str, int, float, bool, List[str], List[int], List[float], List[bool]]
@@ -133,7 +134,7 @@ class Config(object):
     __SECTION_TYPE: Final = ConfigSection
     __section_types: Dict[str, Type[ConfigSection]]
 
-    def __init__(self, filename: Optional[str] = None, allow_extra: bool = False, allow_missing: bool = False):
+    def __init__(self, filename: Optional[Path] = None, allow_extra: bool = False, allow_missing: bool = False):
         '''Create new Config object with either default values or loaded from an .ini file.'''
         cls = type(self)
         self.__section_types = {section: typ for section, typ in get_type_hints(cls).items() if not section.startswith(f'_')}
@@ -163,7 +164,7 @@ class Config(object):
         return f'{type(self).__name__}({", ".join(sects)})'
     
 
-    def load_from_file(self, filename: str, allow_extra: bool = False, allow_missing: bool = False) -> None:
+    def load_from_file(self, filename: Path, allow_extra: bool = False, allow_missing: bool = False) -> None:
         '''Load configuration options from an .ini file into this Config object.'''
         parser = configparser.ConfigParser()
         with open(filename) as r:
