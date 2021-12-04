@@ -45,9 +45,10 @@
             </button>
             <div class="navbar-collapse collapse" id="navbarSupportedContent">
 
-                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/view">
+                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/view" onsubmit="normalize_input_text('#family-input-on-panel');">
                     <div class="autocomplete">
-                        <input class="form-control family-input" name="family" type="search" placeholder="Family ID, e.g. 1.10.630.10" aria-label="Search">
+                        <input id="family-input-on-panel" class="form-control family-input" name="family_id" type="search" placeholder="Family ID, e.g. 1.10.630.10" 
+                            aria-label="Search" required>
                         <!-- <input class="form-control" type="submit" value="Go">
                         <button class="btn btn-outline-success" type="submit">Go</button> -->
                         <button class="btn btn-outline-primary" type="submit">Go</button>
@@ -98,7 +99,17 @@
     </div>
 
     <script type='text/javascript'>
-        initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family}}', '.family-input', '.family-name');
+        initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family_id}}', '.family-input', '.family-name');
+
+        function normalize_input_text(input_element_selector){
+            let input_elem = $(input_element_selector); 
+            let text = input_elem.val();
+            input_elem.val(normalized_string(text)); 
+        }
+
+        function normalized_string(string){
+            return string.trim().split(/\s+/).join(' ');
+        }
     </script>
 
     {% block scripts %}{% endblock %}

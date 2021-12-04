@@ -32,10 +32,10 @@
 </div>
 <div class="row">
     <div class="col">
-        <form class="form-inline" action="/view">
-            <label for="family">Family CATH ID:</label>
+        <form class="form-inline" action="/view" onsubmit="normalize_input_text('#family-input-on-home');">
+            <label for="family_id">Family CATH ID:</label>
             <div class="autocomplete">
-                <input type="text" id="family-input" name="family" placeholder="e.g. 1.10.630.10" class="family-input form-control">
+                <input type="text" id="family-input-on-home" name="family_id" placeholder="e.g. 1.10.630.10" class="family-input form-control" required>
                 <input type="submit" value="Go" class="btn btn-primary">
             </div>
         </form>

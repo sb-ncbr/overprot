@@ -22,11 +22,11 @@ def main():
     fam_dirs = sorted(fam for fam in Path(input_dir, 'families').iterdir() if fam.is_dir)
     # print(fam_dirs)
     for fd in fam_dirs:
-        family = fd.name
+        family_id = fd.name
         try:
-            make_archive(Path(fd, 'results'), Path(output_dir, f'results-{family}.zip'))
+            make_archive(Path(fd, 'results'), Path(output_dir, f'results-{family_id}.zip'))
         except FileNotFoundError:
-            print('Missing results/ directory:', family, file=sys.stderr)
+            print('Missing results/ directory:', family_id, file=sys.stderr)
     
 
 

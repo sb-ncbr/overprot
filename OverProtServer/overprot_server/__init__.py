@@ -4,9 +4,10 @@ import uuid
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, Union, Dict
+from typing import Any, NamedTuple, Optional, Union, Dict, Set
 
-from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, LAST_UPDATE_FILE
+from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE, LAST_UPDATE_FILE
+from .data_caching import DataCache
 from . import domain_parsing
 from . import queuing
 
@@ -29,37 +30,6 @@ class ResponseTuple(NamedTuple):
 
 def get_uuid() -> uuid.UUID:
     return uuid.uuid4()
-
-# @app.route('/test')
-# def test() -> Any:
-#     result = []
-#     scheme = flask.request.scheme
-#     result.append(f'Scheme: {scheme}')
-#     url1 = flask.url_for('home')
-#     url2 = flask.url_for('home', _external=True)
-#     url3 = flask.url_for('home', _external=True, _scheme=scheme)
-#     result.append(f'<a href="/redirect_home_relative">/redirect_home_relative  - {url1}</a>')
-#     result.append(f'<a href="/redirect_home_external">/redirect_home_external  - {url2}</a>')
-#     result.append(f'<a href="/redirect_home_external_scheme">/redirect_home_external_scheme  - {url3}</a>')
-#     headers = flask.request.headers
-#     result.append('')
-#     result.append('Headers:')
-#     for key, value in headers.items():
-#         result.append(f'&nbsp;&nbsp;<b>{key}:</b> {value}')
-#     return '<br>\n'.join(result)
-
-# @app.route('/redirect_home_relative')
-# def redirect_home_relative() -> Any:
-#     return flask.redirect(flask.url_for('home'))
-
-# @app.route('/redirect_home_external')
-# def redirect_home_external() -> Any:
-#     return flask.redirect(flask.url_for('home', _external=True))
-
-# @app.route('/redirect_home_external_scheme')
-# def redirect_home_external_scheme() -> Any:
-#     scheme = flask.request.scheme
-#     return flask.redirect(flask.url_for('home', _external=True, _scheme=scheme))
 
 @app.route('/')
 def index() -> Any:
@@ -149,22 +119,31 @@ def job(job_id: str) -> Any:
 @app.route('/view', methods=['GET'])
 def view() -> Any:
     values = flask.request.values 
-    family = values.get('family', None)
-    if family is None:
-        return flask.redirect(flask.url_for('view', family=DEFAULT_FAMILY_EXAMPLE, example=1))
+    family_id = values.get('family_id', None)
+    if family_id is None:
+        return flask.redirect(flask.url_for('view', family_id=DEFAULT_FAMILY_EXAMPLE, example=1))
     else:
-        if _family_exists(family):
-            fam_info = _family_info(family)
-            return flask.render_template('view.html', family=family, family_info=fam_info, last_update=get_last_update())
+        if _family_exists(family_id):
+            fam_info = _family_info(family_id)
+            example_domain = EXAMPLE_DOMAINS_CACHE.value.get(family_id)
+            return flask.render_template('view.html', family_id=family_id, family_info=fam_info, example_domain=example_domain, last_update=LAST_UPDATE_CACHE.value)
         else:
-            return flask.render_template('search_fail.html', family=family)
+            return flask.render_template('search_fail.html', family_id=family_id)
 
-def get_last_update() -> str:
-    try:
-        return Path(LAST_UPDATE_FILE).read_text().strip()
-    except OSError:
-        return '???'
-    
+@app.route('/view_domain', methods=['GET'])
+def view_domain() -> Any:
+    values = flask.request.values 
+    family_id = values.get('family_id', None)
+    domain_id = values.get('domain_id', None)
+    if family_id is None:
+        return flask.redirect(flask.url_for('view_domain', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
+    else:
+        if _family_exists(family_id):
+            fam_info = _family_info(family_id)
+            return flask.render_template('view_domain.html', family_id=family_id, domain_id=domain_id, family_info=fam_info, last_update=LAST_UPDATE_CACHE.value)
+        else:
+            return flask.render_template('search_fail.html', family_id=family_id)
+    # TODO check if domain exists
 
 @app.route('/favicon.ico')
 def favicon() -> Any:
@@ -210,6 +189,15 @@ def settings() -> Any:
     return ResponseTuple.plain(text)
 
 # DEBUG
+@app.route('/data_cache')
+def data_cache() -> Any:
+    vu1 = EXAMPLE_DOMAINS_CACHE._valid_until
+    value = EXAMPLE_DOMAINS_CACHE.value
+    vu2 = EXAMPLE_DOMAINS_CACHE._valid_until
+    text = '\n'.join(str(x) for x in [vu1, vu2, '', value])
+    return ResponseTuple.plain(text)
+
+# DEBUG
 @app.route('/data/<path:file>')
 def data(file: str):
     if '..' in file:
@@ -230,7 +218,8 @@ def _calculate_time_to_refresh(elapsed_time: timedelta) -> int:
         return -elapsed_seconds % REFRESH_TIMES[-1]
 
 def _family_exists(family_id: str) -> bool:
-    return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
+    return family_id in FAMILY_SET_CACHE.value
+    # return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
 
 def _family_info(family_id: str) -> Dict[str, str]:
     SEP = ':'
@@ -267,8 +256,31 @@ def _get_job_file(job_id: str, *path_parts: str) -> Path:
             return path
     raise FileNotFoundError('/'.join(['...', job_id, *path_parts]))
 
+def _get_example_domains() -> Dict[str, str]:
+    with open(Path(DATA_DIR, 'db', 'cath_example_domains.txt')) as f:
+        result = {}
+        for line in f:
+            line = line.strip()
+            family, example = line.split()
+            result[family] = example
+    return result
 
+def _get_family_set() -> Set[str]:
+    with open(Path(DATA_DIR, 'db', 'families.txt')) as f:
+        result = set()
+        for line in f:
+            family_id = line.strip()
+            if family_id != '':
+                result.add(family_id)
+    return result
 
+def _get_last_update() -> str:
+    try:
+        return Path(LAST_UPDATE_FILE).read_text().strip()
+    except OSError:
+        return '???'
+ 
 
-
-
+EXAMPLE_DOMAINS_CACHE = DataCache(_get_example_domains)
+FAMILY_SET_CACHE = DataCache(_get_family_set)
+LAST_UPDATE_CACHE = DataCache(_get_last_update)
