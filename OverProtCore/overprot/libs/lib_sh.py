@@ -65,6 +65,6 @@ def archive(source: Path, dest: Path) -> Path:
     '''Create archive from a file or directory, 
     e.g. archive(Path('data'), Path('data.zip')) '''
     fmt = dest.suffix.lstrip('.')
-    archive_name = dest.parent/dest.name  # without suffix!
+    archive_name = dest.parent/dest.stem  # without suffix!
     archive = shutil.make_archive(str(archive_name), fmt, str(source))
     return Path(archive)

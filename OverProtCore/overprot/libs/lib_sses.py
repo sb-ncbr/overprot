@@ -74,8 +74,10 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
         # Version with a single dotnet (multi-domain mode)
         
         with Timing('Computing SSA', mute = not progress_bar):
-            domains_string = ';'.join(f'{domain.name},{domain.chain}' for domain in domains)
-            lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, domains_string, 
+            batch_file = directory/'domain_batch.txt'
+            domains_string = '\n'.join(f'{domain.name},{domain.chain},{domain.ranges}' for domain in domains)
+            batch_file.write_text(domains_string)
+            lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', '--batch', directory, batch_file, 
                 stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
             for detected_file, sse_file in zip(detected_sse_files, sse_files):
                 lib_sh.mv(detected_file, sse_file)
@@ -122,8 +124,10 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, ap
 
     # Version with a single dotnet (multi-domain mode)
     with Timing('Running SecStrAnnotator'), RedirectIO(stdout=outdirectory/'stdout.txt', stderr=outdirectory/'stderr.txt'):
-        domains_string = ';'.join(f'{domain.name},{domain.chain}' for domain in domains)
-        lib_run.run_dotnet(SECSTRANNOTATOR_DLL, *options.split(), directory, 'consensus', domains_string)
+        batch_file = outdirectory/'domain_batch.txt'
+        domains_string = '\n'.join(f'{domain.name},{domain.chain},{domain.ranges}' for domain in domains)
+        batch_file.write_text(domains_string)
+        lib_run.run_dotnet(SECSTRANNOTATOR_DLL, *options.split(), directory, 'consensus', '--batch', batch_file)
     
     if outdirectory is not None:
         for domain in domains:

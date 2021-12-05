@@ -7,6 +7,7 @@ Example usage:
 # TODO add description and example usage in docstring
 
 from __future__ import annotations
+import os
 import sys
 import argparse
 from pathlib import Path
@@ -14,13 +15,18 @@ from typing import Dict, Any, Optional, List
 import traceback
 import contextlib
 import shutil
+import json
+from datetime import datetime
 
 from .libs import lib
 from .libs import lib_sh
 from .libs import lib_multiprocessing
 from .libs.lib_io import RedirectIO
-from .libs.lib_logging import Timing
+from .libs.lib_logging import Timing, ProgressBar
 from . import get_cath_family_list
+from . import get_cath_example_domains
+from . import get_cath_family_names
+from . import domains_from_pdbeapi
 from . import overprot
 
 #  CONSTANTS  ################################################################################
@@ -30,12 +36,12 @@ from . import overprot
 
 HLINE = '-' * 60
 
-def process_family(family: str, sample_size: int|str|None, directory: Path, config: Optional[Path] = None) -> Optional[str]:
+def process_family(family: str, sample_size: int|str|None, directory: Path, config: Optional[Path] = None, domains: Optional[Path] = None) -> Optional[str]:
     '''Try running OverProt on a family. Return the error traceback if fails, None if succeeds.'''
     print(HLINE, family, sep='\n')
     print(HLINE, family, sep='\n', file=sys.stderr)
     try:
-        overprot.main(family, sample_size, directory, config=config)
+        overprot.main(family, sample_size, directory, config=config, domains=domains)
         return None
     except Exception as ex:
         error = traceback.format_exc()
@@ -58,8 +64,6 @@ def family_callback(result: lib_multiprocessing.JobResult, directory: Path):
     else:
         with open(directory/'succeeded_families.txt', 'a') as w:
             print(family, file=w)
-
-
 
 def collect_results(families: List[str], input_dir: Path, path_parts: List[str], output_dir: Path, 
         zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False,
@@ -101,6 +105,32 @@ def collect_results(families: List[str], input_dir: Path, path_parts: List[str],
                 print('Missing results/ directory:', family, file=sys.stderr)
     return missing
 
+def get_domain_lists(families: List[str], outdir: Path, collected_output_json: Optional[Path], collected_output_txt: Optional[Path] = None) -> None:
+    outdir.mkdir(parents=True, exist_ok=True)
+    with ProgressBar(len(families), title=f'Getting domain lists for {len(families)} families') as bar:
+        for family in families:
+            with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
+                domains_from_pdbeapi.main(family, join_domains_in_chain=True)
+            bar.step()
+    if collected_output_json is not None or collected_output_txt is not None:
+        collected = {}
+        for family in families:
+            with open(outdir/f'{family}.json') as r:
+                js = json.load(r)
+            collected[family] = js
+    if collected_output_json is not None:
+        lib.dump_json(collected, collected_output_json)
+    if collected_output_txt is not None:
+        domain_list = []
+        for family, pdb2doms in collected.items():
+            for pdb, doms in pdb2doms.items():
+                for dom in doms:
+                    domain_list.append((family, dom['domain'], dom['pdb'], dom['chain_id'], dom['ranges'] ))
+        domain_list.sort()
+        with open(collected_output_txt, 'w') as w:
+            for domain in domain_list:
+                print(*domain, sep='\t', file=w)
+
 
 #  MAIN  #####################################################################################
 
@@ -124,6 +154,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
          out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
+        start_time = datetime.now().astimezone()
         print('Output directory:', directory)
         directory.mkdir(parents=True, exist_ok=True)
         if download_family_list_by_size:
@@ -136,6 +167,9 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
         text = family_list_file.read_text()
         families = text.split()
         print('Number of families:', len(families))
+        get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_txt=directory/'domain_list.txt')
+        get_cath_example_domains.main(output=directory/'cath_example_domains.txt')
+        get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
         out_err_dir = directory/'stdout_stderr'
         out_err_dir.mkdir(exist_ok=True)
         current_dir = directory/'current'
@@ -149,7 +183,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
                 name=family, 
                 func=process_family, 
                 args=(family, sample_size, directory/'families'/family),
-                kwargs={'config': config}, 
+                kwargs={'config': config, 'domains': directory/'domain_lists'/f'{family}.json'}, 
                 stdout=current_dir/f'{family}-out.txt',
                 stderr=current_dir/f'{family}-err.txt'
             ) for family in families]
@@ -170,6 +204,12 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
             with open(directory/'missing_results.txt', 'w') as w:
                 for family in missing_families:
                     print(family, file=w)
+            lib_sh.cp(directory/'domain_list.json', directory/'collected_results')
+            lib_sh.cp(directory/'domain_list.txt', directory/'collected_results')
+            lib_sh.cp(directory/'cath_example_domains.txt', directory/'collected_results')
+            lib_sh.cp(directory/'cath_b_names_options.json', directory/'collected_results')
+            (directory/'collected_results'/'last_update.txt').write_text(start_time.strftime('%d %B %Y').lstrip('0'))
+            (directory/'collected_results'/'last_update_iso.txt').write_text(start_time.isoformat(timespec='seconds'))
         succeeded = sum(1 for res in results if res.result is None)
         failed = sum(1 for res in results if res.result is not None)
         print('Succeeded:', succeeded, 'Failed:', failed)

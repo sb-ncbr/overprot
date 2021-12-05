@@ -12,13 +12,13 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-#  CONSTANTS  ################################################################################
+from .libs.lib_io import RedirectIO
 
+#  CONSTANTS  ################################################################################
 
 URL = 'http://cathdb.info/version/v4_3_0/api/rest/cathtree/from_cath_id_to_depth/root/4?content-type=application/json'
 
 #  FUNCTIONS  ################################################################################
-
 
 #  MAIN  #####################################################################################
 
@@ -26,11 +26,12 @@ def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input_json', help=f'Input JSON (default: download from {URL})', type=Path)
+    parser.add_argument('--output', help=f'Output file (default: stdout)', type=Path)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(input_json: Optional[Path] = None) -> Optional[int]:
+def main(input_json: Optional[Path] = None, output: Optional[Path] = None) -> Optional[int]:
     # TODO add parameters
     '''Foo'''
     # TODO add docstring
@@ -42,7 +43,8 @@ def main(input_json: Optional[Path] = None) -> Optional[int]:
     else: 
         with open(input_json) as f:
             js = json.load(f)
-    process_node(js)
+    with RedirectIO(stdout=output):
+        process_node(js)
     
 def process_node(js: dict) -> None:
     node_id = js.get('cath_id', js['cath_id_padded'])

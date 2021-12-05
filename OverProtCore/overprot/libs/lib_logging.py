@@ -18,14 +18,18 @@ class Timing:
     def __enter__(self):
         self.t0 = datetime.now()
         return self
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         dt = datetime.now() - self.t0
         self.time = dt
         if not self.mute:
+            message = f'Timing:\t{dt}\t'
+            if exc_type is not None:
+                message += '[Failed] '
             if self.name is not None:
-                message = f'Timing:\t{dt}\t{self.name}'
-            else:
-                message = f'Timing:\t{dt}'
+                message += self.name
+                # message = f'Timing:\t{dt}\t{self.name}'
+            # else:
+                # message = f'Timing:\t{dt}'
             print(message, file=self.file)
 
 
@@ -67,7 +71,7 @@ class ProgressBar:
             self.writer.write('\n')
             self.writer.flush()
         if self.timing is not None:
-            self.timing.__exit__()
+            self.timing.__exit__(exc_type, exc_value, exc_traceback)
 
     # def start(self):
     #     if not self.mute:
