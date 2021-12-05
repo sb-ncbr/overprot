@@ -18,6 +18,7 @@ from . import lib_sh
 from . import lib_run
 from . import lib_domains
 from .lib_logging import Timing, ProgressBar
+from .lib_io import RedirectIO
 from .lib_domains import Domain
 from .lib_dependencies import PYTHON, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
 
@@ -60,14 +61,24 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
         lib.log(f'Skipping SSA computation (all files already exist)')
     else:
         stdout_file, stderr_file = get_out_err_files(directory, append=append_outputs)
-        with ProgressBar(len(domains), title='Computing SSA', mute = not progress_bar) as bar:
-            for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
-                append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
-                append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
-                lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
-                    stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+
+        # # Version with dotnet per domain
+        # with ProgressBar(len(domains), title='Computing SSA', mute = not progress_bar) as bar:
+        #     for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
+        #         append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
+        #         append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
+        #         lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
+        #             stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+        #         lib_sh.mv(detected_file, sse_file)
+        #         bar.step()
+        # Version with a single dotnet (multi-domain mode)
+        
+        with Timing('Computing SSA', mute = not progress_bar):
+            domains_string = ';'.join(f'{domain.name},{domain.chain}' for domain in domains)
+            lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, domains_string, 
+                stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+            for detected_file, sse_file in zip(detected_sse_files, sse_files):
                 lib_sh.mv(detected_file, sse_file)
-                bar.step()
 
     failed_domains = [domain.name for domain, sse_file in zip(domains, sse_files) if not sse_file.is_file()]
     if len(failed_domains) > 0:
@@ -92,22 +103,29 @@ def compute_distance_matrices(samples, directory: Path, append_outputs: bool = T
         lib_sh.rm(directory / 'template-smooth.pdb', ignore_errors=True)
 
 def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, append_outputs=True, extra_options='', outdirectory: Optional[Path] = None):
-    samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
-    lib.dump_json(samples_by_pdb, directory/'samples_by_pdb.json', minify=True)
     shutil.copy(directory/'consensus.sses.json', directory/'consensus-template.sses.json')
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
-    print('Running SecStrAnnotator:')
-    lib_run.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
-        '--dll', SECSTRANNOTATOR_DLL, 
-        '--threads', '8', 
-        '--options', f'{options} ', 
-        directory, 
-        'consensus',
-        directory/'samples_by_pdb.json',
-        timing=True)
-    print()
     if outdirectory is not None:
         outdirectory.mkdir(parents=True, exist_ok=True)
+
+    # # Version with dotnet per domain (via SecStrAnnotator_batch.py)
+    # samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
+    # lib.dump_json(samples_by_pdb, directory/'samples_by_pdb.json', minify=True)
+    # lib_run.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
+    #     '--dll', SECSTRANNOTATOR_DLL, 
+    #     '--threads', '8', 
+    #     '--options', f'{options} ', 
+    #     directory, 
+    #     'consensus',
+    #     directory/'samples_by_pdb.json',
+    #     timing=True)
+
+    # Version with a single dotnet (multi-domain mode)
+    with Timing('Running SecStrAnnotator'), RedirectIO(stdout=outdirectory/'stdout.txt', stderr=outdirectory/'stderr.txt'):
+        domains_string = ';'.join(f'{domain.name},{domain.chain}' for domain in domains)
+        lib_run.run_dotnet(SECSTRANNOTATOR_DLL, *options.split(), directory, 'consensus', domains_string)
+    
+    if outdirectory is not None:
         for domain in domains:
             filename = f'{domain.name}-annotated.sses.json'
             lib_sh.mv(directory/filename, outdirectory/filename)

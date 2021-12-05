@@ -18,6 +18,8 @@ import shutil
 from .libs import lib
 from .libs import lib_sh
 from .libs import lib_multiprocessing
+from .libs.lib_io import RedirectIO
+from .libs.lib_logging import Timing
 from . import get_cath_family_list
 from . import overprot
 
@@ -112,63 +114,65 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
     parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)
     parser.add_argument('--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
+    parser.add_argument('--out', help='File for stdout.', type=Path)
+    parser.add_argument('--err', help='File for stderr.', type=Path)
     args = parser.parse_args()
     return vars(args)
 
 
 def main(family_list_file: Path, sample_size: int|str|None, directory: Path, 
-         download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None) -> Optional[int]:
-    '''Foo'''
-    # TODO add docstring
-    print('Output directory:', directory)
-    directory.mkdir(parents=True, exist_ok=True)
-    if download_family_list_by_size:
-        family_list_file = directory/'families.txt'
-        get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file, sort_by_size=True)
-    elif download_family_list:
-        family_list_file = directory/'families.txt'
-        get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file)
-    print('Family list file:', family_list_file)
-    text = family_list_file.read_text()
-    families = text.split()
-    print('Number of families:', len(families))
-    out_err_dir = directory/'stdout_stderr'
-    out_err_dir.mkdir(exist_ok=True)
-    current_dir = directory/'current'
-    current_dir.mkdir(exist_ok=True)
-    (directory/'families.txt').write_text('\n'.join(families))
-    (directory/'failed_families.txt').write_text('')
-    (directory/'succeeded_families.txt').write_text('')
-    (directory/'errors.txt').write_text('')
-    jobs = [
-        lib_multiprocessing.Job(
-            name=family, 
-            func=process_family, 
-            args=(family, sample_size, directory/'families'/family),
-            kwargs={'config': config}, 
-            stdout=current_dir/f'{family}-out.txt',
-            stderr=current_dir/f'{family}-err.txt'
-        ) for family in families]
-    results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=None, progress_bar=True, 
-        callback = lambda res: family_callback(res, directory))
-    lib_sh.rm(current_dir, recursive=True, ignore_errors=True)
-    if collect:
-        collect_results(families, directory, ['results'], directory/'collected_results'/'zip_results', zip=True)
-        collect_results(families, directory, ['results', 'diagram.json'], directory/'collected_results'/'diagrams', hide_missing=True)
-        collect_results(families, directory, ['lists'], directory/'collected_results'/'families', include_original_name=False)
-        collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
-        collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
-        bulk_dir = directory/'collected_results'/'bulk'
-        bulk_dir.mkdir()
-        # shutil.make_archive(str(bulk_dir._sub('consensus')), 'zip', str(directory._sub('collected_results', 'consensus')))
-        lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
-        missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
-        with open(directory/'missing_results.txt', 'w') as w:
-            for family in missing_families:
-                print(family, file=w)
-    succeeded = sum(1 for res in results if res.result is None)
-    failed = sum(1 for res in results if res.result is not None)
-    print('Succeeded:', succeeded, 'Failed:', failed)
+         download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
+         out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+    with RedirectIO(stdout=out, stderr=err), Timing('Total'):
+        print('Output directory:', directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        if download_family_list_by_size:
+            family_list_file = directory/'families.txt'
+            get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file, sort_by_size=True)
+        elif download_family_list:
+            family_list_file = directory/'families.txt'
+            get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file)
+        print('Family list file:', family_list_file)
+        text = family_list_file.read_text()
+        families = text.split()
+        print('Number of families:', len(families))
+        out_err_dir = directory/'stdout_stderr'
+        out_err_dir.mkdir(exist_ok=True)
+        current_dir = directory/'current'
+        current_dir.mkdir(exist_ok=True)
+        (directory/'families.txt').write_text('\n'.join(families))
+        (directory/'failed_families.txt').write_text('')
+        (directory/'succeeded_families.txt').write_text('')
+        (directory/'errors.txt').write_text('')
+        jobs = [
+            lib_multiprocessing.Job(
+                name=family, 
+                func=process_family, 
+                args=(family, sample_size, directory/'families'/family),
+                kwargs={'config': config}, 
+                stdout=current_dir/f'{family}-out.txt',
+                stderr=current_dir/f'{family}-err.txt'
+            ) for family in families]
+        results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=None, progress_bar=True, 
+            callback = lambda res: family_callback(res, directory))
+        lib_sh.rm(current_dir, recursive=True, ignore_errors=True)
+        if collect:
+            collect_results(families, directory, ['results'], directory/'collected_results'/'zip_results', zip=True)
+            collect_results(families, directory, ['results', 'diagram.json'], directory/'collected_results'/'diagrams', hide_missing=True)
+            collect_results(families, directory, ['lists'], directory/'collected_results'/'families', include_original_name=False)
+            collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
+            collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
+            bulk_dir = directory/'collected_results'/'bulk'
+            bulk_dir.mkdir()
+            # shutil.make_archive(str(bulk_dir._sub('consensus')), 'zip', str(directory._sub('collected_results', 'consensus')))
+            lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
+            missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
+            with open(directory/'missing_results.txt', 'w') as w:
+                for family in missing_families:
+                    print(family, file=w)
+        succeeded = sum(1 for res in results if res.result is None)
+        failed = sum(1 for res in results if res.result is not None)
+        print('Succeeded:', succeeded, 'Failed:', failed)
     return None
 
 def _main():

@@ -281,19 +281,21 @@ def write_clustered_sses(directory: Path, domain_names: List[str], sse_table, pr
         sse['variance'] = variances[j]
         sse['covariance'] = covariances[j].tolist()
         consensus_sses.append(sse)
-    consensus: Dict[str, Dict[str, Any]] = {'consensus': {'secondary_structure_elements': consensus_sses}}
+    consensus: Dict[str, Any] = {}
+    consensus['n_sample'] = m
+    consensus['secondary_structure_elements'] = consensus_sses
     if edges is not None:
         beta_connectivity = [ (new_labels[s1], new_labels[s2], typ) for s1, s2, typ in edges ]
         sheets = lib_graphs.connected_components(None, edges)
         for i_sheet, sheet in enumerate(sheets):
             for i_strand in sheet:
                 consensus_sses[i_strand]['sheet_id'] = i_sheet + 1
-        consensus['consensus']['beta_connectivity'] = beta_connectivity
+        consensus['beta_connectivity'] = beta_connectivity
     else:
         for sse in consensus_sses:
             if sse is not None and sse['label'].startswith('E'):
                 sse['sheet_id'] = 1
-    lib.dump_json(consensus, directory/'consensus.sses.json')
+    lib.dump_json({'consensus': consensus}, directory/'consensus.sses.json')
 
     # Write statistics
     occurences = [ size / m for size in sizes ]

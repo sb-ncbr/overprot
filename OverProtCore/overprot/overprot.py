@@ -58,7 +58,7 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
          domains: Optional[Path] = None, structure_source: Optional[str] = None, 
          out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
     
-    with RedirectIO(stdout=out, stderr=err):
+    with RedirectIO(stdout=out, stderr=err), Timing('Total'):
         if config is None:
             config = DEFAULT_CONFIG_FILE
         
@@ -66,6 +66,7 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
         if structure_source is not None and structure_source != '':
             conf.download.structure_sources.insert(0, structure_source)
         results = conf.files.results_dir
+        sample_for_annotation = outdir/'sample-whole_family.json' if conf.overprot.annotate_whole_family else outdir/'sample.json'
 
         print('Configuration:', config)
         print('Output directory:', outdir)
@@ -118,7 +119,6 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
         # Download structures in CIF, cut the domains and save them as CIF and PDB
         print('\n::: DOWNLOAD :::')
         with Timing('Download structures'):
-            sample_for_annotation = outdir/'sample-whole_family.json' if conf.overprot.annotate_whole_family else outdir/'sample.json'
             lib_run.run_dotnet(STRUCTURE_CUTTER_DLL, sample_for_annotation, '--sources', ' '.join(conf.download.structure_sources), 
                         '--cif_outdir', outdir/'cif', '--pdb_outdir', outdir/'pdb', 
                         '--failures', outdir/'StructureCutter-failures.txt', 

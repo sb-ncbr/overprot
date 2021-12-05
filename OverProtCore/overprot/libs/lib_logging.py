@@ -39,10 +39,10 @@ class ProgressBar:
         self.n_steps = n_steps # expected number of steps
         self.prefix = prefix + ' ' if prefix is not None else ''
         self.suffix = ' ' + suffix if suffix is not None else ''
-        self.width = width if width is not None else shutil.get_terminal_size().columns
-        self.width -= len(self.prefix) + len(self.suffix) + 10  # self.width -= len(prefix) + len(suffix) + 8
-        self.title = (' '+title+' ')[0:min(len(title)+2, self.width)]
         self.writer = sys.stdout if writer == 'stdout' else sys.stderr if writer == 'stderr' else writer  # writer if writer is not None else sys.stdout
+        self.width = width or _get_width(self.writer)  # shutil.get_terminal_size().columns
+        self.width -= len(self.prefix) + len(self.suffix) + 10
+        self.title = (' '+title+' ')[0:min(len(title)+2, self.width)]
         self.done = 0 # number of completed steps
         self.shown = 0 # number of shown symbols
         self.mute = mute
@@ -105,3 +105,9 @@ class ProgressBar:
     #     if self.timing is not None:
     #         self.timing.__exit__()
 
+
+def _get_width(writer: TextIO) -> int:
+    if writer.isatty():
+        return shutil.get_terminal_size().columns
+    else:
+        return 80

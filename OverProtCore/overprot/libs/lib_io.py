@@ -77,7 +77,8 @@ class Tee:
     def flush(self, *args, **kwargs):
         for out in self.outputs:
             out.flush(*args, **kwargs)
-
+    def isatty(self) -> bool:
+        return False
 
 @contextmanager
 def maybe_open(filename: Optional[str], *args, default=None, **kwargs):
