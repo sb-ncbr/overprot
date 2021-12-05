@@ -17,7 +17,7 @@ JOB_CLEANUP_TIMEOUT = 600  # seconds, extra time for cleanup in case that job ti
 COMPLETED_JOB_STORING_DAYS = 14  # Currently not implemented
 
 
-LAST_UPDATE_FILE = f'{DATA_DIR}/db/LAST_UPDATE.txt'
+LAST_UPDATE_FILE = f'{DATA_DIR}/db/last_update.txt'
 DB_DIR = f'{VAR_DIR}/jobs'
 DB_DIR_PENDING = f'{DB_DIR}/Pending'
 DB_DIR_RUNNING = f'{DB_DIR}/Running'

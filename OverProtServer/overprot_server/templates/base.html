@@ -45,10 +45,10 @@
             </button>
             <div class="navbar-collapse collapse" id="navbarSupportedContent">
 
-                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/view" onsubmit="normalize_input_text('#family-input-on-panel');">
+                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/search" onsubmit="normalize_input_text('#family-input-on-panel');">
                     <div class="autocomplete">
-                        <input id="family-input-on-panel" class="form-control family-input" name="family_id" type="search" placeholder="Family ID, e.g. 1.10.630.10" 
-                            aria-label="Search" required>
+                        <input id="family-input-on-panel" class="form-control family-input" name="q" type="search" placeholder="e.g. 1.10.630.10, 2nnj, 2nnjA00" 
+                            aria-label="Search" title="Enter CATH family ID or PDB ID or CATH domain ID" required>
                         <!-- <input class="form-control" type="submit" value="Go">
                         <button class="btn btn-outline-success" type="submit">Go</button> -->
                         <button class="btn btn-outline-primary" type="submit">Go</button>

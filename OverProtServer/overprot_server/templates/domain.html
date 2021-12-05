@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+
+{% block title %} OverProt - PDB {{pdb}} {% endblock %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col">
+        <h2>
+            Domain: {{domain}}
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <table>
+            <tr>
+                <th>Family:</th>
+                <td><a href="/view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a></td>
+            </tr>
+            <tr>
+                <th>PDB:</th>
+                <td><a href="/pdb/{{pdb}}" title="Go to PDB entry {{pdb}}">{{pdb}}</a></td>
+            </tr>
+            <tr>
+                <th>Domain:</th>
+                <td><a target="_blank" href="/view_domain?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}} &ndash; Interactive view</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+    {% endblock %}

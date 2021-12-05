@@ -8,6 +8,7 @@ from typing import Any, NamedTuple, Optional, Union, Dict, Set
 
 from .constants import DATA_DIR, DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_ARCHIVED, DB_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE, LAST_UPDATE_FILE
 from .data_caching import DataCache
+from .searching import Searcher
 from . import domain_parsing
 from . import queuing
 
@@ -116,6 +117,38 @@ def job(job_id: str) -> Any:
         raise AssertionError(f'Unknow job status: {job_status.status}')
 
 
+@app.route('/search', methods=['GET'])
+def search() -> Any:
+    values = flask.request.values 
+    query: str = values.get('q', '')
+    query = query.strip()
+    if _family_exists(query):
+        return flask.redirect(flask.url_for('view', family_id=query))
+    elif SEARCHER_CACHE.value.has_pdb(query):
+        return flask.redirect(flask.url_for('pdb', pdb_id=query))
+    elif SEARCHER_CACHE.value.has_domain(query):
+        return flask.redirect(flask.url_for('domain', domain_id=query))
+    else:
+        return flask.render_template('search_fail.html', entity=query)
+
+@app.route('/pdb/<string:pdb_id>', methods=['GET'])
+def pdb(pdb_id: str) -> Any:
+    if SEARCHER_CACHE.value.has_pdb(pdb_id):
+        domains_families = SEARCHER_CACHE.value.get_domains_families_for_pdb(pdb_id)
+        return flask.render_template('pdb.html', pdb=pdb_id, n_domains=len(domains_families), domains_families=domains_families)
+    else:
+        return flask.render_template('404.html', entity_type='PDB entry', entity_id=pdb_id), HTTPStatus.NOT_FOUND
+
+@app.route('/domain/<string:domain_id>', methods=['GET'])
+def domain(domain_id: str) -> Any:
+    if SEARCHER_CACHE.value.has_domain(domain_id):
+        pdb_id = SEARCHER_CACHE.value.get_pdb_for_domain(domain_id)
+        family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
+        return flask.render_template('domain.html', domain=domain_id, pdb=pdb_id, family=family_id)
+    else:
+        return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
+
+
 @app.route('/view', methods=['GET'])
 def view() -> Any:
     values = flask.request.values 
@@ -128,13 +161,14 @@ def view() -> Any:
             example_domain = EXAMPLE_DOMAINS_CACHE.value.get(family_id)
             return flask.render_template('view.html', family_id=family_id, family_info=fam_info, example_domain=example_domain, last_update=LAST_UPDATE_CACHE.value)
         else:
-            return flask.render_template('search_fail.html', family_id=family_id)
+            return flask.render_template('404.html', entity_type='Family', entity_id=family_id), HTTPStatus.NOT_FOUND
 
 @app.route('/view_domain', methods=['GET'])
 def view_domain() -> Any:
     values = flask.request.values 
     family_id = values.get('family_id', None)
     domain_id = values.get('domain_id', None)
+    return flask.redirect(f'/static/integration/index.html?family_id={family_id}&domain_id={domain_id}')  # debug
     if family_id is None:
         return flask.redirect(flask.url_for('view_domain', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
     else:
@@ -142,7 +176,7 @@ def view_domain() -> Any:
             fam_info = _family_info(family_id)
             return flask.render_template('view_domain.html', family_id=family_id, domain_id=domain_id, family_info=fam_info, last_update=LAST_UPDATE_CACHE.value)
         else:
-            return flask.render_template('search_fail.html', family_id=family_id)
+            return flask.render_template('search_fail.html', entity=family_id)
     # TODO check if domain exists
 
 @app.route('/favicon.ico')
@@ -218,6 +252,7 @@ def _calculate_time_to_refresh(elapsed_time: timedelta) -> int:
         return -elapsed_seconds % REFRESH_TIMES[-1]
 
 def _family_exists(family_id: str) -> bool:
+    # return SEARCHER_CACHE.value.has_family(family_id)
     return family_id in FAMILY_SET_CACHE.value
     # return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
 
@@ -282,5 +317,6 @@ def _get_last_update() -> str:
  
 
 EXAMPLE_DOMAINS_CACHE = DataCache(_get_example_domains)
+SEARCHER_CACHE = DataCache(lambda: Searcher(Path(DATA_DIR, 'db', 'domain_list.txt')))
 FAMILY_SET_CACHE = DataCache(_get_family_set)
 LAST_UPDATE_CACHE = DataCache(_get_last_update)
