@@ -105,13 +105,21 @@ def collect_results(families: List[str], input_dir: Path, path_parts: List[str],
                 print('Missing results/ directory:', family, file=sys.stderr)
     return missing
 
-def get_domain_lists(families: List[str], outdir: Path, collected_output_json: Optional[Path], collected_output_txt: Optional[Path] = None) -> None:
+def _download_domains(outdir: Path, family: str) -> None:
+    with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
+        domains_from_pdbeapi.main(family, join_domains_in_chain=True)
+
+def get_domain_lists(families: List[str], outdir: Path, collected_output_json: Optional[Path], collected_output_txt: Optional[Path] = None, 
+                     processes: Optional[int] = None) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
-    with ProgressBar(len(families), title=f'Getting domain lists for {len(families)} families') as bar:
-        for family in families:
-            with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
-                domains_from_pdbeapi.main(family, join_domains_in_chain=True)
-            bar.step()
+    print(f'Downloading domain lists for {len(families)} families:')
+    jobs = [lib_multiprocessing.Job(name=family, func=_download_domains, args=(outdir, family)) for family in families]
+    lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True)
+    # with ProgressBar(len(families), title=f'Getting domain lists for {len(families)} families') as bar:
+    #     for family in families:
+    #         with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
+    #             domains_from_pdbeapi.main(family, join_domains_in_chain=True)
+    #         bar.step()
     if collected_output_json is not None or collected_output_txt is not None:
         collected = {}
         for family in families:
@@ -144,6 +152,7 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
     parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)
     parser.add_argument('--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
+    parser.add_argument('--processes', help='Number of processes to run (default: number of CPUs)', type=int)
     parser.add_argument('--out', help='File for stdout.', type=Path)
     parser.add_argument('--err', help='File for stderr.', type=Path)
     args = parser.parse_args()
@@ -152,7 +161,7 @@ def parse_args() -> Dict[str, Any]:
 
 def main(family_list_file: Path, sample_size: int|str|None, directory: Path, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
-         out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+         processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
         start_time = datetime.now().astimezone()
         print('Output directory:', directory)
@@ -167,7 +176,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
         text = family_list_file.read_text()
         families = text.split()
         print('Number of families:', len(families))
-        get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_txt=directory/'domain_list.txt')
+        get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_txt=directory/'domain_list.txt', processes=processes)
         get_cath_example_domains.main(output=directory/'cath_example_domains.txt')
         get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
         out_err_dir = directory/'stdout_stderr'
@@ -187,7 +196,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
                 stdout=current_dir/f'{family}-out.txt',
                 stderr=current_dir/f'{family}-err.txt'
             ) for family in families]
-        results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=None, progress_bar=True, 
+        results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True, 
             callback = lambda res: family_callback(res, directory))
         lib_sh.rm(current_dir, recursive=True, ignore_errors=True)
         if collect:

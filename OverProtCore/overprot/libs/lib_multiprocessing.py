@@ -15,10 +15,10 @@ from .lib_logging import ProgressBar
 class Job(NamedTuple):
     name: str
     func: Callable
-    args: Sequence
-    kwargs: Mapping
-    stdout: Optional[Path]
-    stderr: Optional[Path]
+    args: Sequence = ()
+    kwargs: Mapping = {}
+    stdout: Optional[Path] = None
+    stderr: Optional[Path] = None
 
 class JobResult(NamedTuple):
     job: Job
