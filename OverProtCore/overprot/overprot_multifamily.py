@@ -115,11 +115,6 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
     print(f'Downloading domain lists for {len(families)} families:')
     jobs = [lib_multiprocessing.Job(name=family, func=_download_domains, args=(outdir, family)) for family in families]
     lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True)
-    # with ProgressBar(len(families), title=f'Getting domain lists for {len(families)} families') as bar:
-    #     for family in families:
-    #         with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
-    #             domains_from_pdbeapi.main(family, join_domains_in_chain=True)
-    #         bar.step()
     if collected_output_json is not None or collected_output_txt is not None:
         collected = {}
         for family in families:
@@ -152,6 +147,7 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
     parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)
     parser.add_argument('--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
+    parser.add_argument('--only_get_lists', help='Get domain lists for families and exit', action='store_true')
     parser.add_argument('--processes', help='Number of processes to run (default: number of CPUs)', type=int)
     parser.add_argument('--out', help='File for stdout.', type=Path)
     parser.add_argument('--err', help='File for stderr.', type=Path)
@@ -161,7 +157,7 @@ def parse_args() -> Dict[str, Any]:
 
 def main(family_list_file: Path, sample_size: int|str|None, directory: Path, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
-         processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+         only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
         start_time = datetime.now().astimezone()
         print('Output directory:', directory)
@@ -179,6 +175,8 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
         get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_txt=directory/'domain_list.txt', processes=processes)
         get_cath_example_domains.main(output=directory/'cath_example_domains.txt')
         get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
+        if only_get_lists:
+            return None
         out_err_dir = directory/'stdout_stderr'
         out_err_dir.mkdir(exist_ok=True)
         current_dir = directory/'current'
@@ -206,8 +204,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
             collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
             collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
             bulk_dir = directory/'collected_results'/'bulk'
-            bulk_dir.mkdir()
-            # shutil.make_archive(str(bulk_dir._sub('consensus')), 'zip', str(directory._sub('collected_results', 'consensus')))
+            bulk_dir.mkdir(parents=True, exist_ok=True)
             lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
             missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
             with open(directory/'missing_results.txt', 'w') as w:
@@ -222,7 +219,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
         succeeded = sum(1 for res in results if res.result is None)
         failed = sum(1 for res in results if res.result is not None)
         print('Succeeded:', succeeded, 'Failed:', failed)
-    return None
+        return None
 
 def _main():
     args = parse_args()

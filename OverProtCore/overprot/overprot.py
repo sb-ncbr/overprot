@@ -168,10 +168,12 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
             with RedirectIO(tee_stdout=outdir/'making_guide_tree.log'):
                 make_guide_tree.main(outdir/'cif_cealign', show_tree=False, progress_bar=True)
             with RedirectIO(tee_stdout=outdir/'clustering.log'):
-                acyclic_clustering.main(outdir/'cif_cealign', force_ssa=conf.overprot.force_ssa, secstrannotator_rematching=conf.overprot.secstrannotator_rematching, min_occurrence=0, fallback=60)
+                acyclic_clustering.main(outdir/'cif_cealign', force_ssa=conf.overprot.force_ssa, secstrannotator_rematching=conf.overprot.secstrannotator_rematching, 
+                    min_occurrence=0, fallback=30)
             if conf.overprot.annotate_whole_family:
                 with Timing('Annotation with SecStrAnnotator'):
-                    lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], outdir/'cif_cealign', extra_options='--fallback 60', outdirectory=outdir/'annotated_sses')
+                    lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], outdir/'cif_cealign', 
+                                                               extra_options='--fallback 30', outdirectory=outdir/'annotated_sses')
 
         # Tidy up
         (outdir/results).mkdir(parents=True, exist_ok=True)
