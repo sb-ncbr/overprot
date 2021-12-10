@@ -223,8 +223,6 @@ class VPTree(AbstractSimilarityTree[K, V]):
                     #     print(d_p_q_low, query_dist[node.pivot], d_p_q_high, current_range, sep='\t')
                     can_be_in = d_p_q_low < node.r + current_range and query_dist[node.pivot] < node.r + current_range
                     can_be_out = d_p_q_high > node.r - current_range and query_dist[node.pivot] > node.r - current_range
-                    if node.pivot not in query_dist:
-                        print('picovina')
                 else:
                     d_p_q = query_dist[node.pivot]
                     can_be_in = d_p_q < node.r + current_range

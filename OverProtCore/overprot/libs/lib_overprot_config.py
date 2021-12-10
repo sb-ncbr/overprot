@@ -4,7 +4,7 @@ Configuration for overprot.py
 
 from typing import List, Literal
 
-from .lib_config import ConfigSection, Config
+from .lib_config import ConfigSection, Config, ConfigException
 
 
 class OverProtConfig(Config):
@@ -19,7 +19,10 @@ class OverProtConfig(Config):
     class _OverProtSection(ConfigSection):
         force_ssa: bool
         secstrannotator_rematching: bool
+    class _AnnotationSection(ConfigSection):
         annotate_whole_family: bool
+        occurrence_threshold: float
+        fallback: int
     class _FilesSection(ConfigSection):
         results_dir: str
         clean_pdb_cif: bool
@@ -32,5 +35,6 @@ class OverProtConfig(Config):
     sample_selection: _SampleSelectionSection
     mapsci: _MapsciSection
     overprot: _OverProtSection
+    annotation: _AnnotationSection
     files: _FilesSection
     visualization: _VisualizationSection

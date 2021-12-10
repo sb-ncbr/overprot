@@ -19,7 +19,7 @@ from .libs import lib_sses
 from .libs import lib_pymol
 from .libs.lib_logging import Timing
 from .libs.lib_io import RedirectIO
-from .libs.lib_overprot_config import OverProtConfig
+from .libs.lib_overprot_config import OverProtConfig, ConfigException
 
 from . import domains_from_pdbeapi
 from . import select_random_domains
@@ -57,16 +57,23 @@ def parse_args() -> Dict[str, Any]:
 def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
          domains: Optional[Path] = None, structure_source: Optional[str] = None, 
          out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+
+    if config is None:
+        config = DEFAULT_CONFIG_FILE
+    try:
+        conf = OverProtConfig(config, allow_extra=False, allow_missing=False)
+    except OSError:
+        print(f'ERROR: Cannot open configuration file: {config}', file=sys.stderr)
+        return 1
+    except ConfigException as ex:
+        print('ERROR:', ex, file=sys.stderr)
+        return 2
     
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
-        if config is None:
-            config = DEFAULT_CONFIG_FILE
-        
-        conf = OverProtConfig(config, allow_extra=False, allow_missing=False)
         if structure_source is not None and structure_source != '':
             conf.download.structure_sources.insert(0, structure_source)
         results = conf.files.results_dir
-        sample_for_annotation = outdir/'sample-whole_family.json' if conf.overprot.annotate_whole_family else outdir/'sample.json'
+        sample_for_annotation = outdir/'sample-whole_family.json' if conf.annotation.annotate_whole_family else outdir/'sample.json'
 
         print('Configuration:', config)
         print('Output directory:', outdir)
@@ -107,7 +114,7 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
             with contextlib.redirect_stderr(sys.stdout):
                 with RedirectIO(stdout=outdir/'sample.json'):
                     select_random_domains.main(outdir/'family.json', size=sample_size, or_all=conf.sample_selection.or_all, unique_pdb=conf.sample_selection.unique_pdb)
-            if conf.overprot.annotate_whole_family:
+            if conf.annotation.annotate_whole_family:
                 with RedirectIO(stdout=outdir/'sample-whole_family.json'):
                     select_random_domains.main(outdir/'family.json', size='all', unique_pdb=False)
                 
@@ -170,10 +177,13 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
             with RedirectIO(tee_stdout=outdir/'clustering.log'):
                 acyclic_clustering.main(outdir/'cif_cealign', force_ssa=conf.overprot.force_ssa, secstrannotator_rematching=conf.overprot.secstrannotator_rematching, 
                     min_occurrence=0, fallback=30)
-            if conf.overprot.annotate_whole_family:
-                with Timing('Annotation with SecStrAnnotator'):
-                    lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], outdir/'cif_cealign', 
-                                                               extra_options='--fallback 30 --unannotated', outdirectory=outdir/'annotated_sses')
+        
+        # Annotate whole family
+        if conf.annotation.annotate_whole_family:
+            print('\n::: ANNOTATING :::')
+            with Timing('Annotation with SecStrAnnotator'):
+                lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], outdir/'cif_cealign', 
+                                                            extra_options='--fallback 30 --unannotated', occurrence_threshold=0.9, outdirectory=outdir/'annotated_sses')
 
         # Tidy up
         (outdir/results).mkdir(parents=True, exist_ok=True)

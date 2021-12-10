@@ -10,6 +10,9 @@ from typing import List,  Dict, Optional, Literal, Final, Type, Union, get_origi
 
 _ConfigOptionValue = Union[str, int, float, bool, Path, List[str], List[int], List[float], List[bool], List[Path]]
 
+class ConfigException(Exception):
+    pass
+
 class ConfigSection(object):
     '''Represents one section of configuration like in .ini file.
     Subclasses of ConfigSection can declare instance variables corresponding to individual options in the section, 
@@ -65,7 +68,8 @@ class ConfigSection(object):
 
         if not allow_extra:
             for option in options:
-                assert option in self.__option_types, f'Extra option {option} in section [{section}] in file {filename}'
+                if option not in self.__option_types:
+                    raise ConfigException(f'Extra option "{option}" in section [{section}] in file {filename}')
         else:
             for option in options:
                 if option not in self.__option_types:
@@ -74,7 +78,8 @@ class ConfigSection(object):
 
         if not allow_missing:
             for option in self.__option_types:
-                assert option in options, f'Missing option {option} in section [{section}] in file {filename}'
+                if option not in options:
+                    raise ConfigException(f'Missing option "{option}" in section [{section}] in file {filename}')
             
         for option in options:
             option_type = self.__option_types.get(option, self.__DEFAULT_TYPE)
@@ -185,7 +190,8 @@ class Config(object):
 
         if not allow_extra:
             for section in loaded_sections:
-                assert section in self.__section_types, f'Extra section [{section}] in {filename}'
+                if section not in self.__section_types:
+                    raise ConfigException(f'Extra section [{section}] in {filename}')
         else:
             for section in loaded_sections:
                 if section not in self.__section_types:
@@ -194,7 +200,8 @@ class Config(object):
 
         if not allow_missing:
             for section in self.__section_types:
-                assert section in loaded_sections, f'Missing section [{section}] in {filename}'
+                if section not in loaded_sections:
+                    raise ConfigException(f'Missing section [{section}] in {filename}')
             
         for section in loaded_sections:
             self.__getattribute__(section)._set_options(parser, section, allow_extra=allow_extra, allow_missing=allow_missing, filename=filename)

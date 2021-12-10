@@ -104,8 +104,26 @@ def compute_distance_matrices(samples, directory: Path, append_outputs: bool = T
             bar.step()
         lib_sh.rm(directory / 'template-smooth.pdb', ignore_errors=True)
 
-def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, append_outputs=True, extra_options='', outdirectory: Optional[Path] = None):
-    shutil.copy(directory/'consensus.sses.json', directory/'consensus-template.sses.json')
+def filter_template_by_occurrence(template: Path, occurrence_threshold: float, output: Path) -> None:
+    if occurrence_threshold == 0.0:
+        shutil.copy(template, output)
+    else:
+        with open(template) as r:
+            js = json.load(r)
+        assert len(js) == 1
+        annot = next(iter(js.values()))
+        sses = annot['secondary_structure_elements']
+        connectivity = annot['beta_connectivity']
+        new_sses = [sse for sse in sses if sse.get('occurrence', 1.0) >= occurrence_threshold]
+        selected = {sse['label'] for sse in new_sses}
+        new_connectivity = [edge for edge in connectivity if edge[0] in selected and edge[1] in selected]
+        annot['secondary_structure_elements'] = new_sses
+        annot['beta_connectivity'] = new_connectivity
+        lib.dump_json(js, output)
+
+def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, append_outputs: bool = True, 
+        extra_options: str = '', occurrence_threshold: float = 0.0, outdirectory: Optional[Path] = None):
+    filter_template_by_occurrence(directory/'consensus.sses.json', occurrence_threshold, directory/'consensus-template.sses.json')
     options = '--ssa file  --align none  --metrictype 3 ' + extra_options
     if outdirectory is not None:
         outdirectory.mkdir(parents=True, exist_ok=True)
