@@ -148,3 +148,9 @@ table.summary th, table.summary td {
   opacity: 0%; 
   z-index: -1;
 }
+
+code {
+  font-family: monospace;
+  font-weight: bold;
+  color: chocolate;
+}

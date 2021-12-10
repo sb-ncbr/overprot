@@ -5,7 +5,8 @@ cd $SW_DIR
 
 export OVERPROT_PYTHON='/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/venv/bin/python'
 export OVERPROT_PY='/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/overprot.py'
-export VAR_DIR='/server_data/overprot_data'
+export VAR_DIR='/home/adam/Workspace/Python/OverProt/docker_mount/var'
+export DATA_DIR='/home/adam/Workspace/Python/OverProt/docker_mount/data'
 
 export RQ_QUEUE='overprot_jobs'
 export N_RQ_WORKERS=8

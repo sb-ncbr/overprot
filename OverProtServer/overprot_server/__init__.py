@@ -124,12 +124,25 @@ def search() -> Any:
     query = query.strip()
     if _family_exists(query):
         return flask.redirect(flask.url_for('view', family_id=query))
-    elif SEARCHER_CACHE.value.has_pdb(query):
-        return flask.redirect(flask.url_for('pdb', pdb_id=query))
-    elif SEARCHER_CACHE.value.has_domain(query):
-        return flask.redirect(flask.url_for('domain', domain_id=query))
-    else:
-        return flask.render_template('search_fail.html', entity=query)
+
+    pdb = SEARCHER_CACHE.value.search_pdb(query)
+    if pdb is not None:
+        return flask.redirect(flask.url_for('pdb', pdb_id=pdb))
+    
+    domain = SEARCHER_CACHE.value.search_domain(query)
+    if domain is not None:
+        return flask.redirect(flask.url_for('domain', domain_id=domain))
+    
+    return flask.render_template('search_fail.html', entity=query)
+    # if SEARCHER_CACHE.value.has_pdb(query.lower()):
+    #     return flask.redirect(flask.url_for('pdb', pdb_id=query.lower()))
+    # elif SEARCHER_CACHE.value.has_domain(query):
+    #     return flask.redirect(flask.url_for('domain', domain_id=query))
+    # else:
+    #     return flask.render_template('search_fail.html', entity=query)
+
+def normalize_domain_id(domain_id: str) -> str:
+    ...
 
 @app.route('/pdb/<string:pdb_id>', methods=['GET'])
 def pdb(pdb_id: str) -> Any:
@@ -144,7 +157,8 @@ def domain(domain_id: str) -> Any:
     if SEARCHER_CACHE.value.has_domain(domain_id):
         pdb_id = SEARCHER_CACHE.value.get_pdb_for_domain(domain_id)
         family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
-        return flask.render_template('domain.html', domain=domain_id, pdb=pdb_id, family=family_id)
+        chain, ranges = SEARCHER_CACHE.value.get_chain_ranges_for_domain(domain_id)
+        return flask.render_template('domain.html', domain=domain_id, pdb=pdb_id, family=family_id, chain=chain, ranges=ranges)
     else:
         return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
 
@@ -186,7 +200,18 @@ def favicon() -> Any:
 
 @app.route('/api_doc')
 def api_doc() -> Any:
-    return flask.render_template('api_doc.html')
+    url_root = flask.request.url_root.rstrip('/')
+    return flask.render_template('api_doc.html', root=url_root)
+
+@app.route('/api/domain/annotation/<string:annot_file>')
+def api_domain_annotation(annot_file: str) -> Any:
+    '''annot_file should be {domain_id}-annotated.sses.json'''
+    subdir = annot_file[1:3]
+    return flask.redirect(f'/data/db/domain/annotation/{subdir}/{annot_file}')
+
+@app.route('/base')  # debug
+def base() -> Any:
+    return ResponseTuple.plain(flask.request.url_root)
 
 @app.route('/diagram/<string:job_id>')
 def diagram(job_id: str) -> Any:
@@ -194,7 +219,6 @@ def diagram(job_id: str) -> Any:
         return flask.send_file(Path(DB_DIR_COMPLETED, job_id, 'results', 'diagram.json'))
     except FileNotFoundError:
         return flask.send_file(Path(DB_DIR_ARCHIVED, job_id, 'results', 'diagram.json'))
-
 
 @app.route('/results/<string:job_id>/<path:file>')
 def results(job_id: str, file: str) -> Any:
@@ -265,7 +289,7 @@ def _family_info(family_id: str) -> Dict[str, str]:
     SEP = ':'
     result = {}
     try:
-        with open(Path(DATA_DIR, 'db', 'families', family_id, f'family_info.txt')) as f:
+        with open(Path(DATA_DIR, 'db', 'family', 'lists', family_id, f'family_info.txt')) as f:
             for line in f:
                 if SEP in line:
                     key, value = line.split(SEP, maxsplit=1)
@@ -297,11 +321,12 @@ def _get_job_file(job_id: str, *path_parts: str) -> Path:
     raise FileNotFoundError('/'.join(['...', job_id, *path_parts]))
 
 def _get_example_domains() -> Dict[str, str]:
-    with open(Path(DATA_DIR, 'db', 'cath_example_domains.txt')) as f:
+    SEPARATOR = ';'
+    with open(Path(DATA_DIR, 'db', 'cath_example_domains.csv')) as f:
         result = {}
         for line in f:
             line = line.strip()
-            family, example = line.split()
+            family, example = line.split(SEPARATOR)
             result[family] = example
     return result
 
@@ -322,6 +347,6 @@ def _get_last_update() -> str:
  
 
 EXAMPLE_DOMAINS_CACHE = DataCache(_get_example_domains)
-SEARCHER_CACHE = DataCache(lambda: Searcher(Path(DATA_DIR, 'db', 'domain_list.txt')))
+SEARCHER_CACHE = DataCache(lambda: Searcher(Path(DATA_DIR, 'db', 'domain_list.csv')))
 FAMILY_SET_CACHE = DataCache(_get_family_set)
 LAST_UPDATE_CACHE = DataCache(_get_last_update)

@@ -165,7 +165,7 @@
                     // select [0] and refresh.....
                     try {
                         // Here it breaks if the user clicks on family selector many times and too fast: "... prop 'value' of undefined"
-                        // E.g. 6.10.160.10 has empty domain list: https://overprot.ncbr.muni.cz/data/db/families/6.10.160.10/domains.json
+                        // E.g. 6.10.160.10 has empty domain list: https://overprot.ncbr.muni.cz/data/db/family/lists/6.10.160.10/domains.json
                         // Or maybe we should just disable family selector as well until everything is ready? Seems not.						
                         console.log('selecting default domain option');
                         const defaultOption = ele[0].options[0].value;

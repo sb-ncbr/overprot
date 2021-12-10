@@ -34,20 +34,42 @@
             Deleted/
     data/ **Static data served by Nginx - to be mounted**
         db/
-            LAST_UPDATE.txt
+            families.txt
+            domain_list.json
+            domain_list.csv
+            cath_example_domains.csv
             cath_b_names_options.json
-            consensus_3d/
-                consensus-$FAMILY.png
-            diagrams/
-                diagram-$FAMILY.json
-            zip_results/
-                results-$FAMILY.zip
-            families/
-                $FAMILY/
-                    family.json, family_info.txt
-                    pdbs.csv, pdbs.html, pdbs.json, pdbs-demo.html
-                    domains.csv, domains.html, domains.json, domains-demo.html
-                    sample.csv, sample.html, sample.json, sample-demo.html
+            last_update.txt
+            last_update_iso.txt
+            family/
+                consensus_cif/
+                    consensus-$FAMILY.cif
+                consensus_sses/
+                    consensus-$FAMILY.sses.json
+                consensus_3d/
+                    consensus-$FAMILY.png
+                diagram/
+                    diagram-$FAMILY.json
+                zip_results/
+                    results-$FAMILY.zip
+                info/
+                    family_info-$FAMILY.txt
+                lists/
+                    $FAMILY/
+                        family.json, family_info.txt
+                        pdbs.csv, pdbs.html, pdbs.json, pdbs-demo.html
+                        domains.csv, domains.html, domains.json, domains-demo.html
+                        sample.csv, sample.html, sample.json, sample-demo.html
+                annotation/
+                    annotation-$FAMILY.zip
+            domain/
+                annotation/
+                    tq/, ...
+                        1tqnA00-annotated.sses.json, ...
+            bulk/
+                family/
+                    consensus_cif.zip
+                    consensus_sses.zip
     ssl/  **SSL certificate - to be mounted**
         certificate.pem
         key.pem

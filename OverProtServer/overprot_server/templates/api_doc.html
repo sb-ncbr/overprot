@@ -6,50 +6,158 @@
 
 {% block content %}
 
-<div class="row">
-    <div class="col">
-        <h2>
-            API documentation
-        </h2>
-    </div>
-</div>
+<style>
+    .api_call {
+        margin-bottom: 8px;
+    }
+    .api_call p {
+        margin-bottom: 2px;
+    }
+    a.api {
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 90%;
+        margin-left: 3em;
+        color: chocolate;
+    }
+    .api_var {
+        color: #007bff;
+    }
+    li.remark {
+        margin-bottom: 5px;
+    }
+</style>
 
 <div class="row">
     <div class="col">
-        <pre>
-https://overprot.ncbr.muni.cz/data/db/cath_b_names_options.json
-https://overprot.ncbr.muni.cz/data/db/cath_example_domains.csv
-https://overprot.ncbr.muni.cz/data/db/domain_list.json
-https://overprot.ncbr.muni.cz/data/db/domain_list.csv
-https://overprot.ncbr.muni.cz/data/db/families.txt
-https://overprot.ncbr.muni.cz/data/db/last_update.txt
-https://overprot.ncbr.muni.cz/data/db/last_update_iso.txt
+        <h2 class="mb-4">API documentation</h2>
 
-https://overprot.ncbr.muni.cz/data/db/family/consensus_sses/consensus-{family_id}.sses.json
-                                            /consensus_cif/consensus-{family_id}.cif
-                                            /consensus_3d/consensus-{family_id}.png
-                                            /diagram/diagram-{family_id}.json
-                                            /info/family_info-{family_id}.json
-                                            /lists/{family_id}/family.json
-                                            /lists/{family_id}/pdbs.json
-                                            /lists/{family_id}/pdbs.csv
-                                            /lists/{family_id}/domains.json
-                                            /lists/{family_id}/domains.csv
-                                            /lists/{family_id}/sample.json
-                                            /lists/{family_id}/sample.csv
-                                            /annotation/annotation-{family_id}.zip
+        <h3>General data</h3>
+        <ul>
+            <li class="api_call">
+                <p>List of all families:</p>
+                <a class="api">{{root}}/data/db/families.txt</a>
+            </li>
+            <li class="api_call">
+                <p>List of all domains:</p>
+                <a class="api">{{root}}/data/db/domain_list.json</a><br>
+                <a class="api">{{root}}/data/db/domain_list.csv</a>
+            </li>
+            <li class="api_call">
+                <p>Example domains for CATH nodes:</p>
+                <a class="api">{{root}}/data/db/cath_example_domains.csv</a>
+            </li>
+            <li class="api_call">
+                <p>CATH node names:</p>
+                <a class="api">{{root}}/data/db/cath_b_names_options.json</a>
+            </li>
+            <li class="api_call">
+                <p>Date of the last update:</p>
+                <a class="api">{{root}}/data/db/last_update.txt</a><br>
+                <a class="api">{{root}}/data/db/last_update_iso.txt</a>
+            </li>
+        </ul>
+        <hr>
+
+        <h3>Family-related data</h3>
+        <ul>
+            <li class="api_call">
+                <p>Structure consensus for a family:</p>
+                <a class="api">{{root}}/data/db/family/consensus_cif/consensus-<span class="api_var">{family_id}</span>.cif</a>
+            </li>
+            <li class="api_call">
+                <p>Secondary structure consensus for a family:</p>
+                <a class="api">{{root}}/data/db/family/consensus_sses/consensus-<span class="api_var">{family_id}</span>.sses.json</a>
+                <a class="api">{{root}}/data/db/family/consensus_3d/consensus-<span class="api_var">{family_id}</span>.png</a>
+            </li>
+            <li class="api_call">
+                <p>Input data for OverProt Viewer:</p>
+                <a class="api">{{root}}/data/db/family/diagram/diagram-<span class="api_var">{family_id}</span>.json</a>
+            </li>
+            <li class="api_call">
+                <p>Various result files from OverProt:</p>
+                <a class="api">{{root}}/data/db/family/zip_results/results-<span class="api_var">{family_id}</span>.zip</a>
+            </li>
+            <li class="api_call">
+                <p>Short summary for a family:</p>
+                <a class="api">{{root}}/data/db/family/info/family_info-<span class="api_var">{family_id}</span>.txt</a>
+            </li>
+            <li class="api_call">
+                <p>List of PDB entries for a family:</p>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/pdbs.json</a>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/pdbs.csv</a>
+            </li>
+            <li class="api_call">
+                <p>List of domains for a family:</p>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/domains.json</a>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/domains.csv</a>
+            </li>
+            <li class="api_call">
+                <p>List of domains included in the consensus computation:</p>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/sample.json</a>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/sample.csv</a>
+            </li>
+            <li class="api_call">
+                <p>List of domains for a family, organized by PDB ID:</p>
+                <a class="api">{{root}}/data/db/family/lists/<span class="api_var">{family_id}</span>/family.json</a>
+            </li>
+            <li class="api_call">
+                <p>Secondary structure annotation for all domains in a family:</p>
+                <a class="api">{{root}}/data/db/family/annotation/annotation-<span class="api_var">{family_id}</span>.zip</a>
+            </li>
+        </ul>
+        <hr>
                                             
-https://overprot.ncbr.muni.cz/api/domain/annotation/{domain_id}-annotated.sses.json  -->
-https://overprot.ncbr.muni.cz/data/db/domain/annotation/{pdb_1}{pdb_2}/{domain_id}-annotated.sses.json
+        <h3>Domain-related data</h3>
+        <ul>
+            <li class="api_call">
+                <p>Secondary structure annotation for a domain:</p>
+                <a class="api">{{root}}/api/domain/annotation/<span class="api_var">{domain_id}</span>-annotated.sses.json</a>
+                <!-- Redirect to https://overprot.ncbr.muni.cz/data/db/domain/annotation/{pdb_1}{pdb_2}/{domain_id}-annotated.sses.json -->
+            </li>
+        </ul>
+        <hr>
+        
+        <h3>Bulk data</h3>
+        <ul>
+            <li class="api_call">
+                <p>Structure consensus (consensus.cif) for all families:</p>
+                <a class="api">{{root}}/data/db/bulk/family/consensus_cif.zip</a>
+            </li>
+            <li class="api_call">
+                <p>Secondary structure consensus (consensus.sses.json) for all families:</p>
+                <a class="api">{{root}}/data/db/bulk/family/consensus_sses.zip</a>
+            </li>
+        </ul>
+        <hr>
 
-https://overprot.ncbr.muni.cz/data/db/bulk/consensus.zip
-https://overprot.ncbr.muni.cz/data/db/bulk/annotation.zip
-
-        </pre>
-
-        Sample formatting:<br>
-        <code style="color: chocolate; font-weight: bold;">https://overprot.ncbr.muni.cz/data/db/domain/annotation/</code><code style="color: blue; font-weight: bold;">{domain_id}</code><code style="color:chocolate; font-weight: bold;">-annotated.sses.json</code>
-
+        <h4>Remarks</h4>
+        <ul>
+            <li class="remark">
+                In all provided data, fields <code>chain_id</code> and <code>ranges</code> refer to the label* numbering scheme 
+                (i.e. <code>label_asym_id</code> and <code>label_seq_id</code> in mmCIF).<br>
+                Only the fields prefixed by <code>auth_</code> refer to the auth* numbering scheme 
+                (i.e. <code>auth_asym_id</code>, <code>auth_seq_id</code> and <code>pdbx_PDB_ins_code</code> in mmCIF).
+            </li>
+            <li class="remark">
+                Residue ranges include the start and end residue (e.g. <code>5:8</code> means residues 5, 6, 7, 8).
+            </li>
+            <li class="remark">
+                In the annotation files, the SSEs with labels starting with an underscore <code>_</code> are unannotated SSEs 
+                (they were detected in the structure but not matched to any consensus SSE).
+            </li>
+        </ul>
     </div>
 </div>
-    {% endblock %}
+{% endblock %}
+
+
+{% block scripts %}
+<script type='text/javascript'>
+    const EXAMPLE_FAMILY = '1.10.10.1020';
+    const EXAMPLE_DOMAIN = '1w36D01';
+    let apiExamples = $('a.api');
+    apiExamples.attr('href', i => apiExamples[i].textContent.replace('{family_id}', EXAMPLE_FAMILY).replace('{domain_id}', EXAMPLE_DOMAIN));
+    apiExamples.attr('target', '_blank');
+</script>
+{% endblock %}

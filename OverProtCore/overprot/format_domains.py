@@ -31,7 +31,7 @@ def parse_args() -> Dict[str, Any]:
     args = parser.parse_args()
     return vars(args)
 
-def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None):
+def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None, links: bool = False):
     pdbs = list(family.keys())
     n_total_rows = len(pdbs)
     if max_rows is not None and n_total_rows > max_rows:
@@ -49,7 +49,10 @@ def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, m
         print(' </thead>', file=w)
         print(' <tbody>', file=w)
         for pdb in pdbs:
-            print(f'  <tr><td>{pdb}</td></tr>', file=w)
+            if links:
+                print(f'  <tr><td><a href="/pdb/{pdb}">{pdb}</a></td></tr>', file=w)
+            else:
+                print(f'  <tr><td>{pdb}</td></tr>', file=w)
         print(' </tbody>', file=w)
         print('</table>', file=w)
         if truncated:
@@ -80,7 +83,7 @@ DOMAIN_FIELDS = [
 
 MAX_ROWS_IN_DEMO_TABLE = 50
 
-def format_domains_html(domains: List[dict], file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None):
+def format_domains_html(domains: List[dict], file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None, links: bool = False):
     n_total_rows = len(domains)
     if max_rows is not None and n_total_rows > max_rows:
         domains = domains[:max_rows]
@@ -102,8 +105,13 @@ def format_domains_html(domains: List[dict], file: Path, table_id: Optional[str]
         for dom in domains:
             print('  <tr>', file=w)
             for header, field in DOMAIN_FIELDS:
-                value = dom[field]
-                print(f'   <td>{value or ""}</td>', file=w)
+                value = dom[field] or ""
+                if links and field == 'pdb':
+                    print(f'   <td><a href="/pdb/{value}">{value}</a></td>', file=w)
+                elif links and field == 'domain':
+                    print(f'   <td><a href="/domain/{value}">{value}</a></td>', file=w)
+                else:
+                    print(f'   <td>{value or ""}</td>', file=w)
             print('  </tr>', file=w)
         print(' </tbody>', file=w)
         print('</table>', file=w)
@@ -154,27 +162,27 @@ def main(input_family_json: Path, input_sample_json: Path,
         sample_csv = Path(out_dir, 'sample.csv')
 
     if pdbs_html is not None:
-        format_pdbs_html(family, pdbs_html, table_id='pdbs')
+        format_pdbs_html(family, pdbs_html, table_id='pdbs', links=True)
     if pdbs_demo_html is not None:
-        format_pdbs_html(family, pdbs_demo_html, table_id='pdbs', max_rows=MAX_ROWS_IN_DEMO_TABLE)
+        format_pdbs_html(family, pdbs_demo_html, table_id='pdbs', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
     if pdbs_json is not None:
         format_pdbs_json(family, pdbs_json)
     if pdbs_csv is not None:
         format_pdbs_csv(family, pdbs_csv)
 
     if domains_html is not None:
-        format_domains_html(domains, domains_html, table_id='domains')
+        format_domains_html(domains, domains_html, table_id='domains', links=True)
     if domains_demo_html is not None:
-        format_domains_html(domains, domains_demo_html, table_id='domains', max_rows=MAX_ROWS_IN_DEMO_TABLE)
+        format_domains_html(domains, domains_demo_html, table_id='domains', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
     if domains_json is not None:
         format_domains_json(domains, domains_json)
     if domains_csv is not None:
         format_domains_csv(domains, domains_csv)
         
     if sample_html is not None:
-        format_domains_html(sample, sample_html, table_id='sample')
+        format_domains_html(sample, sample_html, table_id='sample', links=True)
     if sample_demo_html is not None:
-        format_domains_html(sample, sample_demo_html, table_id='sample', max_rows=MAX_ROWS_IN_DEMO_TABLE)
+        format_domains_html(sample, sample_demo_html, table_id='sample', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
     if sample_json is not None:
         format_domains_json(sample, sample_json)
     if sample_csv is not None:

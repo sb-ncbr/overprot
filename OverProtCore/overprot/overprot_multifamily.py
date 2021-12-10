@@ -251,7 +251,7 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
             with Timing('Collecting results'):
                 f = directory/'families'
                 c = directory/'collected_results'
-                collect_results2(families, f, '{x}/lists/family_info.txt',                c, 'family/info/{x}/family_info.txt')
+                collect_results2(families, f, '{x}/lists/family_info.txt',                c, 'family/info/family_info-{x}.txt')
                 collect_results2(families, f, '{x}/lists/*',                              c, 'family/lists/{x}/')
                 collect_results2(families, f, '{x}/results/',                             c, 'family/zip_results/results-{x}.zip')
                 collect_results2(families, f, '{x}/results/diagram.json',                 c, 'family/diagram/diagram-{x}.json', alternative_content = lambda fam: failed_diagram_content(fam, (f/fam/'EMPTY_FAMILY').exists()))
@@ -262,20 +262,6 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
                 collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
                 lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
                 lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
-                lib_sh.archive(c/'domain'/'annotation',     c/'bulk'/'domain'/'annotation.zip')
-                
-                # collect_results(families, directory, ['results'], directory/'collected_results'/'zip_results', zip=True)
-                # collect_results(families, directory, ['results', 'diagram.json'], directory/'collected_results'/'diagrams', hide_missing=True)
-                # collect_results(families, directory, ['lists'], directory/'collected_results'/'families', include_original_name=False)
-                # collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
-                # collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
-                # bulk_dir = directory/'collected_results'/'bulk'
-                # bulk_dir.mkdir(parents=True, exist_ok=True)
-                # lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
-                # missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
-                # with open(directory/'missing_results.txt', 'w') as w:
-                #     for family in missing_families:
-                #         print(family, file=w)
                 
                 lib_sh.cp(directory/'families.txt', c)
                 lib_sh.cp(directory/'domain_list.json', c)

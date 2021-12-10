@@ -12,7 +12,7 @@
             Family: &nbsp; <span class='family-id'>{{family_id}}</span> &nbsp;
             <span class='family-name' style='font-style: italic;'>&nbsp;</span>
         </h3>
-        <overprot-viewer id="main-viewer" file="/data/db/diagrams/diagram-{{family_id}}.json" height="300" width="1200" 
+        <overprot-viewer id="main-viewer" file="/data/db/family/diagram/diagram-{{family_id}}.json" height="300" width="1200" 
             color-method="sheet" shape-method="symcdf" beta-connectivity="true" occurrence-threshold="0.2" 
             dispatch-events="false" listen-events="false">
         </overprot-viewer>
@@ -27,7 +27,7 @@
     </div>
     <div class="col-12 col-md-6 mb-3">
         <h3 class="text-center">3D view (MAPSCI + OverProt)</h3>
-        <img class="img-fluid d-block mx-auto" src="/data/db/consensus_3d/consensus-{{family_id}}.png">
+        <img class="img-fluid d-block mx-auto" src="/data/db/family/consensus_3d/consensus-{{family_id}}.png">
     </div>
 </div>
 <div class="row">
@@ -51,7 +51,7 @@
             </tr>
             <tr>
                 <th>Example domain:</th>
-                <td>{{example_domain}} (<a target="_blank" href="/view_domain?family_id={{family_id}}&domain_id={{example_domain}}">Interactive view</a>)</td>
+                <td><a href="/domain/{{example_domain}}">{{example_domain}}</a> (<a target="_blank" href="/view_domain?family_id={{family_id}}&domain_id={{example_domain}}">Interactive view</a>)</td>
                 <td><span class="info" title="Example domain for the family, as defined by CATH."></span></td>
             </tr>
         </table>
@@ -77,7 +77,7 @@
             <div class="col">
                 <b>Download:</b>
                 &emsp;
-                <a href="/data/db/zip_results/results-{{family_id}}.zip" target="_blank">
+                <a href="/data/db/family/zip_results/results-{{family_id}}.zip" target="_blank">
                     results.zip
                 </a>
             </div>
@@ -110,8 +110,8 @@
             <div class="modal-body">
                 <div class="text-center">
                     <strong>Download:</strong>
-                    &emsp;<a href="/data/db/families/{{family_id}}/pdbs.csv" download="pdbs-{{family_id}}.csv">CSV</a>
-                    &emsp;<a href="/data/db/families/{{family_id}}/pdbs.json" download="pdbs-{{family_id}}.json">JSON</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/pdbs.csv" download="pdbs-{{family_id}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/pdbs.json" download="pdbs-{{family_id}}.json">JSON</a>
                 </div>
                 <div id="table-pdbs" class="striped-table w-100 py-2"></div>
             </div>
@@ -131,9 +131,9 @@
             <div class="modal-body">
                 <div class="text-center">
                     <strong>Download:</strong>
-                    &emsp;<a href="/data/db/families/{{family_id}}/domains.csv" download="domains-{{family_id}}.csv">CSV</a>
-                    &emsp;<a href="/data/db/families/{{family_id}}/domains.json" download="domains-{{family_id}}.json">JSON</a>
-                    &emsp;<a href="/data/db/families/{{family_id}}/family.json" download="family-{{family_id}}.json">JSON by PDB</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/domains.csv" download="domains-{{family_id}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/domains.json" download="domains-{{family_id}}.json">JSON</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/family.json" download="family-{{family_id}}.json">JSON by PDB</a>
                 </div>
                 <div id="table-domains" class="striped-table w-100 py-2"></div>
             </div>
@@ -153,8 +153,8 @@
             <div class="modal-body">
                 <div class="text-center">
                     <strong>Download:</strong>
-                    &emsp;<a href="/data/db/families/{{family_id}}/sample.csv" download="sample-{{family_id}}.csv">CSV</a>
-                    &emsp;<a href="/data/db/families/{{family_id}}/sample.json" download="sample-{{family_id}}.json">JSON</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/sample.csv" download="sample-{{family_id}}.csv">CSV</a>
+                    &emsp;<a href="/data/db/family/lists/{{family_id}}/sample.json" download="sample-{{family_id}}.json">JSON</a>
                 </div>
                 <div id="table-included-domains" class="striped-table w-100 py-2"></div>
             </div>
@@ -190,9 +190,9 @@
             targetElement.attr('loaded', true);
         }
 
-        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/families/{{family_id}}/pdbs-demo.html', false, '/data/db/families/{{family_id}}/pdbs.html'));
-        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/families/{{family_id}}/domains-demo.html', false, '/data/db/families/{{family_id}}/domains.html'));
-        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/families/{{family_id}}/sample-demo.html', false, '/data/db/families/{{family_id}}/sample.html'));
+        $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/family/lists/{{family_id}}/pdbs-demo.html', false, '/data/db/family/lists/{{family_id}}/pdbs.html'));
+        $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/family/lists/{{family_id}}/domains-demo.html', false, '/data/db/family/lists/{{family_id}}/domains.html'));
+        $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/family/lists/{{family_id}}/sample-demo.html', false, '/data/db/family/lists/{{family_id}}/sample.html'));
     </script>
 
     {% endblock %}

@@ -173,7 +173,7 @@ def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[
             if conf.overprot.annotate_whole_family:
                 with Timing('Annotation with SecStrAnnotator'):
                     lib_sses.annotate_all_with_SecStrAnnotator([dom for doms in domains_by_pdb.values() for dom in doms], outdir/'cif_cealign', 
-                                                               extra_options='--fallback 30', outdirectory=outdir/'annotated_sses')
+                                                               extra_options='--fallback 30 --unannotated', outdirectory=outdir/'annotated_sses')
 
         # Tidy up
         (outdir/results).mkdir(parents=True, exist_ok=True)

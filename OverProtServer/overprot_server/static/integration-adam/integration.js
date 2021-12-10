@@ -70,7 +70,7 @@ class IntegratedViewer {
     
     async setData() {	
         // domains we need to get current domain data, ranges - to get entityId from chainId (=== chain_id(PDBeAPI))
-        const domainsResponse = await fetch(`https://overprot.ncbr.muni.cz/data/db/families/${this.familyId}/domains.json`);
+        const domainsResponse = await fetch(`/data/db/family/lists/${this.familyId}/domains.json`);
         const domains = await domainsResponse.json();
         
         const currentDomainData = domains.filter(d => d.domain === this.domainId)[0];
@@ -332,7 +332,7 @@ class IntegratedViewer {
     }
     
     render1D() {
-        const html = `<overprot-viewer id='anything' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-${this.familyId}.json' width=1800 height=200 color-method='rainbow' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%' dispatch-events='true' listen-events='true'></overprot-viewer>`;
+        const html = `<overprot-viewer id='anything' file='/data/db/family/diagram/diagram-${this.familyId}.json' width=1800 height=200 color-method='rainbow' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%' dispatch-events='true' listen-events='true'></overprot-viewer>`;
         
         const container = document.getElementById('overprot-wrapper');
         container.innerHTML = html;
@@ -341,7 +341,7 @@ class IntegratedViewer {
     async loadFamiliesSelectOptions() {
         console.log('families request sent');
         // Get txt from overprot API
-        const response = await fetch('https://overprot.ncbr.muni.cz/data/db/families.txt');
+        const response = await fetch('/data/db/families.txt');
         const txt = await response.text();
         console.log('families request parsed');
         // Parse txt to get arr with family IDs
@@ -356,7 +356,7 @@ class IntegratedViewer {
     async loadDomainsSelectOptions(familyId) {
         // Get json from overprot API
         console.log('domains request sent');
-        const responseOverprotDomains = await fetch(`https://overprot.ncbr.muni.cz/data/db/families/${familyId}/domains.json`);
+        const responseOverprotDomains = await fetch(`/data/db/family/lists/${familyId}/domains.json`);
         const overprotDomains = await responseOverprotDomains.json();
         console.log('domains request parsed');
         // Potentially both domain lists from Overprot and 2DProts are consistent
