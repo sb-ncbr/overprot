@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+
+{% block title %} OverProt - API documentation {{pdb}} {% endblock %}
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col">
+        <h2>
+            API documentation
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <pre>
+https://overprot.ncbr.muni.cz/data/db/cath_b_names_options.json
+https://overprot.ncbr.muni.cz/data/db/cath_example_domains.csv
+https://overprot.ncbr.muni.cz/data/db/domain_list.json
+https://overprot.ncbr.muni.cz/data/db/domain_list.csv
+https://overprot.ncbr.muni.cz/data/db/families.txt
+https://overprot.ncbr.muni.cz/data/db/last_update.txt
+https://overprot.ncbr.muni.cz/data/db/last_update_iso.txt
+
+https://overprot.ncbr.muni.cz/data/db/family/consensus_sses/consensus-{family_id}.sses.json
+                                            /consensus_cif/consensus-{family_id}.cif
+                                            /consensus_3d/consensus-{family_id}.png
+                                            /diagram/diagram-{family_id}.json
+                                            /info/family_info-{family_id}.json
+                                            /lists/{family_id}/family.json
+                                            /lists/{family_id}/pdbs.json
+                                            /lists/{family_id}/pdbs.csv
+                                            /lists/{family_id}/domains.json
+                                            /lists/{family_id}/domains.csv
+                                            /lists/{family_id}/sample.json
+                                            /lists/{family_id}/sample.csv
+                                            /annotation/annotation-{family_id}.zip
+                                            
+https://overprot.ncbr.muni.cz/api/domain/annotation/{domain_id}-annotated.sses.json  -->
+https://overprot.ncbr.muni.cz/data/db/domain/annotation/{pdb_1}{pdb_2}/{domain_id}-annotated.sses.json
+
+https://overprot.ncbr.muni.cz/data/db/bulk/consensus.zip
+https://overprot.ncbr.muni.cz/data/db/bulk/annotation.zip
+
+        </pre>
+
+        Sample formatting:<br>
+        <code style="color: chocolate; font-weight: bold;">https://overprot.ncbr.muni.cz/data/db/domain/annotation/</code><code style="color: blue; font-weight: bold;">{domain_id}</code><code style="color:chocolate; font-weight: bold;">-annotated.sses.json</code>
+
+    </div>
+</div>
+    {% endblock %}

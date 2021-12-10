@@ -44,6 +44,7 @@ def main(input_json: Optional[Path] = None, output: Optional[Path] = None) -> Op
         with open(input_json) as f:
             js = json.load(f)
     with RedirectIO(stdout=output):
+        print('cath_node;example_domain')
         process_node(js)
     
 def process_node(js: dict) -> None:
@@ -55,8 +56,7 @@ def process_node(js: dict) -> None:
     assert depth <= 4
     if depth > 0:
         assert example is not None
-        print(node_id, example)
-    # print('    '*depth, repr(node_id), example, len(children))
+        print(node_id, example, sep=';')
     for child in children:
         process_node(child)
 

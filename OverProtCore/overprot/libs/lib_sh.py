@@ -12,11 +12,13 @@ from typing import Iterator
 
 def mv(source: Path, dest: Path) -> Path:
     '''Move a file or directory ($ mv source dest)'''
+    dest.parent.mkdir(parents=True, exist_ok=True)
     new_path: Path = shutil.move(source, dest)  # type: ignore
     return new_path
 
 def cp(source: Path, dest: Path) -> Path:
     '''Copy a file or directory ($ cp -r source dest)'''
+    dest.parent.mkdir(parents=True, exist_ok=True)
     if source.is_dir():
         new_path = shutil.copytree(source, dest)
     else:
@@ -61,10 +63,13 @@ def _ls_recursive(path: Path, include_self: bool = False) -> Iterator[Path]:
             yield from _ls_recursive(file, include_self=True)
 
 
-def archive(source: Path, dest: Path) -> Path:
+def archive(source: Path, dest: Path, rm_source: bool = False) -> Path:
     '''Create archive from a file or directory, 
     e.g. archive(Path('data'), Path('data.zip')) '''
     fmt = dest.suffix.lstrip('.')
     archive_name = dest.parent/dest.stem  # without suffix!
+    dest.parent.mkdir(parents=True, exist_ok=True)
     archive = shutil.make_archive(str(archive_name), fmt, str(source))
+    if rm_source:
+        rm(source, recursive=True)
     return Path(archive)

@@ -183,6 +183,11 @@ def view_domain() -> Any:
 def favicon() -> Any:
     return flask.send_file('static/images/favicon.ico')
 
+
+@app.route('/api_doc')
+def api_doc() -> Any:
+    return flask.render_template('api_doc.html')
+
 @app.route('/diagram/<string:job_id>')
 def diagram(job_id: str) -> Any:
     try:

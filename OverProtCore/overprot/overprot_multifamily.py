@@ -11,7 +11,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Iterable, Callable
 import traceback
 import contextlib
 import shutil
@@ -65,6 +65,50 @@ def family_callback(result: lib_multiprocessing.JobResult, directory: Path):
         with open(directory/'succeeded_families.txt', 'a') as w:
             print(family, file=w)
 
+def failed_diagram_content(family: str, is_empty: bool) -> str:
+    error_message = f"Failed to generate consensus for '{family}'."
+    if is_empty:
+        error_message += " The family is empty."
+    return json.dumps({'error': error_message})
+
+def collect_results2(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: Path, out_subpath: str, 
+        alternative_content: Callable[[str], str]|None = None, print_missing: bool = False, 
+        breakout_function: Callable[[Path], Path|str]|None = None) -> List[str]:
+    '''Collect results of the same type. Return the list of families with missing results.'''
+    missing = []
+    for x in xs:
+        in_file = in_dir / in_subpath.format(x=x)
+        out_file = out_dir / out_subpath.format(x=x)
+        # is_dir = in_file.is_dir()
+        glob = '*' in in_file.name
+        zip = out_file.suffix == '.zip'
+        if glob:
+            files = sorted(in_file.parent.glob(in_file.name))
+            tmp_out = out_file.with_suffix('.tmp') if zip else out_file
+            tmp_out.mkdir(parents=True, exist_ok = not zip)
+            if breakout_function is None:
+                for file in files:
+                    lib_sh.cp(file, tmp_out/file.name)
+            else:
+                for file in files:
+                    lib_sh.cp(file, tmp_out/breakout_function(file)/file.name)
+            if zip:
+                lib_sh.archive(tmp_out, out_file, rm_source=True)
+        else:
+            if in_file.exists():
+                if zip: 
+                    lib_sh.archive(in_file, out_file)
+                else:
+                    lib_sh.cp(in_file, out_file)
+            else:
+                missing.append(x)
+                if alternative_content is not None:
+                    out_file.write_text(alternative_content(x))
+                if print_missing:
+                    print('Missing results:', in_subpath.format(x=x), file=sys.stderr)
+    return missing
+
+
 def collect_results(families: List[str], input_dir: Path, path_parts: List[str], output_dir: Path, 
         zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False,
         extension: Optional[str] = None, remove_if_exists: bool = True) -> List[str]:
@@ -109,13 +153,13 @@ def _download_domains(outdir: Path, family: str) -> None:
     with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
         domains_from_pdbeapi.main(family, join_domains_in_chain=True)
 
-def get_domain_lists(families: List[str], outdir: Path, collected_output_json: Optional[Path], collected_output_txt: Optional[Path] = None, 
+def get_domain_lists(families: List[str], outdir: Path, collected_output_json: Optional[Path], collected_output_csv: Optional[Path] = None, 
                      processes: Optional[int] = None) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     print(f'Downloading domain lists for {len(families)} families:')
     jobs = [lib_multiprocessing.Job(name=family, func=_download_domains, args=(outdir, family)) for family in families]
     lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True)
-    if collected_output_json is not None or collected_output_txt is not None:
+    if collected_output_json is not None or collected_output_csv is not None:
         collected = {}
         for family in families:
             with open(outdir/f'{family}.json') as r:
@@ -123,16 +167,17 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
             collected[family] = js
     if collected_output_json is not None:
         lib.dump_json(collected, collected_output_json)
-    if collected_output_txt is not None:
+    if collected_output_csv is not None:
         domain_list = []
         for family, pdb2doms in collected.items():
             for pdb, doms in pdb2doms.items():
                 for dom in doms:
                     domain_list.append((family, dom['domain'], dom['pdb'], dom['chain_id'], dom['ranges'] ))
         domain_list.sort()
-        with open(collected_output_txt, 'w') as w:
+        with open(collected_output_csv, 'w') as w:
+            print('family;domain;pdb;chain_id;ranges', file=w)
             for domain in domain_list:
-                print(*domain, sep='\t', file=w)
+                print(*domain, sep=';', file=w)
 
 
 #  MAIN  #####################################################################################
@@ -172,8 +217,8 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
         text = family_list_file.read_text()
         families = text.split()
         print('Number of families:', len(families))
-        get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_txt=directory/'domain_list.txt', processes=processes)
-        get_cath_example_domains.main(output=directory/'cath_example_domains.txt')
+        get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_csv=directory/'domain_list.csv', processes=processes)
+        get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
         get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
         if only_get_lists:
             return None
@@ -194,31 +239,54 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
                 stdout=current_dir/f'{family}-out.txt',
                 stderr=current_dir/f'{family}-err.txt'
             ) for family in families]
+        print(f'Running OverProt for {len(families)} families:')
         results = lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True, 
             callback = lambda res: family_callback(res, directory))
         lib_sh.rm(current_dir, recursive=True, ignore_errors=True)
-        if collect:
-            collect_results(families, directory, ['results'], directory/'collected_results'/'zip_results', zip=True)
-            collect_results(families, directory, ['results', 'diagram.json'], directory/'collected_results'/'diagrams', hide_missing=True)
-            collect_results(families, directory, ['lists'], directory/'collected_results'/'families', include_original_name=False)
-            collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
-            collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
-            bulk_dir = directory/'collected_results'/'bulk'
-            bulk_dir.mkdir(parents=True, exist_ok=True)
-            lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
-            missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
-            with open(directory/'missing_results.txt', 'w') as w:
-                for family in missing_families:
-                    print(family, file=w)
-            lib_sh.cp(directory/'domain_list.json', directory/'collected_results')
-            lib_sh.cp(directory/'domain_list.txt', directory/'collected_results')
-            lib_sh.cp(directory/'cath_example_domains.txt', directory/'collected_results')
-            lib_sh.cp(directory/'cath_b_names_options.json', directory/'collected_results')
-            (directory/'collected_results'/'last_update.txt').write_text(start_time.strftime('%d %B %Y').lstrip('0'))
-            (directory/'collected_results'/'last_update_iso.txt').write_text(start_time.isoformat(timespec='seconds'))
         succeeded = sum(1 for res in results if res.result is None)
         failed = sum(1 for res in results if res.result is not None)
         print('Succeeded:', succeeded, 'Failed:', failed)
+        if collect:
+            print('Collecting results:')
+            with Timing('Collecting results'):
+                f = directory/'families'
+                c = directory/'collected_results'
+                collect_results2(families, f, '{x}/lists/family_info.txt',                c, 'family/info/{x}/family_info.txt')
+                collect_results2(families, f, '{x}/lists/*',                              c, 'family/lists/{x}/')
+                collect_results2(families, f, '{x}/results/',                             c, 'family/zip_results/results-{x}.zip')
+                collect_results2(families, f, '{x}/results/diagram.json',                 c, 'family/diagram/diagram-{x}.json', alternative_content = lambda fam: failed_diagram_content(fam, (f/fam/'EMPTY_FAMILY').exists()))
+                collect_results2(families, f, '{x}/results/consensus.cif',                c, 'family/consensus_cif/consensus-{x}.cif')
+                collect_results2(families, f, '{x}/results/consensus.sses.json',          c, 'family/consensus_sses/consensus-{x}.sses.json')
+                collect_results2(families, f, '{x}/results/consensus.png',                c, 'family/consensus_3d/consensus-{x}.png')
+                collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
+                collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
+                lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
+                lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
+                lib_sh.archive(c/'domain'/'annotation',     c/'bulk'/'domain'/'annotation.zip')
+                
+                # collect_results(families, directory, ['results'], directory/'collected_results'/'zip_results', zip=True)
+                # collect_results(families, directory, ['results', 'diagram.json'], directory/'collected_results'/'diagrams', hide_missing=True)
+                # collect_results(families, directory, ['lists'], directory/'collected_results'/'families', include_original_name=False)
+                # collect_results(families, directory, ['results', 'consensus.cif'], directory/'collected_results'/'consensus')
+                # collect_results(families, directory, ['results', 'consensus.sses.json'], directory/'collected_results'/'consensus', remove_if_exists=False, extension='.sses.json')
+                # bulk_dir = directory/'collected_results'/'bulk'
+                # bulk_dir.mkdir(parents=True, exist_ok=True)
+                # lib_sh.archive(directory/'collected_results'/'consensus', bulk_dir/'consensus.zip')
+                # missing_families = collect_results(families, directory, ['results', 'consensus.png'], directory/'collected_results'/'consensus_3d', print_missing=True)
+                # with open(directory/'missing_results.txt', 'w') as w:
+                #     for family in missing_families:
+                #         print(family, file=w)
+                
+                lib_sh.cp(directory/'families.txt', c)
+                lib_sh.cp(directory/'domain_list.json', c)
+                lib_sh.cp(directory/'domain_list.csv', c)
+                lib_sh.cp(directory/'cath_example_domains.csv', c)
+                lib_sh.cp(directory/'cath_b_names_options.json', c)
+                (c/'last_update.txt').write_text(start_time.strftime('%d %B %Y').lstrip('0'))
+                (c/'last_update_iso.txt').write_text(start_time.isoformat(timespec='seconds'))
+
+                missing = [family for family in families if not (c/'family'/'consensus_3d'/f'consensus-{family}.png').is_file()]
+                (directory/'missing_results.txt').write_text('\n'.join(missing))
         return None
 
 def _main():
