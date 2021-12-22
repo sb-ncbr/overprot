@@ -407,6 +407,7 @@ def make_structure_tree(structs: List[Path], show_tree=False, with_cealign=True,
     return ac.children
 
 def make_structure_tree_with_merging(structs: List[Path], show_tree=False, progress_bar=False):
+    
     structs = list(structs)
     n_structs = len(structs)
     assert n_structs > 0

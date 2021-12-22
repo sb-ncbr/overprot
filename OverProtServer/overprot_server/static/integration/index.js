@@ -69,7 +69,7 @@ class IntegratedViewer {
 	
 	async setData() {	
 		// domains we need to get current domain data, ranges - to get entityId from chainId (=== chain_id(PDBeAPI))
-		const domainsResponse = await fetch(`https://overprot.ncbr.muni.cz/data/db/families/${this.familyId}/domains.json`);
+		const domainsResponse = await fetch(`/data/db/family/lists/${this.familyId}/domains.json`);
 		const domains = await domainsResponse.json();
 		
 		const currentDomainData = domains.filter(d => d.domain === this.domainId)[0];
@@ -339,7 +339,7 @@ class IntegratedViewer {
 	
 	render1D() {
 		// Actually insert in HTML rather than render
-		const html = `<overprot-viewer id='anything' file='https://overprot.ncbr.muni.cz/data/db/diagrams/diagram-${this.familyId}.json' width=1800 height=200 color-method='rainbow' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%' dispatch-events='true' listen-events='true'></overprot-viewer>`;
+		const html = `<overprot-viewer id='anything' file='/data/db/family/diagram/diagram-${this.familyId}.json' width=1800 height=200 color-method='rainbow' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%' dispatch-events='true' listen-events='true'></overprot-viewer>`;
 		
 		const container = document.getElementById('overprot-wrapper');
 		container.innerHTML = html;
@@ -348,7 +348,7 @@ class IntegratedViewer {
 	async loadFamiliesSelectOptions() {
 		console.log('families request sent');
 		// Get txt from overprot API
-		const response = await fetch('https://overprot.ncbr.muni.cz/data/db/families.txt');
+		const response = await fetch('/data/db/families.txt');
 		const txt = await response.text();
 		console.log('families request parsed');
 		// Parse txt to get arr with family IDs
@@ -363,7 +363,7 @@ class IntegratedViewer {
 	async loadDomainsSelectOptions(familyId) {
 		// Get json from overprot API
 		console.log('domains request sent');
-		const responseOverprotDomains = await fetch(`https://overprot.ncbr.muni.cz/data/db/families/${familyId}/domains.json`);
+		const responseOverprotDomains = await fetch(`/data/db/family/lists/${familyId}/domains.json`);
 		const overprotDomains = await responseOverprotDomains.json();
 		console.log('domains request parsed');
 		// Potentially both domain lists from Overprot and 2DProts are consistent
@@ -419,7 +419,7 @@ $(instance.familiesSelectEle).on('changed.bs.select', function (e, clickedIndex,
 			// select [0] and refresh.....
 			try {
 				// Here it breaks if the user clicks on family selector many times and too fast: "... prop 'value' of undefined"
-				// E.g. 6.10.160.10 has empty domain list: https://overprot.ncbr.muni.cz/data/db/families/6.10.160.10/domains.json
+				// E.g. 6.10.160.10 has empty domain list: https://overprot.ncbr.muni.cz/data/db/family/lists/6.10.160.10/domains.json
 				// Or maybe we should just disable family selector as well until everything is ready? Seems not.						
 				console.log('selecting default domain option');
 				const defaultOption = ele[0].options[0].value;

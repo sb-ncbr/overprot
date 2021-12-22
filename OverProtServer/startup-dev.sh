@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SW_DIR=$(realpath $(dirname $0))
 cd $SW_DIR
 

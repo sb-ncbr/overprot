@@ -39,7 +39,7 @@
                     List domains one-per-line,
                     <br><code>PDB,CHAIN</code>
                     or <code>PDB,CHAIN,RANGES</code>
-                    <br>(maximum 500 domains)
+                    <br>(maximum 500 domains) <span class="info" title="Chain IDs and residue ranges must be in the label* numbering scheme (not auth*)"></span>
                     <br><br>
                     Example:
                     <pre style="color: gray; font-size: 80%;" id="example_1">
@@ -51,6 +51,8 @@
                     document.getElementById('input_list').value = document.getElementById('example_1').innerHTML;
                     document.getElementById('input_job_name').value = 'Example job - Cytochromes P450';
                     ">
+                    <br>
+                    <button type="button" class="btn btn-link p-0 mt-3" data-toggle="modal" data-target="#modal-time-estimation">Expected computation time</button>
                 </div>
             </div>
             <div class="row mb-2">
@@ -82,6 +84,37 @@
             </div>
         </form>
 
+                
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="modal-time-estimation" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modallabel-pdbs">Expected computation time</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    The job computation time strongly depends on the number and size of the domains.
+                    <br>
+                    This table can help to roughly estimate the computation time.
+                </p>
+                <table class="striped-table text-center w-100 py-2">
+                    <tr><th>Number of domains</th> <th>Domain size<br>170 residues</th> <th>Domain size<br>420 residues</th></tr>
+                    <tr><th>5</th><td>13 s</td> <td>17 s</td></tr>
+                    <tr><th>20</th><td>20 s</td> <td>30 s</td></tr>
+                    <tr><th>100</th><td>50 s</td> <td>3.5 min</td></tr>
+                    <tr><th>500</th><td>4 min</td> <td>20 min</td></tr>
+                </table>
+                <br>
+                (These times are based on families 2.40.128.20 and 1.10.630.10)
+            </div>
+        </div>
     </div>
 </div>
 
