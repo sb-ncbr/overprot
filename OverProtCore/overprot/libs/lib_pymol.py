@@ -8,10 +8,10 @@ import json
 from pathlib import Path
 from collections import namedtuple  # change namedtuple to typing.NamedTuple
 import numpy as np
-from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal, Iterable
+from typing import Optional, Sequence, Any, Literal, Iterable
 
 try:
-    from pymol import cmd, querying, util, CmdException  # type: ignore
+    from pymol import cmd, querying, util, cgo, CmdException  # type: ignore
     cmd.feedback('disable', 'all', 'everything')
     cmd.set('cif_use_auth', 0)
     cmd.set('cif_keepinmemory', 1)
@@ -19,10 +19,24 @@ except ImportError:
     print('', file=sys.stderr)
 
 from . import lib
+from . import lib_sses
 from . import lib_domains
 from .lib_logging import ProgressBar
 from .lib_structure import Structure
 from . import superimpose3d
+
+
+_MIN_CYLINDER_RADIUS = 0.0  # 0.1  # when radius is dependent on occurrence
+_MAX_CYLINDER_RADIUS = 1.6
+_DEFAULT_CYLINDER_RADIUS = 0.25
+
+_MIN_ARROW_WIDTH = 0.0  # 0.1  # when radius is dependent on occurrence
+_MAX_ARROW_WIDTH = 1.4
+_DEFAULT_ARROW_WIDTH = 0.3
+
+_ARROW_HEAD_TAIL_WIDTH_RATIO = 1.6
+_ARROW_THICKNESS_WIDTH_RATIO = 0.25
+_DARKER_COLOR_RATIO = 0.6
 
 
 Coloring = Literal['rainbow', 'color']  # coloring scheme in PyMOL sessions, 'rainbow' = blue to red, 'color' = random-like color sequence
@@ -140,7 +154,7 @@ def dumb_align(target_file: Path, mobile_file: Path, result_file: Optional[Path]
             w.write(mobile.to_cif())
     return CealignResult(None, rmsd, ttt, R, t)
 
-def ttt_matrix_to_rotation_translation(flat_ttt_matrix: List[float]) -> RotationTranslation:
+def ttt_matrix_to_rotation_translation(flat_ttt_matrix: list[float]) -> RotationTranslation:
     '''Convert PyMOL pseudo-rotation matrix (ttt_matrix) to rotation and translation matrices (A' = rotation @ A + translation)'''
     ttt_matrix = np.array(flat_ttt_matrix).reshape((4,4))
     pretranslation = ttt_matrix[3, 0:3].reshape((3,1))
@@ -149,7 +163,7 @@ def ttt_matrix_to_rotation_translation(flat_ttt_matrix: List[float]) -> Rotation
     translation = rotation @ pretranslation + posttranslation
     return RotationTranslation(rotation, translation)
 
-def rotation_translation_to_ttt_matrix(rot_trans: RotationTranslation) -> List[float]:
+def rotation_translation_to_ttt_matrix(rot_trans: RotationTranslation) -> list[float]:
     result = np.empty((4, 4), dtype=np.float64)
     result[0:3, 0:3] = rot_trans.rotation
     result[0:3, 3:4] = rot_trans.translation
@@ -217,13 +231,10 @@ def create_alignment_session(structfileA: Path, structfileB: Path, alignment_fil
     cmd.save(output_session_file, format='pse')
 
 
-_MIN_DASH_RADIUS = 0.0  # 0.1  # when radius is dependent on occurrence
-_MAX_DASH_RADIUS = 1.5
-_DEFAULT_DASH_RADIUS = 0.25
-
 def create_consensus_session(consensus_structure_file: Path, consensus_sse_file: Path, 
                              out_session_file: Optional[Path], coloring: Coloring = 'rainbow', 
-                             out_image_file: Optional[Path] = None, image_size: Tuple[int, int] | Tuple[int] | Tuple[()] = ()) -> None:
+                             out_image_file: Optional[Path] = None, image_size: tuple[int, int] | tuple[int] | tuple[()] = (),
+                             enable_occurrence_threshold: float = 0.05) -> None:
     '''image_size is either (width, height) or (width,) (height is scaled) or () (default size)'''
     obj = 'cons'
     group_name = _segment_group_name(obj)
@@ -233,10 +244,11 @@ def create_consensus_session(consensus_structure_file: Path, consensus_sse_file:
             consensus = json.load(f)	
         cmd.group(group_name)
         for sse in consensus['consensus']['secondary_structure_elements']:
-            _create_line_segment(sse, group_name, coloring)
+            _create_line_segment(sse, group_name, coloring, enable_occurrence_threshold=enable_occurrence_threshold)
     cmd.hide()
     cmd.show('cartoon', obj)
     util.chainbow(obj)  # cmd.color('white', obj)
+    cmd.show('cgo', group_name)
     cmd.show('dashes', group_name)
     cmd.set('dash_gap', 0)
     cmd.dss(obj)
@@ -267,6 +279,7 @@ def create_multi_session(directory: Path, consensus_structure_file: Optional[Pat
             bar.step(i)
     cmd.hide()
     cmd.show('cartoon')
+    cmd.show('cgo')
     cmd.show('dashes')
     cmd.set('dash_gap', 0)
     cmd.zoom('vis')
@@ -304,22 +317,134 @@ def _segment_group_name(domain_name: str) -> str:
 def _sses_group_name(domain_name: str) -> str:
     return domain_name + '_sses'
 
-def _create_line_segment(sse: Dict[str, Any], group_name: str, coloring: Coloring) -> None:
+def _create_line_segment(sse: dict[str, Any], group_name: str, coloring: Coloring, enable_occurrence_threshold: float) -> None:
     label = sse['label']
+    name = group_name + '.' + label
     start_vector = sse['start_vector']
     end_vector = sse['end_vector']
     color = sse[coloring]
-    radius = sse['occurrence'] * (_MAX_DASH_RADIUS-_MIN_DASH_RADIUS) + _MIN_DASH_RADIUS if 'occurrence' in sse else _DEFAULT_DASH_RADIUS
+    occurrence = sse.get('occurrence')
+    if sse['type'] in 'GHIh':  # helix
+        _create_line_segment_cylinder(name, start_vector, end_vector, color, occurrence)
+        # _create_line_segment_dash(name, start_vector, end_vector, color, occurrence, round_ends=False)
+    else:  # strand
+        minor_axis = sse.get('minor_axis')
+        _create_line_segment_arrow(name, start_vector, end_vector, minor_axis, color, occurrence)
+        # _create_line_segment_cylinder(name, start_vector, end_vector, color, occurrence, round_ends=True)
+    if occurrence is not None and occurrence < enable_occurrence_threshold:
+        cmd.disable(name)
+
+def _create_line_segment_dash(name: str, start_vector: list[float], end_vector: list[float], color: str, occurrence: float|None, round_ends: bool = False) -> None:
+    radius = occurrence * (_MAX_CYLINDER_RADIUS-_MIN_CYLINDER_RADIUS) + _MIN_CYLINDER_RADIUS if occurrence is not None else _DEFAULT_CYLINDER_RADIUS
     cmd.pseudoatom('start', pos=start_vector)
     cmd.pseudoatom('end', pos=end_vector)
-    distance_name = group_name + '.' + label
-    cmd.distance(distance_name, 'start', 'end')
-    cmd.color(color, distance_name)
-    cmd.set('dash_radius', radius, distance_name)
-    if sse['type'] in 'GHIh':
-        cmd.set('dash_round_ends', 0, distance_name)
+    cmd.distance(name, 'start', 'end')
+    cmd.color(color, name)
+    cmd.set('dash_radius', radius, name)
+    if not round_ends:
+        cmd.set('dash_round_ends', 0, name)
     cmd.delete('start')
     cmd.delete('end')
 
+def _create_line_segment_cylinder(name: str, start_vector: list[float], end_vector: list[float], color: str, occurrence: float|None) -> None:
+    radius = occurrence * (_MAX_CYLINDER_RADIUS-_MIN_CYLINDER_RADIUS) + _MIN_CYLINDER_RADIUS if occurrence is not None else _DEFAULT_CYLINDER_RADIUS
+    color_rgb = lib_sses.pymol_spectrum_to_rgb(color)
+    cgo_arrow = _cgo_cylinder_from_points(start_vector, end_vector, radius=radius, color=color_rgb)
+    cmd.load_cgo(cgo_arrow, name)
+
+def _create_line_segment_arrow(name: str, start_vector: list[float], end_vector: list[float], minor_axis: list[float]|None, color: str, occurrence: float|None) -> None:
+    width = occurrence * (_MAX_ARROW_WIDTH-_MIN_ARROW_WIDTH) + _MIN_ARROW_WIDTH if occurrence is not None else _DEFAULT_ARROW_WIDTH
+    color_rgb = lib_sses.pymol_spectrum_to_rgb(color)
+    cgo_arrow = _cgo_arrow_from_points(np.array(start_vector), np.array(end_vector), minor_axis, width=width, color=color_rgb)
+    cmd.load_cgo(cgo_arrow, name)
+
 def _create_void_session(out_session_file: str) -> None:
     cmd.save(out_session_file)
+
+
+def _darker_rgb(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
+    r, g, b = rgb
+    return r*_DARKER_COLOR_RATIO, g*_DARKER_COLOR_RATIO, b*_DARKER_COLOR_RATIO
+
+def _cgo_cylinder_from_points(p1: np.ndarray, p2: np.ndarray, radius: float, color: tuple[float, float, float]) -> list[float]:
+    return [cgo.CYLINDER, *p1, *p2, radius, *color, *color]
+
+def _cgo_arrow_from_points(p1: np.ndarray, p2: np.ndarray, minor_axis: np.ndarray|None, width: float, color: tuple[float, float, float]) -> list[float]:
+    u = p2 - p1
+    v = minor_axis if minor_axis is not None else _any_normal(u)
+    size_u = np.linalg.norm(u)
+    u_normalized = u / size_u
+    rotation = np.array((u_normalized, v, np.cross(u_normalized, v))).T
+    return _cgo_arrow(*_auto_head(size_u), b=width, bh=width*_ARROW_HEAD_TAIL_WIDTH_RATIO, c=width*_ARROW_THICKNESS_WIDTH_RATIO, origin=p1, rotation=rotation, color=color)
+
+def _cgo_arrow(a=8.0, ah=2.0, b=1.0, bh=1.6, c=0.25, scale=1.0, origin=(0.0, 0.0, 0.0), rotation=None, color: tuple[float, float, float] = (1.0, 1.0, 1.0)) -> list[float]:# appr. tail width
+    '''Return a 3D arrow as CGO object, pointing in x direction, in xy plane.
+    a = tail length
+    ah = head length
+    b = tail half-width
+    bh = head half-width
+    c = half-thickness
+    scale = rescales all the above parameters
+    origin = starting point (center of the arrow's butt)
+    '''
+    x, y, z = origin
+    a *= scale
+    ah *= scale
+    b *= scale
+    bh *= scale
+    c *= scale
+    coords = np.array([
+        a+ah, 0, c,
+        a+ah, 0, -c,
+        a, -bh, c,
+        a, -bh, -c,
+        a, -b, c,
+        a, -b, -c,
+        0, -b, c,
+        0, -b, -c,
+        0, +b, c,
+        0, +b, -c,
+        a, +b, c,
+        a, +b, -c,
+        a, +bh, c,
+        a, +bh, -c,
+        a+ah, 0, c,
+        a+ah, 0, -c,
+    ]).reshape((-1, 3)).T
+    if rotation is not None:
+        coords = rotation @ coords
+    coords += np.array(origin).reshape((3, 1))
+    top_face = coords[:, 0::2]
+    bottom_face = coords[:, 1::2]
+    result = _cgo_from_np(cgo.TRIANGLE_STRIP, _darker_rgb(color), coords)
+    result.extend(_cgo_from_np(cgo.TRIANGLE_FAN, color, top_face))
+    result.extend(_cgo_from_np(cgo.TRIANGLE_FAN, color, bottom_face))
+    return result
+
+def _cgo_from_np(cgo_type: float, cgo_color: tuple[float, float, float], vertices: np.ndarray) -> list[float]:
+    result = [cgo.BEGIN, cgo_type, cgo.COLOR, *cgo_color]
+    for vertex in vertices.T:
+        result.append(cgo.VERTEX)
+        result.extend(vertex)
+    result.append(cgo.END)
+    return result
+
+def _auto_head(total_length: float, max_head=6.0, min_head_ratio=0.5) -> tuple[float, float]:
+    '''Return auto-determined tail and head length for an arrow with total_length.'''
+    head = (total_length * min_head_ratio * max_head) / (max_head + min_head_ratio * total_length)
+    tail = total_length - head
+    return (tail, head)
+
+def _any_normal(u: np.ndarray) -> np.ndarray:
+    '''Return any vector perpendicular to vector u with size 1.'''
+    x = np.array((1.0, 0.0, 0.0))
+    y = np.array((0.0, 1.0, 0.0))
+    vx = np.cross(u, x)
+    vy = np.cross(u, y)
+    size_vx = np.linalg.norm(vx)
+    size_vy = np.linalg.norm(vy)
+    if size_vx > size_vy:
+        return vx / size_vx
+    else:
+        return vy / size_vy
+

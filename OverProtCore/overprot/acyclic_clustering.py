@@ -4,6 +4,7 @@ Performs clustering of SSEs from a set of domains, preserving SSE order and type
 
 from __future__ import annotations
 import json
+from os import major
 from pathlib import Path
 import numpy as np
 import argparse
@@ -231,7 +232,7 @@ def make_precedence_matrix(names):
     return precedence
 
 def write_clustered_sses(directory: Path, domain_names: List[str], sse_table, precedence_matrix=None, edges=None):
-    sizes, means, variances, covariances = sse_coords_stats(sse_table)
+    sizes, means, variances, covariances, minor_axes = sse_coords_stats(sse_table)
     rainbow_colors = lib_sses.spectrum_colors_weighted(sizes)
 
     lengths = np.zeros_like(sse_table, dtype=np.int32)
@@ -280,6 +281,7 @@ def write_clustered_sses(directory: Path, domain_names: List[str], sse_table, pr
         sse['end_vector'] = means[j][3:6].tolist()
         sse['variance'] = variances[j]
         sse['covariance'] = covariances[j].tolist()
+        sse['minor_axis'] = minor_axes[j].tolist() if minor_axes[j] is not None else None
         consensus_sses.append(sse)
     consensus: Dict[str, Any] = {}
     consensus['n_sample'] = m
@@ -361,15 +363,15 @@ def make_hybrid_sses_from_table(table, sses):
 def sse_coords_stats(hybrids):
     n_domains = len(hybrids)
     n_sses = len(hybrids[0])
-    sizes, means, variances, covariances = [], [], [], []
+    sizes, means, variances, covariances, minor_axes = [], [], [], [], []
     for i in range(n_sses):
         sses = [ hybrids[j][i] for j in range(n_domains) if hybrids[j][i] is not None ]
         coords = np.zeros((6, len(sses)), dtype=float)
         for j, sse in enumerate(sses):
             coords[0:3, j] = sse['start_vector']
             coords[3:6, j] = sse['end_vector']
-        # mean = np.mean(coords, axis=1)
         mean = lib.safe_mean(coords, axis=1)
+        minor_axis = combine_strand_minor_axes(sses, mean[3:6] - mean[0:3])
         cov = np.cov(coords) if len(sses) > 1 else np.zeros((6,6), dtype=float)
         var = np.trace(cov)
         # print(i)
@@ -382,11 +384,44 @@ def sse_coords_stats(hybrids):
         means.append(mean)
         variances.append(var)
         covariances.append(cov)
-    return sizes, means, variances, covariances
+        minor_axes.append(minor_axis)
+    return sizes, means, variances, covariances, minor_axes
+
+def combine_strand_minor_axes(sses: list[dict], major_axis: np.ndarray) -> np.ndarray|None:
+    minor_axes = []
+    weights = []
+    for j, sse in enumerate(sses):
+        min_ax = sse.get('minor_axis')
+        if min_ax is not None:
+            minor_axes.append(min_ax)
+            sse_length = sse['end'] - sse['start'] + 1
+            weights.append(sse_length)
+    n = len(minor_axes)
+    if n == 0:
+        return None
+    minor_axes = np.array(minor_axes).T
+    weights = np.array(weights)
+    if n == 1:
+        result = minor_axes[:, 0]
+    elif n == 2:
+        u = minor_axes[:, 0]
+        v = minor_axes[:, 1]
+        if np.dot(u, v) >= 0:
+            result = weights[0] * u + weights[1] * v
+        else:
+            result = weights[0] * u - weights[1] * v
+    else:
+        M = minor_axes * np.sqrt(weights).reshape((1, -1))
+        # print('minor axes:', minor_axes.shape, 'M', M.shape)
+        U, S, Vh = np.linalg.svd(M, full_matrices=False)
+        result = U[:, 0]
+    # print('major:', major_axis.shape, 'result:', result.shape)
+    result = np.cross(np.cross(major_axis, result), major_axis)
+    result /= np.linalg.norm(result)
+    return result
 
 def calculate_duplicity(n_duplicates, n_1, n_2):
     duplicity = n_duplicates / min(n_1, n_2)
-    # duplicity = n_duplicates / max(n_1, n_2)
     return duplicity
 
 
@@ -753,7 +788,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
         cluster_edges = lib_acyclic_clustering_simple.cluster_edges(edges, acs.labels)
         # print('Table:', table)
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=acs.cluster_precedence_matrix, edges=cluster_edges) 
-        sizes, means, variances, covariances = sse_coords_stats(hybrids)
+        sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
         print('Sorted DAG:', lib_graphs.sort_dag(range(acs.n_clusters), lambda i,j: acs.cluster_precedence_matrix[i,j]))
         with open(cache_file, 'w') as w:
             w.write('\n'.join( str(l) for l in acs.labels ))
@@ -783,7 +818,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
     # print('Table:', table)
     # print('Hybrids:', hybrids)
     write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
-    sizes, means, variances, covariances = sse_coords_stats(hybrids)
+    sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
     print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
     print('Sizes:', sizes)
     
@@ -816,7 +851,7 @@ def run_simple_clustering(domains: List[Domain], directory: Path, min_occurrence
         # print('Table:', table)
         # print('Hybrids:', hybrids)
         write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
-        sizes, means, variances, covariances = sse_coords_stats(hybrids)
+        sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
         print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
         print('Sizes:', sizes)
         
@@ -933,7 +968,7 @@ def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotato
             # print('Table:', table)
             # print('Hybrids:', hybrids)
             write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
-            sizes, means, variances, covariances = sse_coords_stats(hybrids)
+            sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
             print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
             print('Sizes:', sizes)
             
@@ -981,7 +1016,7 @@ def run_clustering_with_sides(samples, directory: Path, protein_similarity_weigh
     print('Table:', table)
     print('Hybrids:', hybrids)
     write_clustered_sses(directory, [], hybrids, precedence_matrix=ac.g_precedence, edges=ac.g_edges)
-    sizes, means, variances, covariances = sse_coords_stats(hybrids)
+    sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
     print('G-edges:', *ac.g_edges, sep='\n')
     print('Sorted P-DAG:', lib_graphs.sort_dag(range(ac.n_p_clusters), lambda i,j: ac.cluster_precedence_matrix[i,j]))
     print('Sorted G-DAG:', lib_graphs.sort_dag(range(ac.n_g_clusters), lambda i,j: ac.g_precedence[i,j]))

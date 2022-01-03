@@ -21,3 +21,4 @@ cp libraries/* dist/  &&
 ./node_modules/node-minify/bin/cli.js  -c html-minifier  -i dist/overprot-viewer.css  -o dist/overprot-viewer.min.css  &&
 
 echo BUILD FINISHED
+

@@ -96,7 +96,7 @@ The third constraint can be formalized:
 - Cluster $A$ precedes cluster $B$ ($A \rightarrow B$) iff there exist SSEs $x \in A, y \in B$ such that $x \rightarrow y$.
 - There must be no sequence of clusters $A, B...$, such that $A \rightarrow B \rightarrow ... \rightarrow A$.
 
-TODO figures (from presentations/posters)
+TODO figures (from presentations/posters) - GM pr16
 
 In the merging step, the guide tree leaves are first populated with SSEs of their respective domains. In each internal node, the SSEs from the two children nodes are matched together and merged. The root then contains the consensus SSEs of the whole family. The matching and merging of two SSE graphs is in principle similar to matching (aligning) and merging of two weighted structures. The best matching is also found by dynamic programming. However, it is more complicated here, because 1) clusters of different type cannot be matched (this can cause the branching in the resulting graph), and 2) the dynamic programming algorithm is not as straightforward for matching DAGs as it is for matching sequences.
 

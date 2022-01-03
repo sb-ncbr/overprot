@@ -4,6 +4,8 @@
 
 ## Build
 
+Install dependencies listed in `build.sh` and then run:
+
 ```sh
 sh build.sh
 ```
