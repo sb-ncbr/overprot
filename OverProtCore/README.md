@@ -18,7 +18,7 @@ The main script is `overprot.py`.
 Example:
 
 ```sh
-python overprot.py 1.10.630.10 50 ../data/cyp_50/
+python overprot.py 1.10.630.10 ../data/cyp_50/ --sample_size 50
 ```
 
 will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save the results into directory `../data/cyp_50/`.

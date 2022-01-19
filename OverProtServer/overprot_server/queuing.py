@@ -51,7 +51,7 @@ def process_job(job_id: str):
         with open(stderr_file, 'w') as w_err:
             try:
                 proc = subprocess.run([OVERPROT_PYTHON, OVERPROT_PY, 
-                                    job_id, 'all', Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), 
+                                    job_id, Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), 
                                     '--domains', Path(DB_DIR_RUNNING, job_id, JOB_DOMAINS_FILE),
                                     '--structure_source', OVERPROT_STRUCTURE_SOURCE], 
                                     check=True, timeout=JOB_TIMEOUT, stdout=w_out, stderr=w_err)

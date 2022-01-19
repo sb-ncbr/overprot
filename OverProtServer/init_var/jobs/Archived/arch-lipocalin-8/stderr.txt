@@ -1,5 +1,1 @@
-Selected 20 (all) out of 20 domains
-| Downloading 20 structures (20 domains) ____________________________________________________________|
-|********************Warning: More than one model found for domain 1t0v_A_01 (using only model 1)
-********************************************************************************|
-Timing: SSA: 0:00:08.025539
+Warning: More than one model found for domain 1t0v_A_01 (using only model 1)

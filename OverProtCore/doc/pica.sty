@@ -1,0 +1,52 @@
+% \documentclass{article}
+\usepackage{pmboxdraw}
+\usepackage{authblk}
+\usepackage{amsmath}
+% \usepackage{amsfonts}
+% \usepackage{mathpazo}
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}  % also contains \strong
+% \usepackage{fontenc}
+\usepackage{xcolor}  % for \definecolor
+\usepackage{hyperref}  % for hyperlinks in Table of contents
+\usepackage{graphicx}
+
+\usepackage{caption}
+\captionsetup{font=footnotesize}
+
+% \usepackage{verbatim}
+\usepackage{fancyvrb}
+% \usepackage{color}
+\usepackage{setspace}  % for \setstretch
+\usepackage[parfill]{parskip}  % space between paragraphs instead of indents
+
+\setmainfont{DejaVu Serif}
+\setmonofont{DejaVu Sans Mono}
+% \setmathfont(Pica){DejaVu Math TeX Gyre}
+% \setmathrm{DejaVu Serif}
+% \renewcommand{\rmdefault}{DejaVu Serif}
+
+\setstretch{1.25}
+
+% \setcounter{secnumdepth}{3}
+
+\renewcommand{\Affilfont}{\raggedright\footnotesize}
+
+% \renewcommand{\strong}[1]{\textbf{#1}}
+
+\definecolor{CodeColor}{rgb}{.6, .4, .1}
+
+% \let\oldtexttt\texttt
+% \renewcommand{\texttt}[1]{\textcolor{CodeColor}{\oldtexttt{#1}}}
+\newcommand{\code}[1]{\textcolor{CodeColor}{\texttt{#1}}}
+
+% \let\oldverbatim\verbatim
+% \renewenvironment{verbatim}
+%     {\color{CodeColor}\begin{oldverbatim}}
+%     {\end{oldverbatim}}
+\DefineVerbatimEnvironment{codeblock}{Verbatim}{
+    formatcom=\color{CodeColor}\setstretch{1.0},
+    xleftmargin=0in
+    }
+
+\newcommand{\TODO}[1]{\textcolor{blue}{TODO: #1}}

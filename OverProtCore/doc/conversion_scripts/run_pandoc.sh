@@ -4,7 +4,8 @@ SCRIPT_DIR=$(dirname $0)
 cd $SCRIPT_DIR
 
 INFILE="../Description_of_methods.md"
-OUTFILE="../Description_of_methods.pdf"
+# OUTFILE="../Description_of_methods.pdf"
+OUTFILE="../Description_of_methods.tex"
 
 AUX_INFILE="$(dirname $INFILE)/tmp-$(basename $INFILE)"
 

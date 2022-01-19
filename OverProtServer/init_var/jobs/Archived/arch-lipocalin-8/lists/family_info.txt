@@ -1,4 +1,4 @@
-family_id: arch-lipocalin-8
+family_id: 6c297d4c-2070-4f9d-90b3-e04d02f83d1f
 n_pdbs: 20
 n_domains: 20
 n_sample: 20

@@ -38,8 +38,8 @@ def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('family', help='Family identifier for PDBe API (e.g. CATH code)', type=str)
-    parser.add_argument('sample_size', help='Number of domains to process (integer or "all")', type=str)
     parser.add_argument('outdir', help='Directory to save everything in', type=Path)
+    parser.add_argument('--sample_size', help='Number of domains to process (integer or "all")', type=str, default='all')
     parser.add_argument('--config', help=f'Configuration file (default: {DEFAULT_CONFIG_FILE})', type=Path, default=DEFAULT_CONFIG_FILE)
     parser.add_argument('--domains', help='File with the list of input domains (do not download domain list)', type=Path)
     parser.add_argument('--structure_source', help='Prepend a structure source to download.structure_sources parameter from the config file.', type=str)
@@ -54,7 +54,7 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(family: str, sample_size: int|str|None, outdir: Path, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
+def main(family: str, outdir: Path, sample_size: int|str|None = None, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
          domains: Optional[Path] = None, structure_source: Optional[str] = None, 
          out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
 

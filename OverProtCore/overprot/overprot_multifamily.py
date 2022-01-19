@@ -36,12 +36,12 @@ from . import overprot
 
 HLINE = '-' * 60
 
-def process_family(family: str, sample_size: int|str|None, directory: Path, config: Optional[Path] = None, domains: Optional[Path] = None) -> Optional[str]:
+def process_family(family: str, directory: Path, sample_size: int|str|None = None, config: Optional[Path] = None, domains: Optional[Path] = None) -> Optional[str]:
     '''Try running OverProt on a family. Return the error traceback if fails, None if succeeds.'''
     print(HLINE, family, sep='\n')
     print(HLINE, family, sep='\n', file=sys.stderr)
     try:
-        overprot.main(family, sample_size, directory, config=config, domains=domains)
+        overprot.main(family, directory, sample_size=sample_size, config=config, domains=domains)
         return None
     except Exception as ex:
         error = traceback.format_exc()
@@ -186,8 +186,8 @@ def parse_args() -> Dict[str, Any]:
     '''Parse command line arguments.'''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('family_list_file', help='File with list of family codes (whitespace-separated)', type=Path)
-    parser.add_argument('sample_size', help='Number of domains to process per family (integer or "all")', type=str)
     parser.add_argument('directory', help='Directory to save everything in', type=Path)
+    parser.add_argument('--sample_size', help='Number of domains to process per family (integer or "all")', type=str, default='all')
     parser.add_argument('-d', '--download_family_list', help='Download the current list of all CATH families (ignore family_list_file)', action='store_true')
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
     parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)
@@ -200,7 +200,7 @@ def parse_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def main(family_list_file: Path, sample_size: int|str|None, directory: Path, 
+def main(family_list_file: Path, directory: Path, sample_size: int|str|None = None, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
          only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
@@ -234,8 +234,8 @@ def main(family_list_file: Path, sample_size: int|str|None, directory: Path,
             lib_multiprocessing.Job(
                 name=family, 
                 func=process_family, 
-                args=(family, sample_size, directory/'families'/family),
-                kwargs={'config': config, 'domains': directory/'domain_lists'/f'{family}.json'}, 
+                args=(family, directory/'families'/family),
+                kwargs={'sample_size': sample_size, 'config': config, 'domains': directory/'domain_lists'/f'{family}.json'}, 
                 stdout=current_dir/f'{family}-out.txt',
                 stderr=current_dir/f'{family}-err.txt'
             ) for family in families]

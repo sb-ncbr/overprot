@@ -1,4 +1,4 @@
-family_id: arch-lipocalin-10
+family_id: a6716a11-bfa3-42f8-9ea1-cb6224f23481
 n_pdbs: 20
 n_domains: 20
 n_sample: 20

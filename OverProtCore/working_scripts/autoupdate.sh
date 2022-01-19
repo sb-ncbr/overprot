@@ -7,6 +7,7 @@ if [ $# -lt 1 ] ; then
 	return 1;
 	fi
 UPDATE=$1
+shift
 
 UPDATE_DIR=$DATA_DIR/$UPDATE
 
@@ -14,5 +15,5 @@ CONFIG=$(dirname $0)/overprot-config-overprotserverdb.ini
 
 mkdir -p $UPDATE_DIR
 echo "Data will be in $UPDATE_DIR"
-$PYTHON $OVERPROT_MULTI --download_family_list_by_size  --config $CONFIG --collect  xxx all $UPDATE_DIR/  --out $UPDATE_DIR/stdout.txt  --err $UPDATE_DIR/stderr.txt
+$PYTHON $OVERPROT_MULTI --download_family_list_by_size  --config $CONFIG --collect  xxx  $UPDATE_DIR/  --out $UPDATE_DIR/stdout.txt  --err $UPDATE_DIR/stderr.txt  "$@"
 
