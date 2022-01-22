@@ -1,154 +1,11 @@
-\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
-\PassOptionsToPackage{hyphens}{url}
-%
-\documentclass[12pt,draft]{article}
-\usepackage{lmodern}
-\usepackage{amssymb,amsmath}
-\usepackage{ifxetex,ifluatex}
-\usepackage{fixltx2e} % provides \textsubscript
-\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
-  \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
-  \usepackage{textcomp} % provides euro and other symbols
-\else % if luatex or xelatex
-  \usepackage{unicode-math}
-  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
-    \setmainfont[]{DejaVu Serif}
-    \setmonofont[Mapping=tex-ansi]{DejaVu Sans Mono}
-\fi
-% use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
-% use microtype if available
-\IfFileExists{microtype.sty}{%
-\usepackage[]{microtype}
-\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-\IfFileExists{parskip.sty}{%
-\usepackage{parskip}
-}{% else
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{6pt plus 2pt minus 1pt}
-}
-\usepackage{hyperref}
-\hypersetup{
-            pdfborder={0 0 0},
-            breaklinks=true}
-\urlstyle{same}  % don't use monospace font for urls
-\usepackage[margin=1in]{geometry}
-\usepackage{color}
-\usepackage{fancyvrb}
-\newcommand{\VerbBar}{|}
-\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\newenvironment{Shaded}{}{}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\setlength{\emergencystretch}{3em}  % prevent overfull lines
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{5}
-% Redefines (sub)paragraphs to behave more like sections
-\ifx\paragraph\undefined\else
-\let\oldparagraph\paragraph
-\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
-\fi
-\ifx\subparagraph\undefined\else
-\let\oldsubparagraph\subparagraph
-\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
-\fi
+\documentclass{article}
+\usepackage{Description_of_methods}
 
-% set default figure placement to htbp
-\makeatletter
-\def\fps@figure{htbp}
-\makeatother
-
-\usepackage{pmboxdraw}
-\usepackage{authblk}
-% \usepackage{amsfonts}
-% \usepackage{mathpazo}
-% \usepackage[no-math]{fontspec}
-% \usepackage{fontenc}
-
-% \setromanfont{DejaVu Serif}
-% \setmathfont(Pica){DejaVu Math TeX Gyre}
-% \setmathrm{DejaVu Serif}
-% \renewcommand{\rmdefault}{DejaVu Serif}
-% \usepackage{color}   %May be necessary if you want to color links
-% \usepackage{hyperref}
-% \hypersetup{
-%     colorlinks=true, %set true if you want colored links
-%     linktoc=all,     %set to all if you want both sections and subsections linked
-%     linkcolor=blue,  %choose some color if you want links to stand out
-% }
-
-% \setcounter{secnumdepth}{3}
-
-\renewcommand{\Affilfont}{\raggedright\footnotesize}
-
-% \definecolor{CodeColor}{rgb}{0.858, 0.188, 0.478}
-\definecolor{CodeColor}{rgb}{.6, .4, .1}
-
-\let\oldtexttt\texttt
-\renewcommand{\texttt}[1]{\textcolor{CodeColor}{\oldtexttt{#1}}}
-
-\let\oldverbatim\verbatim
-\renewenvironment{verbatim}
-    {\color{CodeColor}\begin{oldverbatim}}
-    {\end{oldverbatim}}
-
-% \newcommand{\oldtexttt}{\@texttt}
-% \renewcommand{\code}{\textcolor{red}}
-
-% \makeatletter  % Magic for using @ in command names
-% \renewcommand{\maketitle}{
-%     \bgroup
-%      \@title
-%     \begin{flushleft}
-%         \@author
-%     \end{flushleft}
-%     % \@date
-%     \egroup
-% }
-% \makeatother
-
-\date{}
 
 \begin{document}
 
-\title{Supplementary information for \\ ``OverProt: secondary structure consensus for protein families''}
+\title{Supplementary information for \\ ``OverProt: secondary structure consensus \\for protein families''}
 % \title{OverProt -- Description of methods}
-
-% $if(title)$ $endif$
 
 \author[1,2]{Adam Midlik}
 \author[1,2,3]{Ivana Hutařová Vařeková}
@@ -162,20 +19,18 @@
 \affil[3]{Faculty of Informatics, Masaryk University, Botanická 68a, 602 00 Brno, Czech Republic}
 \affil[4]{Department of Physical Chemistry, Regional Centre of Advanced Technologies and Materials, Faculty of Science, Palacký University, 17. listopadu 1192/12, 771 46 Olomouc, Czech Republic}
 \affil[*]{To whom correspondence should be addressed.}
-% \date{\today}
-
+\date{}  % omit date
 
 \maketitle
 
-% \tableofcontents
-
-\renewcommand*\contentsname{Table of contents}
-{
-\setcounter{tocdepth}{3}
+\renewcommand{\contentsname}{Table of contents}
 \tableofcontents
-}
-\hypertarget{introduction}{%
-\section{Introduction}\label{introduction}}
+\clearpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
 
 OverProt is a tool for construction and visualization of the secondary
 structure consensus for protein families. The consensus produced by
@@ -188,141 +43,156 @@ OverProt consists of three main parts: the main algorithm
 Server} presents the results on the web and allows user-defined
 computations.
 
-\hypertarget{terminology}{%
-\section{Terminology}\label{terminology}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Terminology}
 
 \begin{itemize}
-\item
-  \textbf{Protein structure} -- a set of atoms with assigned 3D
-  coordinates. A structure consists of one ore more \textbf{chains}. A
-  chain is a sequence of \textbf{residues}, which consist of the
-  individual \textbf{atoms}. OverProt works with structures in
-  \textbf{mmCIF format}. Structures deposited in the PDB {[}cite{]} are
-  referenced by their PDB ID (e.g.~\texttt{1tqn}). OverProt follows the
-  \emph{label*} numbering scheme when referencing chains and residues
-  within a structure (i.e.~items \texttt{label\_asym\_id} and
-  \texttt{label\_seq\_id} in the mmCIF file) -- this is sometimes
-  different from the \emph{auth*} numbering scheme.
-\item
-  \textbf{Protein domain} -- a part of protein structure which may be a
-  whole chain or a range (ranges) of residues in a chain. A domain is
-  defined by the structure identifier, chain identifier, and one or more
-  ranges of residues, e.g.~\texttt{1tqn,A,7:478} or
-  \texttt{1n26,A,2:9,94:192}. Residue ranges include the start and end
-  residue (e.g.~\texttt{5:8} means residues 5, 6, 7, 8).
-\item
-  \textbf{Protein family} -- a set of protein domains with reasonable
-  structural similarity. The set can be provided by the user or it can
-  be defined based on the CATH database {[}cite{]}, in which case the
-  family (\emph{CATH superfamily}) is identified by its CATH ID
-  (e.g.~\texttt{1.10.630.10}) and domains are identified by CATH domain
-  ID (e.g.~\texttt{1tqnA00}).
-\item
-  \textbf{Secondary structure element (SSE)} -- a section of a protein
-  chain with some secondary structure pattern. OverProt focuses on two
-  types of SSEs -- \textbf{helices} (H) and \textbf{β-strands} (E). Each
-  SSE within a protein structure can be identified by its chain
-  identifier, start (index of its first residue), end (index of its last
-  residue), and type. For comparing SSEs, it is convenient to simplify
-  an SSE to a line segment (i.e.~3D coordinates of the start and end
-  point).\\
-  The term β-connectivity refers to the way in which the strands are
-  connected: a \textbf{β-ladder} is a connection of two strands and can
-  be either parallel or antiparallel; a \textbf{β-sheet} is a set of
-  strands which are connected by β-ladders.\\
-  This model is kept as simple as possible (different helix types
-  (\(\alpha\), \(3_{10}\), \(\pi\)) are not distinguished; other SSE
-  type (loops, turns) are not taken into account). Secondary structure
-  assignment (i.e.~detection of SSEs) is performed by
-  \textbf{SecStrAnnotator}, more details can be found in its original
-  paper {[}cite{]}.
-\item
-  \textbf{Consensus SSE} -- a set of equivalent SSEs from different
-  family members. The \textbf{occurrence} of a consensus SSE is the
-  number of domains that contain it, divided by the total number of
-  domains in the family. (e.g.~consensus helix X = \{helix H1 in
-  domain1, helix H3 in domain2, helix H3 in domain3\}; domain4 contains
-  no helix X; the occurrence is 3/4 = 0.75 or 75\%).
-\item
-  \textbf{Secondary structure consensus} -- a set of consensus SSEs
-  together with their order and β-connectivity.
+  \item
+    \textbf{Protein structure} -- a set of atoms with assigned 3D
+    coordinates. A structure consists of one or more \textbf{chains}. A
+    chain is a sequence of \textbf{residues}, which consist of the
+    individual \textbf{atoms}. OverProt works with structures in
+    \textbf{mmCIF format}. Structures deposited in the PDB {[}cite{]} are
+    referenced by their PDB ID (e.g.~\code{1tqn}). OverProt follows the
+    \emph{label*} numbering scheme when referencing chains and residues
+    within a structure (i.e.~items \code{label\_asym\_id} and
+    \code{label\_seq\_id} in the mmCIF file) -- this is sometimes
+    different from the \emph{auth*} numbering scheme.
+  \item
+    \textbf{Protein domain} -- a part of protein structure, either a
+    whole chain or a range (ranges) of residues in a chain. A domain is
+    defined by the structure identifier (PDB ID), chain identifier, and one or more
+    ranges of residues, e.g.~\code{1tqn,A,7:478} or
+    \code{1n26,A,2:9,94:192}. Residue ranges include the start and end
+    residue (e.g.~\code{5:8} means residues 5, 6, 7, 8).
+  \item
+    \textbf{Protein family} -- a set of protein domains with reasonable
+    structural similarity. The set can be provided by the user or it can
+    be defined based on the CATH database {[}cite{]}, in which case the
+    family (\emph{CATH superfamily}) is identified by its CATH ID
+    (e.g.~\code{1.10.630.10}) and domains are identified by CATH domain
+    ID (e.g.~\code{1tqnA00}).
+  \item
+    \textbf{Secondary structure element (SSE)} -- a section of a protein
+    chain with some secondary structure pattern. OverProt focuses on two
+    types of SSEs -- \textbf{helices} (H) and \textbf{β-strands} (E). Each
+    SSE within a protein structure can be identified by its chain
+    identifier, start (index of its first residue), end (index of its last
+    residue), and type (H/E). For comparing SSEs, it is convenient to simplify
+    an SSE to a line segment (i.e.~3D coordinates of the start and end
+    point).\\
+    The term β-connectivity refers to the way in which the strands are
+    connected: a \textbf{β-ladder} is a connection of two strands and can
+    be either parallel or antiparallel; a \textbf{β-sheet} is a set of
+    strands which are connected by β-ladders.\\
+    This model is kept as simple as possible (different helix types
+    (\(\alpha\), \(3_{10}\), \(\pi\)) are not distinguished; other SSE
+    type (loops, turns) are not taken into account). Secondary structure
+    assignment (i.e.~detection of SSEs) is performed by
+    \textbf{SecStrAnnotator}, more details can be found in its original
+    paper {[}cite{]}.\\
+    We will sometimes use the term \textbf{base SSEs} to distinguish SSEs from consensus SSEs.
+  \item
+    \textbf{Consensus SSE} -- a set of equivalent SSEs from different
+    family members. 
+  \item
+    \textbf{Secondary structure consensus} -- a set of consensus SSEs
+    with a given order and β-connectivity.
 \end{itemize}
 
-\hypertarget{methods-overprot-core}{%
-\section{Methods -- OverProt Core}\label{methods-overprot-core}}
+    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methods -- OverProt Core}
 
 \textbf{OverProt Core} is an algorithm that constructs the secondary
 structure consensus for a given protein family. The algorithm proceeds
-in a number of steps, combined in \texttt{overprot.py}:
+in a number of steps. 
+(In the following text, \code{--xx} refers to a command-line option of \path{overprot.py},
+\code{[xx]yy} refers to a setting yy in section xx in the configuration file (\path{overprot-config.ini}).)
 
-\hypertarget{preparation}{%
-\subsection{Preparation}\label{preparation}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Preparation}
 
 \begin{itemize}
-\item
-  Download the list of domains for the family (if not already given by
-  \texttt{-\/-domains}) from PDBe API
-  (\texttt{https://www.ebi.ac.uk/pdbe/api/mappings/\{family\_id\}}).
-\item
-  Select sample: If \texttt{sample\_size} is different from
-  \texttt{all}, select a random subset of the domain list.\\
-  The family may contain multiple domains from the same PDB entry. If
-  \texttt{{[}sample\_selection{]}unique\_pdb} is \texttt{True}, then
-  these are treated as duplicates and only one of them is selected (the
-  first in alphabetical order).
-\item
-  Download structures: The structures of listed domains are downloaded
-  in mmCIF format, domains are cut out from the structures and saved in
-  separate files. The sources of structures are given by
-  \texttt{-\/-structure\_source} and
-  \texttt{{[}download{]}structure\_sources}. Structures are also
-  converted to PDB format for some later steps (MAPSCI). The download
-  step is performed by \texttt{StructureCutter} written in C\#.
-\end{itemize}
+  \item
+    The list of domains for the family is downloaded from PDBe API
+    \path{https://www.ebi.ac.uk/pdbe/api/mappings/{family_id}} 
+    (if not already given by \code{--domains}).
+  \item
+    Select sample: If \code{--sample\_size} is different from
+    \code{all} (default), a random subset of the domain list is selected.\\
+    The family may contain multiple domains from the same PDB entry. If
+    \code{[sample\_selection]{\allowbreak}unique\_pdb} is \code{True}, then
+    these are treated as duplicates and only one of them is selected (the
+    first in alphabetical order).
+  \item
+    Download structures: The structures of listed domains are downloaded
+    in mmCIF format, domains are cut out from the structures and saved in
+    separate files. The sources of structures are given by
+    \code{-\/-structure\_source} and
+    \code{{[}download{]}structure\_sources}. Structures are also
+    converted to PDB format for some later steps (MAPSCI). The download
+    step is performed by \code{StructureCutter} written in C\#.
+  \end{itemize}
+  
 
-\hypertarget{structural-alignment}{%
-\subsection{Structural alignment}\label{structural-alignment}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Structural alignment}
 
 Multiple structure alignment is performed in 2 steps:
 
 \begin{itemize}
 \item
   Program MAPSCI {[}cite Ilinkin et al., 2010{]} is used to calculate a
-  consensus structure (-\textgreater{} \texttt{mapsci/consensus.cif}).
+  consensus structure (\path{mapsci/consensus.cif}).
   For performance reasons, at most 100 domains are selected for this
-  calculation (in a quasi-random way, i.e.~for the same family selects
-  each time the same subset).\\
+  calculation (in a quasi-random way, i.e.~for the same family it selects 
+  the same subset every time).\\
   To reduce indeterminism and ease later visualization, the consensus
   structure is centered to the origin (0, 0, 0), rotated so that its PCA
   components are aligned to the XYZ axes (``the structure is laid
-  flat''), and flipped in a consistent way (roughly so that the chain
-  goes left-top to right-bottom and its ends are more in front).\\
+  flat''), and flipped in a consistent way (roughly so that the start and 
+  the end of the chain are more in front, and the chain goes from left-top 
+  to right-bottom).\\
   In general, MAPSCI produces a reasonable consensus structure, but the
   alignment of the individual domains is often poor -- therefore the
   following re-alignment step is necessary.
 \item
   In the realignment step, all domains are structurally aligned onto the
-  consensus structure via \texttt{cealign} algorithm {[}cite Shindyalov
+  MAPSCI consensus structure via \code{cealign} algorithm {[}cite Shindyalov
   and Bourne, 1998{]} provided in PyMOL module {[}cite{]}. In rare cases
-  the cealign fail (when the domain is too short) -- in such cases a
-  simple alignment algorithm \texttt{DumbAlign} is used instead
-  (theretically inefficient and inaccurate, but sufficient for these
+  cealign fails (when the domain is too short) -- in such cases a
+  simple alignment algorithm \code{DumbAlign} is used instead
+  (theretically inefficient and not allowing gaps, but sufficient for these
   very short domains).
 \end{itemize}
 
-\hypertarget{secondary-structure-assignment}{%
-\subsection{Secondary structure
-assignment}\label{secondary-structure-assignment}}
 
-The SSEs in each domain are detected by \texttt{SecStrAnnotator} {[}cite
-Midlik et al., 2019, 2021{]} (options \texttt{-\/-onlyssa}
-\texttt{-\/-verbose} \texttt{-\/-batch}).
 
-\hypertarget{guide-tree}{%
-\subsection{Guide tree}\label{guide-tree}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Secondary structure assignment}
 
-The domains are clustered by agglomerative clustering to produce a guide
-tree. During this step, each domain is first converted into a
+The SSEs in each domain are detected by \code{SecStrAnnotator} {[}cite
+Midlik et al., 2019, 2021{]} (options ~\code{-\/-onlyssa}
+~\code{-\/-verbose} ~\code{-\/-batch}).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Guide tree}
+
+The domains are clustered by agglomerative clustering to produce a \textbf{guide
+tree}. During this step, each domain is first converted into a
 \textbf{weighted structure} (a sequence of C-alpha coordinates with
 individual weight for each point). The two most similar weighted
 structures are then merged into a new weighted structure, and this is
@@ -332,51 +202,65 @@ to the tree root.
 This agglomerative algorithm can be expressed by the following
 pseudocode:
 
-\begin{verbatim}
+\begin{codeblock}
     Workset = { a weighted structure for each input domain }  
     while |Workset| > 1:  
         A, B = two nearest weighted structures in Workset
-        C = merge(A, B)  
-        Children[C] = {A, B}
+        C = merge_structures(A, B)  
+        Children of C = {A, B}
         Workset = Workset - {A, B} ∪ {C}
-\end{verbatim}
+\end{codeblock}
 
-At the end, \texttt{Workset} will only contain one weighted structure,
+At the end, \code{Workset} will only contain one weighted structure,
 which is the tree root. The topology of the tree will be defined by
-\texttt{Children}.
+\code{Children}. An example is shown in Figure \ref{fig:guide_tree}.
 
-Example: 5 structures were initially in \texttt{Workset}. B+C were
-merged into BC, then D+E into DE, then A+BC into ABC, and finally ABC+DE
-into ABCDE. The resulting tree is:
+\begin{figure}[h!]
+  \centering{
+    \begin{codeblock}
+                      A────────────┐
+                                   │
+                      B────┐       ├ABC──────┐
+                           ├BC─────┘         │
+                      C────┘                 ├ABCDE
+                                             │
+                      D────────┐             │
+                               ├DE───────────┘
+                      E────────┘
+    \end{codeblock}
+  }
+  \caption{An example of the guide tree construction. 5 structures were initially in \code{Workset}.
+  B+C were merged into BC, then D+E into DE, then A+BC into ABC, and finally ABC+DE into ABCDE.}
+  \label{fig:guide_tree}
+\end{figure}
 
-\begin{verbatim}
-    A────────────┐
-                 │
-    B────┐       ├ABC──────┐
-         ├BC─────┘         │
-    C────┘                 ├ABCDE
-                           │
-    D────────┐             │
-             ├DE───────────┘
-    E────────┘
-\end{verbatim}
+The details of the algorithm are described in section \ref{sec:appendix} Appendix (distance function
+\(D^{*}\), which determines the nearest weighted structures; operation
+\code{merge\_structures}).
 
-Details of the algorithm are described in Appendix (distance function
-\(D^{*}\), which determines the nearest weighted structures, operation
-\texttt{merge}).
 
-\hypertarget{merging}{%
-\subsection{Merging}\label{merging}}
 
-This is the core of the consensus generation algorithm. On the input, we
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Merging}
+\label{sec:merging}
+
+This step is the core of the consensus generation algorithm. On the input, we
 have a set of \emph{k} protein domains. Each domain is simplified to a
-sequence of SSEs (defined by their type, line segment, etc.). The
-required output is a clustering of all input SSEs. However, the
-clustering must fulfil these constraints:
+sequence of SSEs (defined by their type, line segment, etc.). 
+The required output is a clustering of all input SSEs (see Figure \ref{fig:clusters}).
+
+\begin{figure}[h!]
+  \centering\includegraphics[width=\linewidth]{figures/clusters.png}
+  \caption{An example of 5 domains simplified to a sequence of base SSEs 
+  (gray = helix, blue = strand) and their clustering into 11 clusters.}
+  \label{fig:clusters}
+\end{figure}
+
+However, the clustering must fulfil these constraints:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
+% \tightlist
 \item
   Each cluster can contain only elements of the same type (only helices
   or only strands).
@@ -384,160 +268,344 @@ clustering must fulfil these constraints:
   A cluster must not contain more than one element from the same protein
   domain.
 \item
-  There must be a partial ordering of the clusters.
+  There must be a partial order of the clusters. This constraint can be formalized as:
+  \begin{itemize}
+    \item
+      Base SSE \(x\) precedes base SSE \(y\) (written \(x \rightarrow y\)) iff they
+      are from the same protein domain and \(x\) goes before \(y\) in the sequence.
+    \item
+      Cluster \(P\) directly precedes cluster \(Q\) (\(P \Rightarrow Q\)) iff there
+      exist SSEs \(x \in P, y \in Q\) such that \(x \rightarrow y\).
+    \item
+      Cluster \(P\) precedes cluster \(Q\) (\(P \rightarrow Q\)) iff there
+      exists a sequence of clusters \(P \Rightarrow R_1 \Rightarrow ... 
+      \Rightarrow R_n \Rightarrow Q\) where \(n \geq 0\) (in other words, \(\rightarrow\) 
+      is the transitive closure of \(\Rightarrow\)).
+    \item
+      There must be no clusters \(P, Q\), such that
+      \(P \rightarrow Q\) and \(Q \rightarrow P\).
+  \end{itemize}
 \end{enumerate}
 
-The third constraint can be formalized:
+Note: The order of some clusters may be undefined (i.e.~neither 
+\(P \rightarrow Q\) nor \(Q \rightarrow P\)) if they contain no SSEs 
+from the same domain. Therefore \(\rightarrow\) is a partial order on the clusters (not a total order).
+We visualize the order by a directed acyclic graph (DAG), see Figure \ref{fig:dag_example}.
 
+\begin{figure}[h!]
+  \centering\includegraphics[width=0.6\linewidth]{figures/dag_ABCDE.png}
+  \caption{An example of a DAG representing clusters of SSEs from Figure \ref{fig:clusters}. 
+  The height of each rectangle shows the weight of the cluster (the number of base SSEs in the cluster).
+  The color shows the cluster type (gray = helix, blue = strand).
+  The direction of the edges is implicit (left to right).
+  The egdes that can be inferred from transitivity are not shown 
+  (i.e. we show only the transitive reduction (Hasse diagram)). }
+  \label{fig:dag_example}
+\end{figure}
+
+The merging step follows the guide tree. First, each guide tree leaf is
+populated with the DAG of SSEs of the respective domain (DAGs in the leaves are always paths). 
+In each internal node, the DAGs from the two children nodes are matched together and merged. 
+The root then contains the consensus SSEs of the whole family (see Figure \ref{fig:dag_merging}). 
+
+\begin{figure}[h!]
+  \centering\includegraphics[width=\linewidth]{figures/dag_merging.png}
+  \caption{The process of merging 5 DAGs based on the guide tree from Figure \ref{fig:guide_tree}.}
+  \label{fig:dag_merging}
+\end{figure}
+
+The matching and merging of two SSE DAGs is in principle similar to matching (aligning)
+and merging of two weighted structures. 
+The best matching is also found by dynamic programming.
+However, it is more complicated here, because 
+1) clusters of different type cannot be matched (this can cause the
+branching in the resulting DAG), 
+and 2) the dynamic programming algorithm is not as straightforward 
+for matching DAGs as it is for matching sequences.
+More details are provided in Appendix \ref{sec:appendix_matching_dags}.
+
+The β-connectivity is not directly considered in the merging algorithm 
+(though it is included in the distance function for DAG matching).
+Therefore it is necessary to determine the β-connectivity of the resulting clusters 
+based on the β-connectivity of the base SSEs.
+
+A β-ladder \(PQo\) (connecting strand clusters \(P\) and \(Q\) with orientation \(o\) (parallel/antiparallel)) 
+is included in the resulting consensus if
+
+\[  \frac { n_{PQo} } { \min{\{n_P, n_Q\}} } \geq 0.5  \]
+
+where \(n_P\) is the number of strands in cluster \(P\), 
+\(n_Q\) is the number of strands in cluster \(Q\),
+and \(n_{PQo}\) is the number of ladders connecting a strand in \(P\) to a strand in \(Q\)
+with orientation \(o\) (see Figure \ref{fig:dag_ladders}).
+
+\begin{figure}[h!]
+  \centering\includegraphics[width=\linewidth]{figures/dag_ladders.png}
+  \caption{Merging β-ladders from 5 domains. 
+  Lower arcs show parallel, upper arcs antiparallel ladders.
+  Ladder A is included because \( n_{PQo} / \min{\{n_P, n_Q\}} = 1 / \min{\{1, 5\}} = 1 \geq 0.5\).
+  Ladder B is not included because \( n_{PQo} / \min{\{n_P, n_Q\}} = 2 / \min{\{5, 5\}} = 0.4 < 0.5\).
+  The last column shows the separation of the consensus strands into sheets (connected components).}
+  \label{fig:dag_ladders}
+\end{figure}
+
+After the clustering, a variety of statistics are computed for each consensus SSE and saved in \path{results/consensus.sses.json}: 
 \begin{itemize}
-\tightlist
-\item
-  SSE \(x\) precedes SSE \(y\) (written \(x \rightarrow y\)) iff they
-  are in the same protein domain and \(x\) appears before \(y\).
-\item
-  Cluster \(A\) precedes cluster \(B\) (\(A \rightarrow B\)) iff there
-  exist SSEs \(x \in A, y \in B\) such that \(x \rightarrow y\).
-\item
-  There must be no sequence of clusters \(A, B...\), such that
-  \(A \rightarrow B \rightarrow ... \rightarrow A\).
+  \item
+    Occurrence -- the number of domains that contain this SSE, 
+    divided by the total number of domains in the family. 
+    In the previous example, the first strand occurs in 1 out of 5 domains, 
+    thus its occurrence is 0.2 or 20\%.
+  \item
+    Average length -- measured as the number of residues.
+  \item
+    Average line segment -- average starting and ending point in 3D.
+  \item
+    3D variability -- variance of the starting and ending point.
 \end{itemize}
 
-TODO figures (from presentations/posters) - GM pr16
+Each consensus SSE also gets a unique label (containing its type and sequential number, e.g. E0, H1, H2...) and color.
 
-In the merging step, the guide tree leaves are first populated with SSEs
-of their respective domains. In each internal node, the SSEs from the
-two children nodes are matched together and merged. The root then
-contains the consensus SSEs of the whole family. The matching and
-merging of two SSE graphs is in principle similar to matching (aligning)
-and merging of two weighted structures. The best matching is also found
-by dynamic programming. However, it is more complicated here, because 1)
-clusters of different type cannot be matched (this can cause the
-branching in the resulting graph), and 2) the dynamic programming
-algorithm is not as straightforward for matching DAGs as it is for
-matching sequences.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Annotation}
 
-TODO say what is implemented in which function
-
-\hypertarget{annotation}{%
-\subsection{Annotation}\label{annotation}}
-
-This is an optional step, in which the generated SSE consensus is used
-as annotation template for SecStrAnnotator and all family members are
+In this optional step, the generated SSE consensus is used
+as an annotation template for SecStrAnnotator and all family members are
 annotated. Before the annotation, the SSEs with low occurrence
 (\textless{} 5\%) are removed, which dramatically reduces the running
 time of SecStrAnnotator. Options for SecStrAnnotator:
-\texttt{-\/-ssa\ file} ~\texttt{-\/-align\ none}
-~\texttt{-\/-metrictype\ 3} ~\texttt{-\/-fallback\ 30}
-~\texttt{-\/-unannotated}.
+\code{-\/-ssa\ file} ~\code{-\/-align\ none}
+~\code{-\/-metrictype~3} ~\code{-\/-fallback\ 30}
+~\code{-\/-unannotated}. 
+Metric type 3 must be used, because the default metric requires 
+residue numbers for each SSE, but these are not available for the consensus SSEs. 
+Option \code{-\/-unannotated} includes also the unannotated SSEs in the resulting annotation files, 
+with labels prefixed by underscore (e.g. \code{\_H0}).
 
-\hypertarget{visualization}{%
-\subsection{Visualization}\label{visualization}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Visualization}
 
 The generated SSE consensus is visualized by several SVG diagrams with
-different settings and \texttt{diagram.json} file is produced, which
-will be used for interactive visualization be OverProt Viewer. A PyMOL
-session (.pse) is created, with the structure consensus from MAPSCI
-(shown as ribbon) and the SSE consensus (shown as flat-end cylinders
-(helices) and round-end cylinders (strands)). A PNG image is also
-rendered from the session. A session with all domains and their SSEs is
-generated if \texttt{{[}visualization{]}create\_multi\_session} is
-\texttt{True} (very slow, not recommended for larger families).
+different settings and \path{diagram.json} file is produced, which
+will be used for interactive visualization by OverProt Viewer. 
+A PyMOL session (.pse) is created, with the MAPSCI consensus structure 
+shown as ribbon and the SSE consensus shown as cylinders and arrows.
+The width of each cylinder/arrow shows to the occurrence of the corresponding helix/strand.
+A PNG image is also rendered from the session. 
+A session with all domains and their SSEs is
+generated if \code{{[}visualization{]} create\_multi\_session} is
+\code{True} (very slow, not recommended for larger families).
 
-\hypertarget{multi-family-mode}{%
-\subsection{Multi-family mode}\label{multi-family-mode}}
 
-Multiple families can be processed in parallel using
-\texttt{overprot\_multifamily.py}.
 
-\hypertarget{interactive-visualization-by-overprot-viewer}{%
-\section{Interactive visualization by OverProt
-Viewer}\label{interactive-visualization-by-overprot-viewer}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Execution}
+
+OverProt Core is implemented mostly in Python 
+and designed to run in the Linux environment (tested on Ubuntu 20.04).
+On the other operating systems, it can be run in Docker.
+Before the first execution, the dependencies must be installed:
+
+\begin{codeblock}
+  sh install.sh --clean
+\end{codeblock}
+
+All steps of the algorithm are combined in \path{overprot.py}. 
+It is run in a Python virtual environment. 
+The arguments are the CATH family ID and the output directory:
+
+\begin{codeblock}
+  . venv/bin/activate
+  python overprot.py --help
+  python overprot.py 1.10.630.10 data/cyp/
+\end{codeblock}
+
+Multiple families can be processed in parallel using \path{overprot_multifamily.py}. 
+The arguments are the family list and the output directory:
+
+\begin{codeblock}
+  . venv/bin/activate
+  python overprot_multifamily.py --help
+  python overprot_multifamily.py data/families.txt data/multifamily/
+\end{codeblock}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Interactive visualization by OverProt Viewer}
 
 \textbf{OverProt Viewer} is a web component for interactive
 visualization of the SSE consensus. Its input is the preprocessed
-\texttt{diagram.json} file. It is implemented in TypeScript with D3.js.
+\path{diagram.json} file. It is implemented in TypeScript with D3.js.
 
-\hypertarget{data-computation-for-overprot-server}{%
-\section{Data computation for OverProt
-Server}\label{data-computation-for-overprot-server}}
+OverProt Viewer shows each consensus SSE as a rectangle, whose height 
+corresponds to its occurrence 
+and width corresponds to its average length (number of residues). 
+Strands from the same β-sheet are shown in the same color, helices are shown in gray. 
+Connections of the strands in a β-sheet are shown by arcs 
+(lower arcs -- parallel, upper arcs -- antiparallel). 
+Hovering over an SSE shape shows the SSE details, see Figure \ref{fig:overprot_viewer}.
+
+\begin{figure}[h!]
+  \centering\includegraphics[width=\linewidth]{figures/overprot_viewer.png}
+  \caption{OverProt Viewer showing the secondary structure consensus for CATH family 1.10.630.10 (Cytochrome P450).}
+  \label{fig:overprot_viewer}
+\end{figure}
+
+Visualization options include: 
+
+\begin{itemize}
+  \item
+    Color:
+    \begin{denseitemize}     \item
+        Uniform -- Show all SSEs in the same color.
+      \item
+        Type -- Show β-strands in blue, helices in gray.
+      \item
+        Sheet -- Assign the same color to all β-strands from the same β-sheet, show helices in gray.
+      \item
+        Variability -- The 3D variability measures the standard deviation of the SSE start and end point coordinates. 
+        Low values (dark) indicate conserved SSE position, high values (bright) indicate variable SSE position.
+      \item
+        Rainbow -- Standard rainbow coloring from N-terminus (blue) to C-terminus (red).
+    \end{denseitemize}
+    
+  \item
+  Shape:
+  \begin{denseitemize}
+    \item
+      Rectangle -- Show SSEs as rectangles. The height of the rectangle indicates its occurrence, the width indicates its average length (number of residues).
+    \item
+      SymCDF -- The cumulative distribution function (CDF) describes the statistical distribution of the SSE length. 
+      The SymCDF shape consists of four symmetrical copies of the CDF, the bottom right quarter is the classical CDF.
+      The widest part of the shape corresponds to the maximum length, 
+      the narrowest to the minimum length, the height corresponds to the occurrence. 
+  \end{denseitemize}
+  
+  \item
+    Beta-connectivity:
+    \begin{denseitemize}
+      \item
+        On -- The beta-connectivity shows how β-strands are connected to each other in β-sheets.
+        The lower arcs indicate parallel ladders,
+        the upper arcs indicate antiparallel ladders.
+      \item
+        Off -- The beta-connectivity arcs are hidden.
+    \end{denseitemize}
+    
+  \item
+  Occurrence threshold:
+  \begin{denseitemize}
+    \item
+      Hides the SSEs with occurrence lower than the specified threshold. Can be set to any number from 0\% to 100\% (default 20\%).
+  \end{denseitemize}
+\end{itemize}
+
+OverProt Viewer can be set to dispatch and listen to HTML events. 
+When an SSE is hovered over or clicked, the viewer dispatches an event (\code{PDB.overprot.hover} or \code{PDB.overprot.select}). 
+The information about the selected elements is included in \code{event.detail}.
+Conversely, the viewer handles the incoming events (\code{PDB.overprot.do.hover} 
+or \code{PDB.overprot.do.select}) by highlighting the selected elements. 
+This allows interactivity across several web components, as demonstrated by 
+the Integrated Viewer in the OverProt web (\path{https://overprot.ncbr.muni.cz/static/integration/index.html?family_id=1.10.630.10&domain_id=1jfbA00})
+-- hovering over an SSE in any of the three components (OverProt Viewer, interactive 2DProts, MolStar Viewer) highlights it in all three.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data computation for OverProt Server}
 
 \textbf{OverProt Server} serves precomputed SSE consensuses (database)
-and runs the OverProt Core algorithm for user-defined sets of domains
-(jobs).
+and runs the OverProt Core algorithm for user-defined sets of domains (jobs). 
+OverProt Server is implemented using Python (Flask), Gunicorn, Redis Queue, Nginx, and Docker.
+
 
 The database is constructed in this way:
 
 \begin{itemize}
-\tightlist
 \item
   Retrieve the current list of families from CATH
-  (ftp://orengoftp.biochem.ucl.ac.uk\allowbreak/cath/releases/latest-release/cath-classification-data/cath-domain-list.txt).
+  (\path{ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-release/cath-classification-data/cath-domain-list.txt}).
   (This file also contains the domain definitions, but they are in an
-  incompatible numbering scheme (\emph{auth*}), therefore they are not
+  incompatible numbering scheme (\emph{auth*}), so they are not
   used). This is currently 6631 families, out of which 64 are empty
-  families (December 2021).
+  families (January 2022).
 \item
   Retrieve the domain lists for each family, including chains and
   residue ranges, from PDBe API
-  (https://www.ebi.ac.uk/pdbe/api/mappings/\{family\_id\}). This is
-  currently over 470k domains (December 2021).
+  (\path{https://www.ebi.ac.uk/pdbe/api/mappings/{family_id}}). This is
+  currently over 470k domains (January 2022).
 \item
   Remove duplicates (i.e.~multiple domains from the same PDB entry).
-  This is currently over 200k domains (December 2021).
+  This is currently over 200k domains (January 2022).
 \item
   Apply the OverProt Core algorithm to each family.
 \end{itemize}
 
 The whole process is realized by:
 
-\begin{Shaded}
-\begin{Highlighting}[]
-    \ExtensionTok{python}\NormalTok{  overprot_multifamily.py  --download_family_list_by_size \textbackslash{}}
-\NormalTok{    --config working_scripts/overprot-config-overprotserverdb.ini \textbackslash{}}
-\NormalTok{    --collect  xxx  all  }\VariableTok{$UPDATE_DIRECTORY}  
-\end{Highlighting}
-\end{Shaded}
+\begin{codeblock}
+    python  overprot_multifamily.py  --download_family_list_by_size
+    --config working_scripts/overprot-config-overprotserverdb.ini
+    --collect  -  $UPDATE_DIRECTORY                                                           $
+\end{codeblock}
 
 The database is updated weekly.
 
-\hypertarget{appendix}{%
-\section{Appendix}\label{appendix}}
 
-\hypertarget{computation-of-distance-function-for-two-weighted-structures}{%
-\subsection{Computation of distance function for two weighted
-structures}\label{computation-of-distance-function-for-two-weighted-structures}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Appendix} 
+\label{sec:appendix}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Distance function for two weighted structures}
 
 A weighted structure \(A\) is a tuple
-\((n^A, \mathbf{R}^A, \mathbf{W}^A, k^A)\) where \(n^A\) is the length
+\( (n^A, \mathbf{R}^A, \mathbf{W}^A, k^A) \) where \(n^A\) is the length
 of the weighted structure (number of points), \(\mathbf{R}^A\) is the
 matrix of their coordinates (\(n^A \times 3\)), \(\mathbf{W}^A\) is the
 vector of their relative weights \(\in (0,1]\), and \(k^A\) is the
-absolute weight of \(A\) (scalar). Example of a weighted structure:
+absolute weight of \(A\). Example of a weighted structure:
 
-\[n^A = 4 \quad
-\mathbf{R}^A = \begin{bmatrix}-1.1&-2.9&0.1&0.4\\0.0&1.1&0.9&-2.7\\5.2&2.1&0.0&0.8\end{bmatrix} \quad
-\mathbf{W}^A = \begin{bmatrix}1&0.5&0.8&1\end{bmatrix} \quad
-k^A = 10\]
+\[
+  n^A = 4 \quad
+  \mathbf{R}^A = \begin{bmatrix}-1.1&-2.9&0.1&0.4\\0.0&1.1&0.9&-2.7\\5.2&2.1&0.0&0.8\end{bmatrix} \quad
+  \mathbf{W}^A = \begin{bmatrix}1&0.5&0.8&1\end{bmatrix} \quad
+  k^A = 10
+\]
 
 \(\mathbf{r}^A_i\) and \(w^A_i\) will refer to \(i\)-th column of
 \(\mathbf{R}^A\) and \(\mathbf{W}^A\).
 
-TODO nice format (matrices and vectors in bold)
-
 A protein domain can be converted into a weighted structure as follows:
-\(n\) is the number of residues, \(r^A_i\) are the coordinates of the
+\(n\) is the number of residues, \(\mathbf{r}^A_i\) are the coordinates of the
 C-alpha atom of \(i\)-th residue, \(w^A_i\) is 1, and \(k^A\) is 1.
 
-Distance function \(d\) is defined for two weighted points:
+The distance function \(d\) is defined for two weighted points:
 
-\[d((r^A_i, w^A_i), (r^B_j, w^B_j)) = \left(1 - e^{-\lVert r^A_i-r^B_j \rVert / R_0}\right) \cdot \min\{ w^A_i, w^B_j \} + \frac{1}{2} \lvert w^A_i-w^B_j \rvert\]
+\[
+  d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
+  = \left( 1 - e^{-\lVert \mathbf{r}^A_i-\mathbf{r}^B_j \rVert / R_0} \right) \cdot \min\{ w^A_i, w^B_j \} + \frac{1}{2} \lvert w^A_i-w^B_j \rvert
+\]
 
 In case that one of the weighted points is undefined (\(\bot\)), \(d\)
 is still defined:
 
-\[d((r^A_i, w^A_i), \bot) = \frac{1}{2} w^A_i \qquad d(\bot, (r^B_j, w^B_j)) = \frac{1}{2} w^B_j\]
+\[
+  d \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = \frac{1}{2} w^A_i \qquad 
+  d \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = \frac{1}{2} w^B_j
+\]
 
-(\(d\) is not the Euclidean distance of the two points.
+(Note: Distance \(d\) is not the Euclidean distance of the two points.
 \(d \in [0,1)\).)
 
 An alignment of two weighted structures \(A\), \(B\) is a sequence of
@@ -551,24 +619,37 @@ not matched. Example of a valid alignment for \(n^A = 4, n^B = 5\):
 
 \[\begin{bmatrix}1&2&3&4&\bot&\bot\\1&\bot&2&3&4&5\end{bmatrix}\]
 
-\(D(A, B, M) = \sum\limits_{(p, q) \in M}{d((r^A_{p}, w^A_{p}), (r^B_{q}, w^B_{q}))}\)
+The distance function \(D\) for two weighted structures \(A\) and \(B\) with a given alignment \(M\) is defined:
 
-The best alignment \(M^*(A, B)\) is the alignment \(M\) which minimizes
-\(D(A, B, M)\).
+\[  D(A, B, M) = \sum\limits_{(p, q) \in M}{d \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}  \]
 
-The distance of \(A\) and \(B\) is \(D^*(A, B) = D(A, B, M^*(A, B))\).
+The distance function \(D^*\) of two weighted structures \(A\) and \(B\) is then:
+
+\[  D^*(A, B) = D(A, B, M^*)  \]
+
+where \(M^*\) is the best alignment of \(A\) and \(B\), i.e. the alignment which minimizes \(D(A, B, M^*)\).
 
 The best alignment is found by dynamic programming (this is basically
-the Needleman-Wunsch algorithm {[}cite{]}) -- for this, the distance
+the Needleman-Wunsch algorithm {[}cite{]}). For this, the distance
 function \(d\) is converted into a score function \(s\):
 
-\[s((r^A_i, w^A_i), (r^B_j, w^B_j)) = \frac{1}{2} w^A_i + \frac{1}{2} w^B_j - d((r^A_i, w^A_i), (r^B_j, w^B_j))\]
+\[
+  s \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
+  = \frac{1}{2} w^A_i + \frac{1}{2} w^B_j - d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right)
+\]
 
-\[s((r^A_i, w^A_i), \bot) = 0 \qquad s(\bot, (r^B_j, w^B_j)) = 0\]
+\[
+  s \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = 0 \qquad 
+  s \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = 0
+\]
 
-\[S(A, B, M) = \sum\limits_{(p, q) \in M}{s((r^A_{p}, w^A_{p}), (r^B_{q}, w^B_{q}))}\]
+Similarly, \(D\) is converted into \(S\):
 
-\[S(A, B, M) = \sum\limits_{i=1}^{n^A}{w^A_i} + \sum\limits_{j=1}^{n^B}{w^B_j} - D(A, B, M)\]
+\[
+  S(A, B, M) 
+  = \sum\limits_{(p, q) \in M}{s \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}
+  = \sum\limits_{i=1}^{n^A}{w^A_i} + \sum\limits_{j=1}^{n^B}{w^B_j} - D(A, B, M)
+\]
 
 From this equation it can be seen, that maximizing \(S\) by dynamic
 programming also minimizes \(D\).
@@ -578,38 +659,131 @@ metric (i.e.~\(D^*(A,A) = 0\), \(D^*(A,B) = D^*(B,A)\), and
 \(D^*(A,B) + D^*(B,C) \geq D^*(A,C)\) for any weighted structures
 \(A, B, C\)).
 
-Having two structures \(A, B\) and their best alignment
-\(M^*(A, B) = [(p_1, q_1), ..., (p_n, q_n)]\), we can define operation
-\(merge\) as follows:
-
-\[merge(A, B) = C = (n^C, R^C, W^C, k^C)\]
-
-\[n^C = n\]
-
-\[r^C_i = \frac {r^A_{p_i} w^A_{p_i} k^A + r^B_{q_i} w^B_{q_i} k^B} {w^A_{p_i} k^A + w^B_{q_i} k^B}\]
-
-\[w^C_i = w^A_{p_i} k^A + w^B_{q_i} k^B\]
-
-\[k^C = k^A + k^B\]
-
-(If \(p_i=\bot\), the values can be calculated by setting
-\(w^A_{p_i} = 0\), thus simplifying to
-\(r^C_i = r^B_{q_i}, w^C_i = w^B_{q_i}\). Similarly for \(q_i=\bot\).)
-
 Remark: When finding the two nearest items in the work set, it is not
 necessary to calculate the distance \(D^*\) for every pair of items --
 there are specialized data structures that can significantly decrease
 the number of distance calculations. We use a non-standard structure
-NN-tree (nearest neighbour tree). (Standard structures like VP-tree,
-GH-tree, GNAT, M-tree etc. (TODO name, what I tried) either miss some of
+NN-tree (nearest neighbor tree). In some larger protein families this
+can reduce the number of distance computations to roughly 20\%. 
+(Standard structures like GH-tree, M-tree etc. either miss some of
 the necessary operations (insert, delete) or perform worse than NN-tree
-for this particular application.) In some larger protein families this
-can reduce the number of distance computations to roughly 20\%.
+for this particular application.) This is only possible because \(D^*\) 
+is a metric.
 
-\hypertarget{references}{%
-\section{References}\label{references}}
 
-\href{http://example.com/}{Exemplini F \emph{et al.} (2019) Examples in
-scientific literature. J Exemp Biol, 42, 1-100.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Merging two weighted structures}
+
+Having two weighted structures \(A, B\) and their best alignment
+\(M^*(A, B) = [(p_1, q_1), ..., (p_n, q_n)]\), we can define operation
+\(merge\_structures\) as follows:
+
+\[  merge\_structures(A, B) = C = (n^C, \mathbf{R}^C, \mathbf{W}^C, k^C)  \]
+
+\[  n^C = n  \]
+
+\[  \mathbf{r}^C_i = \frac {\mathbf{r}^A_{p_i} w^A_{p_i} k^A + \mathbf{r}^B_{q_i} w^B_{q_i} k^B} {w^A_{p_i} k^A + w^B_{q_i} k^B}  \]
+
+\[  w^C_i = w^A_{p_i} k^A + w^B_{q_i} k^B  \]
+
+\[  k^C = k^A + k^B  \]
+
+(If \(p_i=\bot\), the values can be calculated by setting
+\(w^A_{p_i} = 0\), thus simplifying to
+\(\mathbf{r}^C_i = \mathbf{r}^B_{q_i}, w^C_i = w^B_{q_i}\). Similarly for \(q_i=\bot\).)
+
+
+
+
+\subsection{Matching two SSE DAGs}
+\label{sec:appendix_matching_dags}
+
+The distance function \(d\) for two SSEs \(P\) and \(Q\) is defined 
+as the sum of Euclidean distances between their start points and between their end points:
+
+\[  d(P, Q) = \lVert \mathbf{u}_P - \mathbf{u}_Q \rVert + \lVert \mathbf{v}_P - \mathbf{v}_Q \rVert  \]
+
+where \(\mathbf{u}_P, \mathbf{v}_P\) is the start and end point of SSE \(P\), 
+\(\mathbf{u}_Q, \mathbf{v}_Q\) is the start and end point of SSE \(Q\).
+
+The score function \(s\) is then defined:
+\[
+  s(P, Q) = \begin{cases}
+              SR(d(P, Q)) \quad & \mathrm{if}\ P, Q\ \mathrm{are\ of\ the\ same\ type\ (helix/strand)} \\
+              0           \quad & \mathrm{otherwise}
+            \end{cases}
+\]
+
+where \(SR\) is the ``smoothed ramp'' function, which is basically 
+a smooth, strictly decreasing version of the function \(y = \max\{0, 1 - x/d_0\} \). \\
+\(SR\) is defined by the implicit equation 
+\(  d_0 (1 - \alpha) y^2 + (x + d_0 (2\alpha - 1)) y - d_0 \alpha = 0  \).
+When solving this quadratic equation, the greater root is selected.
+The parameters were set to \(d_0 = 30\) and \(\alpha = 0.01\).
+
+The distance function \(d\) and score function \(s\) can be easily 
+extended from base SSEs to consensus SSEs. 
+For a consensus SSE \(P\), the point \(\mathbf{u}_P\) is simply 
+the arithmetic mean of \(\mathbf{u}\) of all base SSEs included in \(P\).
+Similarly for \(\mathbf{v}_P\).
+
+However, it will be useful to define the weight of a consensus SSE \(P\) (\(w_P\)) 
+as the number of base SSEs included in \(P\).
+Similarly, we will define the weights of the consensus β-ladders:
+\(w_{PQp}\) is the number of parallel ladders connecting 
+a base strand in \(P\) to a base strand in \(Q\),
+\(w_{PQa}\) is the number of antiparallel ladders connecting 
+a base strand in \(P\) to a base strand in \(Q\). 
+(Note: base SSEs/ladders can be understood as consensus SSEs/ladders with weight equal to 1.)
+
+In order to reflect the beta-connectivity in the score function, 
+the ``ladder correction'' is applied to the strands:
+
+\[  s_\mathrm{corr}(P_i, Q_j) = \frac{1}{2} \left( s(P_i, Q_j) + \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) s(P_k, Q_l) \right)  \]
+
+where \(P_i, P_k\) are strands in the first matched DAG, 
+\(Q_j, Q_l\) are strands in the second matched DAG, 
+and the coefficients \(\alpha_{ijkl}, \beta_{ijkl}\) 
+maximize the value of \(s_\mathrm{corr}(P_i, Q_j)\)
+while fulfilling the following constraints:
+
+\[  \alpha_{ijkl} \geq 0 \qquad  \beta_{ijkl} \geq 0  \]
+
+\[  \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) \leq 1  \]
+
+\[  \sum_l \alpha_{ijkl} \leq \frac{w_{P_i P_k a}}{w_{P_i}}  \qquad  \sum_l \beta{ijkl} \leq \frac{w_{P_i P_k p}}{w_{P_i}}  \]
+
+\[  \sum_k \alpha_{ijkl} \leq \frac{w_{Q_j Q_l a}}{w_{Q_j}}  \qquad  \sum_k \beta{ijkl} \leq \frac{w_{Q_j Q_l p}}{w_{Q_j}}  \]
+
+For each pair \(P_i, Q_j\), the values of coefficients \(\alpha_{ijkl}, \beta_{ijkl}\) 
+are determined by a greedy algorithm (i.e.~first assigning the greatest possible value 
+to coefficients corresponding to the highest \(s(P_k, Q_l)\), then second highest etc.). 
+
+For helices, no ``ladder correction'' is necessary, so \(s_\mathrm{corr}(P_i, Q_j) = s(P_i, Q_j)\).
+
+The best matching of two SSE DAGs is the one which maximizes the total score without breaking any of the three constraints stated in Section \ref{sec:merging}.
+
+\[  S(A, B, M) = \sum_{(P_i, Q_j) \in M} s_\mathrm{corr}(P_i, Q_j)  \]
+
+Problem decomposition for dynamic programming:
+
+\[ \begin{aligned}
+  S(\graph{G}, \graph{H}) = \max\Big( & \{ S(\graph{G}-P, \graph{H}) \mid P \in \mathrm{sinks}(\graph{G}) \} \\
+                            \cup\     & \{ S(\graph{G}, \graph{H}-Q) \mid Q \in \mathrm{sinks}(\graph{H}) \} \\
+                            \cup\     & \{ S(\graph{G}-P, \graph{H}-Q) + s_\mathrm{corr}(P, Q) \mid P \in \mathrm{sinks}(\graph{G}), Q \in \mathrm{sinks}(\graph{H}) \} \Big)  
+\end{aligned} \]
+
+\TODO{continue with the matching and merging algorithm (at least its outline, or move the text from the main text)}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{References}
+
+\TODO{}
+
 
 \end{document}

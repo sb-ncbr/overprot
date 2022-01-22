@@ -3,7 +3,7 @@ set -e
 DIR=$(dirname $0)
 cd $DIR
 
-NAME="pica"
+NAME="Description_of_methods"
 
 xelatex $NAME.tex  \
 &&  xelatex $NAME.tex  \

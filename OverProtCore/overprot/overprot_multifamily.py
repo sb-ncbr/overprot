@@ -187,7 +187,7 @@ def parse_args() -> Dict[str, Any]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('family_list_file', help='File with list of family codes (whitespace-separated)', type=Path)
     parser.add_argument('directory', help='Directory to save everything in', type=Path)
-    parser.add_argument('--sample_size', help='Number of domains to process per family (integer or "all")', type=str, default='all')
+    parser.add_argument('--sample_size', help='Number of domains to process per family (integer or "all", default: "all")', type=str, default='all')
     parser.add_argument('-d', '--download_family_list', help='Download the current list of all CATH families (ignore family_list_file)', action='store_true')
     parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
     parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)

@@ -50,3 +50,9 @@
     }
 
 \newcommand{\TODO}[1]{\textcolor{blue}{TODO: #1}}
+
+\newenvironment{denseitemize}
+    { \begin{itemize} \setlength\itemsep{-6pt} }
+    { \end{itemize} }
+
+\newcommand{\graph}[1]{\boldsymbol{#1}}  % For graph names in math mode

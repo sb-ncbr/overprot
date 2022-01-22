@@ -925,7 +925,8 @@ def get_labels_from_memberlists(memberlists: List[List[int]]) -> np.ndarray:
         labels[members] = label
     return labels
 
-def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
+def dynprog_match_dags__old(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
+    '''Contains a bug (sorting vertices 1 doesn't guarantee the best matching).'''
     n_vertices1, n_vertices2 = scores.shape
     precedence1 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
     precedence2 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
@@ -983,6 +984,76 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
     assert lib.are_unique(i for i, j in matching)
     assert lib.are_unique(j for i, j in matching)
     total_score = cumulative[m-1, n-1]
+    return matching, total_score
+    # TODO try to vectorize computation of cumulative and direction
+    # TODO put larger (or more branched) dag on rows, smaller on columns
+    # TODO keep edge list or precedence matrix (decide which if more efficient)
+
+def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
+    n_vertices1, n_vertices2 = scores.shape
+    precedence1 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
+    precedence2 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
+    # sorted_vertices1 = lib_graphs.sort_dag(range(n_vertices1), lambda u,v: precedence1[u,v])
+    tipsets1, tipset_edges1 = lib_graphs.left_subdag_tipsets(n_vertices1, edges1, precedence_matrix=precedence1)
+    tipsets2, tipset_edges2 = lib_graphs.left_subdag_tipsets(n_vertices2, edges2, precedence_matrix=precedence2)
+    assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges1)
+    assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges2)
+    # lib.log_debug('n1 n2 m2', len(sorted_vertices1), len(tipsets2), len(tipset_edges2))
+    m, n = len(tipsets1), len(tipsets2)
+    cumulative = np.full((m, n), -1.0)
+    cumulative[0, :] = 0
+    cumulative[:, 0] = 0
+    # direction = np.zeros((m, n), dtype=np.int32)  # 0 = move 1 up (skip tip1), -k = move k left (skip one of tipset2), +k = move 1 up and k left (match tip1 to one of tipset2)
+    tip_matrix = np.empty((m, n, 2), dtype=np.int32)  
+    tipset_edges1_by_outvertex = defaultdict(list)
+    tipset_edges2_by_outvertex = defaultdict(list)
+    dir = np.full((m, n, 2), NONMATCHED, dtype=np.int32)
+    for edge in tipset_edges1:
+        tipset_edges1_by_outvertex[edge.outvertex].append(edge)
+    for edge in tipset_edges2:
+        tipset_edges2_by_outvertex[edge.outvertex].append(edge)
+    for i in range(1, m):
+        tipset1 = tipsets1[i]
+        inedges1 = tipset_edges1_by_outvertex[i]
+        for j in range(1, n):
+            tipset2 = tipsets2[j]
+            inedges2 = tipset_edges2_by_outvertex[j]
+            # Skip any of tipset1:
+            for i_predecessor, _, tip1 in inedges1:
+                if cumulative[i_predecessor, j] > cumulative[i, j]:
+                    cumulative[i, j] = cumulative[i_predecessor, j]
+                    dir[i, j] = (i_predecessor, j)
+            # Skip any of tipset2:
+            for j_predecessor, _, tip2 in inedges2:
+                if cumulative[i, j_predecessor] > cumulative[i, j]:
+                    cumulative[i, j] = cumulative[i, j_predecessor]
+                    dir[i, j] = (i, j_predecessor)
+            # Match any of tipset1 to any of tipset2:
+            for i_predecessor, _, tip1 in inedges1:
+                for j_predecessor, _, tip2 in inedges2:
+                    candidate_cum = cumulative[i_predecessor, j_predecessor] + scores[tip1, tip2]
+                    if candidate_cum > cumulative[i,j]:
+                        cumulative[i,j] = candidate_cum
+                        dir[i,j] = (i_predecessor, j_predecessor)
+                        tip_matrix[i, j] = (tip1, tip2)
+    # lib.print_matrix(cumulative, 'tmp/cumulative.tsv')
+    # lib.print_matrix(direction, 'tmp/direction.tsv')
+
+    # Reconstruct path (matching):
+    i, j = m-1, n-1
+    matching: Matching = []
+    while i > 0 and j > 0:
+        i_predecessor, j_predecessor = dir[i, j]
+        if i_predecessor != i and j_predecessor != j:
+            tip1, tip2 = tip_matrix[i, j]
+            matching.append((tip1, tip2))
+        i, j = i_predecessor, j_predecessor
+    matching.reverse()
+    assert lib.are_unique(i for i, j in matching)
+    assert lib.are_unique(j for i, j in matching)
+    total_score = cumulative[m-1, n-1]
+    # if total_score != score2:
+    #     print(f'------------------------\n{total_score} != {score2}\n{matching}\n-{set(matching)-set(matching2)}\n+{set(matching2)-set(matching)}\nedges1:{edges1}\nedges2:{edges2}')  # DEBUG
     return matching, total_score
     # TODO try to vectorize computation of cumulative and direction
     # TODO put larger (or more branched) dag on rows, smaller on columns
@@ -1077,8 +1148,7 @@ def include_min_ladder_in_score_matrix_weighted(score: np.ndarray, weights1: np.
             remaining_edge_weights_j = [w/weight_uj for *_, w in edges_j]
             remaining_weight = 1.0
             acquired_score = 0.0
-            scored_edge_pairs = sorted((score[vi, vj], ei, ej) 
-                for ei, (_ui, vi, oi, *_) in enumerate(edges_i) for ej, (_uj, vj, oj, *_) in enumerate(edges_j) if oi == oj)
+            scored_edge_pairs = sorted((score[vi, vj], ei, ej) for ei, (_ui, vi, oi, *_) in enumerate(edges_i) for ej, (_uj, vj, oj, *_) in enumerate(edges_j) if oi == oj)
             while remaining_weight > 0 and len(scored_edge_pairs) > 0:
                 best_score, ei, ej = scored_edge_pairs.pop()
                 weight = min(remaining_weight, remaining_edge_weights_i[ei], remaining_edge_weights_j[ej])
@@ -1301,7 +1371,11 @@ class GuidedAcyclicClustering:
                     # lib.print_matrix(scores, 'tmp/scores_with_ladder_correction.tsv')
                 if weight_scores:
                     scores = scores * weights1.reshape((-1, 1)) * weights2.reshape((1, -1))
+
                 matching, matching_score = dynprog_match_dags(scores, prec_edges1, prec_edges2)
+                matching_old, matching_score_old = dynprog_match_dags__old(scores, prec_edges1, prec_edges2)  # DEBUG
+                assert matching_score >= matching_score_old, f'Score {matching_score} < old score {matching_score_old}'
+                
                 new_vertices, new_prec_edges = merge_dags(n1, n2, prec_edges1, prec_edges2, matching, draw_result=False and (i==2*n_leaves-2))
                 new_coords, new_weights = self.aggregate_coords_and_weights(new_vertices, coords1, coords2, weights1, weights2, sample_aggregation_function)
                 new_members = self.aggregate_members(new_vertices, members[left], members[right])
@@ -1332,17 +1406,6 @@ class GuidedAcyclicClustering:
         self.labels = get_labels_from_memberlists(final_members)
         self.cluster_precedence_matrix = cluster_precedence_matrix
     
-    # @staticmethod
-    # def aggregate_coords_and_weights(new_vertices: Matching, coords1, coords2, weights1, weights2, aggregation_function) -> Tuple[np.ndarray, np.ndarray]:
-    #     new_coords_weights = [
-    #         (coords1[u], weights1[u]) if v == NONMATCHED 
-    #         else (coords2[v], weights2[v]) if u == NONMATCHED 
-    #         else aggregation_function(coords1[u], weights1[u], coords2[v], weights2[v]) 
-    #         for (u, v) in new_vertices]
-    #     new_coords = np.array([c for c, w in new_coords_weights])
-    #     new_weights = np.array([w for c, w in new_coords_weights])
-    #     return new_coords, new_weights
-
     @staticmethod
     def aggregate_coords_and_weights(new_vertices: Matching, coords1, coords2, weights1, weights2, aggregation_function) -> Tuple[np.ndarray, np.ndarray]:
         n = len(new_vertices)
@@ -1382,4 +1445,4 @@ class GuidedAcyclicClustering:
             new_edge_weights[edge] += weight
         new_edges = [(p, q, orient, weight) for (p, q, orient), weight in sorted(new_edge_weights.items())]
         return new_edges
-        
+    

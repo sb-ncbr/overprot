@@ -69,8 +69,9 @@ def laying_rotation_translation(A: numpy.ndarray, return_laid_coords: bool = Fal
     '''Return rotation and translation matrices which center A and align the PCA1, 2, 3 with axes x, y, z.
     If return_laid_coords==True, also return the transformed matrix A.
     One of 4 possible results is selected so that: 
-    1) starting coordinates tend to be more left-top (x < y), ending more right-bottom (x > y), 
-    2) starting and ending coordinates tend to be more in front (z > 0), middle more behind (z < 0).'''
+    1) starting and ending coordinates tend to be more in front (z > 0), middle more behind (z < 0).
+    2) starting coordinates tend to be more left-top (x < y), ending more right-bottom (x > y), 
+    '''
     cA = numpy.mean(A, axis=1, keepdims=True)
     R = laying_rotation(A - cA)
     t = -R @ cA
@@ -80,8 +81,9 @@ def laying_rotation(A: numpy.ndarray) -> numpy.ndarray:
     '''Return rotation matrix which aligns the PCA1, 2, 3 with axes x, y, z.
     Centered input matrix is expected.
     One of 4 possible results is selected so that: 
-    1) starting coordinates tend to be more left-top (x < y), ending more right-bottom (x > y), 
-    2) starting and ending coordinates tend to be more in front (z > 0), middle more behind (z < 0).'''
+    1) starting and ending coordinates tend to be more in front (z > 0), middle more behind (z < 0).
+    2) starting coordinates tend to be more left-top (x < y), ending more right-bottom (x > y), 
+    '''
     assert A.shape[0] == 3
     # assert A.shape[1] >= 3  # ?
     n = A.shape[1]

@@ -307,7 +307,7 @@ def _color_by_annotation(domain_name: str, annotation_file: Path, base_color: st
             cmd.select(sel_name, sel_definition)
             cmd.color(color, sel_name)
         if show_line_segments:
-            _create_line_segment(sse, _segment_group_name(domain_name), coloring)
+            _create_line_segment(sse, _segment_group_name(domain_name), coloring, enable_occurrence_threshold=0.0)
         cmd.deselect()
     cmd.dss(domain_name)
 

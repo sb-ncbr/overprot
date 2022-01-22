@@ -904,7 +904,7 @@ def smoothed_ramp(x: np.ndarray, x0: float, a: float) -> np.ndarray:
     '''Smooth and strictly decreasing approximation of function f(x) = max(1-x/k, 0).
     [0, inf) -> (0, 1]
     a is a smoothness parameter from interval [0, 1).
-    For a==0, the function is equal to f(x) = max(1-x/k, 0)'''
+    For a==0, the function is equal to f(x) = max(1-x/x0, 0)'''
     assert 0 <= a < 1
     A = x0 * (1 - a)
     B = x + x0 * (2*a - 1)
