@@ -131,35 +131,40 @@ def format_domains_csv(domains: List[dict], file: Path):
 def format_domains_json(domains: List[dict], file: Path):
     lib.dump_json(domains, file)
 
+def format_domain_json(domain: dict, file: Path):
+    lib.dump_json(domain, file)
+
 
 def main(input_family_json: Path, input_sample_json: Path, 
         pdbs_html: Optional[Path] = None, pdbs_demo_html: Optional[Path] = None, pdbs_json: Optional[Path] = None, pdbs_csv: Optional[Path] = None, 
         domains_html: Optional[Path] = None, domains_demo_html: Optional[Path] = None, domains_json: Optional[Path] = None, domains_csv: Optional[Path] = None, 
         sample_html: Optional[Path] = None, sample_demo_html: Optional[Path] = None, sample_json: Optional[Path] = None, sample_csv: Optional[Path] = None,
-        out_dir: Optional[Path] = None) -> Optional[int]:
+        out_dir: Optional[Path] = None,
+        per_domain_out_dir: Optional[Path] = None,
+        family_id: Optional[str] = None) -> Optional[int]:
     '''Foo'''
     # TODO add docstring
-    with open(Path(input_family_json)) as r:
-        family = json.load(r)
+    with open(input_family_json) as r:
+        family: dict[str, list[dict]] = json.load(r)
     domains = [dom for doms in family.values() for dom in doms]
-    with open(Path(input_sample_json)) as r:
+    with open(input_sample_json) as r:
         sample = json.load(r)
 
     if out_dir is not None:
-        Path(out_dir).mkdir(exist_ok=True)
-        shutil.copy(input_family_json, Path(out_dir, 'family.json'))
-        pdbs_html = Path(out_dir, 'pdbs.html')
-        pdbs_demo_html = Path(out_dir, 'pdbs-demo.html')
-        pdbs_json = Path(out_dir, 'pdbs.json')
-        pdbs_csv = Path(out_dir, 'pdbs.csv')
-        domains_html = Path(out_dir, 'domains.html')
-        domains_demo_html = Path(out_dir, 'domains-demo.html')
-        domains_json = Path(out_dir, 'domains.json')
-        domains_csv = Path(out_dir, 'domains.csv')
-        sample_html = Path(out_dir, 'sample.html')
-        sample_demo_html = Path(out_dir, 'sample-demo.html')
-        sample_json = Path(out_dir, 'sample.json')
-        sample_csv = Path(out_dir, 'sample.csv')
+        out_dir.mkdir(exist_ok=True)
+        shutil.copy(input_family_json, out_dir/'family.json')
+        pdbs_html = out_dir/'pdbs.html'
+        pdbs_demo_html = out_dir/'pdbs-demo.html'
+        pdbs_json = out_dir/'pdbs.json'
+        pdbs_csv = out_dir/'pdbs.csv'
+        domains_html = out_dir/'domains.html'
+        domains_demo_html = out_dir/'domains-demo.html'
+        domains_json = out_dir/'domains.json'
+        domains_csv = out_dir/'domains.csv'
+        sample_html = out_dir/'sample.html'
+        sample_demo_html = out_dir/'sample-demo.html'
+        sample_json = out_dir/'sample.json'
+        sample_csv = out_dir/'sample.csv'
 
     if pdbs_html is not None:
         format_pdbs_html(family, pdbs_html, table_id='pdbs', links=True)
@@ -187,6 +192,13 @@ def main(input_family_json: Path, input_sample_json: Path,
         format_domains_json(sample, sample_json)
     if sample_csv is not None:
         format_domains_csv(sample, sample_csv)
+
+    if per_domain_out_dir is not None:
+        per_domain_out_dir.mkdir(parents=True, exist_ok=True)
+        for domain in domains:
+            domain_id = domain['domain']
+            domain['family'] = family_id
+            format_domain_json(domain, per_domain_out_dir/f'{domain_id}.json')
 
     return None
 

@@ -141,9 +141,6 @@ def search() -> Any:
     # else:
     #     return flask.render_template('search_fail.html', entity=query)
 
-def normalize_domain_id(domain_id: str) -> str:
-    ...
-
 @app.route('/pdb/<string:pdb_id>', methods=['GET'])
 def pdb(pdb_id: str) -> Any:
     if SEARCHER_CACHE.value.has_pdb(pdb_id):
@@ -203,11 +200,11 @@ def api_doc() -> Any:
     url_root = flask.request.url_root.rstrip('/')
     return flask.render_template('api_doc.html', root=url_root)
 
-@app.route('/api/domain/annotation/<string:annot_file>')
-def api_domain_annotation(annot_file: str) -> Any:
-    '''annot_file should be {domain_id}-annotated.sses.json'''
-    subdir = annot_file[1:3]
-    return flask.redirect(f'/data/db/domain/annotation/{subdir}/{annot_file}')
+@app.route('/api/domain/<string:endpoint>/<string:file>')
+def domain_api(endpoint: str, file: str) -> Any:
+    '''file should start with domain_id'''
+    subdir = file[1:3]
+    return flask.redirect(f'/data/db/domain/{endpoint}/{subdir}/{file}')
 
 @app.route('/base')  # debug
 def base() -> Any:

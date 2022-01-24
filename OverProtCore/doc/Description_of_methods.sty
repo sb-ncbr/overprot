@@ -2,6 +2,7 @@
 \usepackage{pmboxdraw}
 \usepackage{authblk}
 \usepackage{amsmath}
+\usepackage{amssymb}
 % \usepackage{amsfonts}
 % \usepackage{mathpazo}
 \usepackage[margin=1in]{geometry}
@@ -56,3 +57,8 @@
     { \end{itemize} }
 
 \newcommand{\graph}[1]{\boldsymbol{#1}}  % For graph names in math mode
+
+\newcommand{\rmurl}[1]{{\urlstyle{same}\url{#1}}}  % \url in normal font
+\newcommand{\mycite}[2]{\hyperlink{cit:#1}{#2}}
+\newcommand{\myreference}[3]{\hypertarget{cit:#1}{\hangindent=2em\href{#3}{#2 \rmurl{#3}}}}
+\newcommand{\etal}{\emph{et al.}}

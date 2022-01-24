@@ -260,6 +260,7 @@ def main(family_list_file: Path, directory: Path, sample_size: int|str|None = No
                 collect_results2(families, f, '{x}/results/consensus.png',                c, 'family/consensus_3d/consensus-{x}.png')
                 collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
                 collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
+                collect_results2(families, f, '{x}/domain_info/*.json', c, 'domain/info/', breakout_function = lambda file: file.name[1:3])
                 lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
                 lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
                 

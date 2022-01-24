@@ -1,3 +1,6 @@
+// const OVERPROT_BASE_URL = ''
+const OVERPROT_BASE_URL = 'https://overprot.ncbr.muni.cz'
+
 // Converts color name ('grey', 'gray' will work) to HEX
 function colorNameToHex(colorName){
 	const ctx = document.createElement('canvas').getContext('2d');
@@ -18,8 +21,22 @@ function hexToRgb(hex) {
 	} : null;
 }
 
+// Get element by ID and if it doesn't exist, throw an error (if required) or print warning (if not required)
+function getElementByIdAndCheck(elementId, required=false){
+	const element = document.getElementById(elementId);
+	if (element == null){
+		const message = `HTML element with ID "${elementId}" was not found`;
+		if (required) {
+			throw Error(message);
+		} else if (elementId != null) {
+			console.warn(message);
+		}
+	}
+	return element;
+}
+
 class IntegratedViewer {
-	constructor() {
+	constructor(setting) {
 		this.plugins = {
 			'twoD': {
 				'instance': undefined,
@@ -43,15 +60,19 @@ class IntegratedViewer {
 		this.pdbId;
 		this.structAsymId;
 		this.authAsymId;
-		this.entityId;
+		this.entityId;		
+
+		this.view1dDiv = getElementByIdAndCheck(setting.view1dDiv, true);
+		this.view2dDiv = getElementByIdAndCheck(setting.view2dDiv, true);
+		this.view3dDiv = getElementByIdAndCheck(setting.view3dDiv, true);
 		
-		this.familyAndDomainForm = document.getElementById('familyAndDomainForm');
-		this.familiesSelectEle = document.getElementById('familiesSelector');
-		this.domainsSelectEle = document.getElementById('domainsSelector');
-		this.submitButton = document.getElementById('submitFamilyAndDomainForm');
+		this.familyAndDomainForm = getElementByIdAndCheck(setting.familyAndDomainForm);
+		this.familiesSelectEle = getElementByIdAndCheck(setting.familySelect);
+		this.domainsSelectEle = getElementByIdAndCheck(setting.domainSelect);
+		this.submitButton = getElementByIdAndCheck(setting.submitButton);
 		
-		this.currentFamilyIdEle = document.getElementById('currentFamilyIdEle');
-		this.currentDomainIdEle = document.getElementById('currentDomainIdEle');				
+		this.currentFamilyIdEle = getElementByIdAndCheck(setting.currentFamilyDiv);
+		this.currentDomainIdEle = getElementByIdAndCheck(setting.currentDomainDiv);		
 	}
 	
 	parseUrl() {
@@ -63,13 +84,17 @@ class IntegratedViewer {
 	}
 	
 	showCurrentFamilyAndDomain() {
-		this.currentFamilyIdEle.innerHTML = `Current family (CATH): <strong>${this.familyId}</strong>`;
-		this.currentDomainIdEle.innerHTML = `Current domain: <strong>${this.domainId}</strong>`;
+		if (this.currentDomainIdEle) {
+			this.currentFamilyIdEle.innerHTML = `Current family (CATH): <strong>${this.familyId}</strong>`;
+		}
+		if (this.currentDomainIdEle) {
+			this.currentDomainIdEle.innerHTML = `Current domain: <strong>${this.domainId}</strong>`;
+		}
 	}
 	
 	async setData() {	
 		// domains we need to get current domain data, ranges - to get entityId from chainId (=== chain_id(PDBeAPI))
-		const domainsResponse = await fetch(`/data/db/family/lists/${this.familyId}/domains.json`);
+		const domainsResponse = await fetch(`${OVERPROT_BASE_URL}/data/db/family/lists/${this.familyId}/domains.json`);
 		const domains = await domainsResponse.json();
 		
 		const currentDomainData = domains.filter(d => d.domain === this.domainId)[0];
@@ -139,17 +164,19 @@ class IntegratedViewer {
 	
 	bindFormSubmitListener() {
 		const _this = this;
-		this.familyAndDomainForm.addEventListener('submit', (event) => {
-			event.preventDefault();
-			try {
-				const requestedUrl = new URL(_this.currentUrl);
-				requestedUrl.searchParams.set('family_id', _this.familiesSelectEle.value);
-				requestedUrl.searchParams.set('domain_id', _this.domainsSelectEle.value);
-				window.location.href = requestedUrl.href;
-			} catch (error) {
-				throw new Error(error.message);
-			}
-		});
+		if (this.familyAndDomainForm) {
+			this.familyAndDomainForm.addEventListener('submit', (event) => {
+				event.preventDefault();
+				try {
+					const requestedUrl = new URL(_this.currentUrl);
+					requestedUrl.searchParams.set('family_id', _this.familiesSelectEle.value);
+					requestedUrl.searchParams.set('domain_id', _this.domainsSelectEle.value);
+					window.location.href = requestedUrl.href;
+				} catch (error) {
+					throw new Error(error.message);
+				}
+			});
+		}
 	}
 	
 	render3D() {
@@ -171,11 +198,13 @@ class IntegratedViewer {
 		}
 		// Alternative coordinate server: https://cs.litemol.org/ (same syntax)
 
-		//Get element from HTML/Template to place the viewer 
-		var viewerContainer = document.getElementById('myViewer');
+		// Create pdbe-molstar-viewer div
+		const molstarViewerDiv = document.createElement('div');
+		molstarViewerDiv.setAttribute('id', 'pdbe-molstar-viewer');
+		this.view3dDiv.appendChild(molstarViewerDiv);
 
 		//Call render method to display the 3D view
-		viewerInstance.render(viewerContainer, options);
+		viewerInstance.render(molstarViewerDiv, options);
 		
 		// Promise for 3D load completion
 		const loadComplete = new Promise((resolve, reject) => {
@@ -291,195 +320,223 @@ class IntegratedViewer {
 	}
 		
 	render2D() {
-		// document.addEventListener('DOMContentLoaded', () => {
-			//Create plugin instance
-			const pluginInstance = new PdbTopologyViewerPlugin();
-			this.plugins.twoD.instance = pluginInstance;
-			//Get element from HTML/Template to place the view
-			const viewContainer = document.getElementById('pdb-topology-viewer');
-			// console.log(this.pdbId, this.entityId, this.authAsymId, this.familyId, this.domainId)
-			const options = {
-			  entryId: this.pdbId,
-			  entityId: this.entityId,
-			  // as auth_asym_id (mmCIF) === chain_id (PDBeAPI) === chainId internally used in TopologyViewer code
-			  chainId: this.authAsymId,
-			  // structAsymId should be provided as well as we actually need to request 2DProts layout data based on structAsymId from withing TopologyViewer, BUT TopologyViewer itself uses auth_asym_id === chain_id === chainId (internally)
-			  structAsymId: this.structAsymId,
-			  familyId:	this.familyId,
-			  domainId: this.domainId,
-			  twoDProtsTimestamp: this.twoDProtsTimestamp,
-			  // entryId: '1akd',
-			  // entityId: '1',
-			  // chainId: 'A',
-			  // entryId: '3oh1',
-			  // entityId: '1',
-			  // chainId: 'A',
-			} 
+		//Create plugin instance
+		const pluginInstance = new PdbTopologyViewerPlugin();
+		this.plugins.twoD.instance = pluginInstance;
+		// console.log(this.pdbId, this.entityId, this.authAsymId, this.familyId, this.domainId)
+		const options = {
+			entryId: this.pdbId,
+			entityId: this.entityId,
+			// as auth_asym_id (mmCIF) === chain_id (PDBeAPI) === chainId internally used in TopologyViewer code
+			chainId: this.authAsymId,
+			// structAsymId should be provided as well as we actually need to request 2DProts layout data based on structAsymId from withing TopologyViewer, BUT TopologyViewer itself uses auth_asym_id === chain_id === chainId (internally)
+			structAsymId: this.structAsymId,
+			familyId:	this.familyId,
+			domainId: this.domainId,
+			twoDProtsTimestamp: this.twoDProtsTimestamp,
+			// entryId: '1akd',
+			// entityId: '1',
+			// chainId: 'A',
+			// entryId: '3oh1',
+			// entityId: '1',
+			// chainId: 'A',
+		} 
+
+		// Create pdb-topology-viewer div
+		const pdbTopologyViewerDiv = document.createElement('div');
+		pdbTopologyViewerDiv.setAttribute('id', 'pdb-topology-viewer');
+		this.view2dDiv.appendChild(pdbTopologyViewerDiv);
+	
+		//Call render method to display the 2D view
+		pluginInstance.render(pdbTopologyViewerDiv, options);
 		
-			//Call render method to display the 2D view
-			pluginInstance.render(viewContainer, options);
-			
-			// 2D => 1D hover event listener
-			document.addEventListener('PDB.topologyViewer.mouseover', (event) => {
-				document.querySelector('overprot-viewer').dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {
-					detail: {
-								'sses': [{'label': event.eventData.parentSSEId}]
-							}
-						}));
-			});
-			
-			document.addEventListener('PDB.topologyViewer.mouseout', (event) => {
-				document.querySelector('overprot-viewer').dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {
-					detail: {
-								'sses': []
-							}
-						}));
-			});
+		// 2D => 1D hover event listener
+		document.addEventListener('PDB.topologyViewer.mouseover', (event) => {
+			document.querySelector('overprot-viewer').dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {
+				detail: {
+							'sses': [{'label': event.eventData.parentSSEId}]
+						}
+					}));
+		});
+		
+		document.addEventListener('PDB.topologyViewer.mouseout', (event) => {
+			document.querySelector('overprot-viewer').dispatchEvent(new CustomEvent('PDB.overprot.do.hover', {
+				detail: {
+							'sses': []
+						}
+					}));
+		});
 	}
 	
 	render1D() {
 		// Actually insert in HTML rather than render
-		const html = `<overprot-viewer id='anything' file='/data/db/family/diagram/diagram-${this.familyId}.json' width=1800 height=200 color-method='rainbow' shape-method='symcdf' beta-connectivity='on' occurrence-threshold='25%' dispatch-events='true' listen-events='true'></overprot-viewer>`;
-		
-		const container = document.getElementById('overprot-wrapper');
-		container.innerHTML = html;
+		const html = `<overprot-viewer id="anything" file="${OVERPROT_BASE_URL}/data/db/family/diagram/diagram-${this.familyId}.json" width="1800" height="200" color-method="rainbow" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%" dispatch-events="true" listen-events="true"></overprot-viewer>`;
+		this.view1dDiv.innerHTML = html;
 	}
 	
+	// TODO don't run these 2 function if select elements not present (adam)
 	async loadFamiliesSelectOptions() {
-		console.log('families request sent');
-		// Get txt from overprot API
-		const response = await fetch('/data/db/families.txt');
-		const txt = await response.text();
-		console.log('families request parsed');
-		// Parse txt to get arr with family IDs
-		const options = txt.replace(/\r/g, "").split(/\n/);
-		// Populate familiesSelectEle with that arr
-		const ele = $(this.familiesSelectEle);
-		this.populateSelectEle(ele, options);
-		console.log('families select populated');
-		return ele;
+		if (this.familiesSelectEle) {
+			console.log('families request sent');
+			// Get txt from overprot API
+			const response = await fetch(`${OVERPROT_BASE_URL}/data/db/families.txt`);
+			const txt = await response.text();
+			console.log('families request parsed');
+			// Parse txt to get arr with family IDs
+			const options = txt.replace(/\r/g, "").split(/\n/);
+			// Populate familiesSelectEle with that arr
+			const ele = $(this.familiesSelectEle);
+			this.populateSelectEle(ele, options);
+			console.log('families select populated');
+		}
 	}
 	
 	async loadDomainsSelectOptions(familyId) {
-		// Get json from overprot API
-		console.log('domains request sent');
-		const responseOverprotDomains = await fetch(`/data/db/family/lists/${familyId}/domains.json`);
-		const overprotDomains = await responseOverprotDomains.json();
-		console.log('domains request parsed');
-		// Potentially both domain lists from Overprot and 2DProts are consistent
-		// If not, implement these: get two lists, and remove from Overprot list whatever is not in 2DProts list
-		// You need to also request for a timestamp for that family before requesting the list from 2DProts
-		// Plan:
-		// 1. parallel request via Promise.all for overprot list and 2DProts HTML for that family
-		// 2. parsing 2DProts HTML to get timestamp for that family
-		// 3. request to 2DProts domain_list for that family using obtained timestamp
-		// 4. remove from Overprot list whatever is not in 2DProts list
-		// TRY CATCH - if cannot find domain_list, leave options as from overprot
-		// const responseTwoDProtsDomains = await fetch(`https://2dprots.ncbr.muni.cz/static/web/generated-${familyId}/2021-10-04T11_52_33_653629990_02_00/domain_list.txt`);
-		// const twoDProtsDomains = await responseTwoDProtsDomains.text();
-		// const twoDProtsOptions = twoDProtsDomains.replace(/\r/g, "").split(/\n/);
-		
-		// Parse json to get arr with domain IDs
-		const overprotOptions = overprotDomains.map(domain => domain.domain);
-		
-		// Populate domainsSelectEle with that arr
-		const ele = $(this.domainsSelectEle);
-		this.populateSelectEle(ele, overprotOptions);
-		console.log('domains select populated');
-		return ele;
+		if (this.domainsSelectEle) {
+			// Get json from overprot API
+			console.log('domains request sent');
+			const responseOverprotDomains = await fetch(`${OVERPROT_BASE_URL}/data/db/family/lists/${familyId}/domains.json`);
+			const overprotDomains = await responseOverprotDomains.json();
+			console.log('domains request parsed');
+			// Potentially both domain lists from Overprot and 2DProts are consistent
+			// If not, implement these: get two lists, and remove from Overprot list whatever is not in 2DProts list
+			// You need to also request for a timestamp for that family before requesting the list from 2DProts
+			// Plan:
+			// 1. parallel request via Promise.all for overprot list and 2DProts HTML for that family
+			// 2. parsing 2DProts HTML to get timestamp for that family
+			// 3. request to 2DProts domain_list for that family using obtained timestamp
+			// 4. remove from Overprot list whatever is not in 2DProts list
+			// TRY CATCH - if cannot find domain_list, leave options as from overprot
+			// const responseTwoDProtsDomains = await fetch(`https://2dprots.ncbr.muni.cz/static/web/generated-${familyId}/2021-10-04T11_52_33_653629990_02_00/domain_list.txt`);
+			// const twoDProtsDomains = await responseTwoDProtsDomains.text();
+			// const twoDProtsOptions = twoDProtsDomains.replace(/\r/g, "").split(/\n/);
+			
+			// Parse json to get arr with domain IDs
+			const overprotOptions = overprotDomains.map(domain => domain.domain);
+			
+			// Populate domainsSelectEle with that arr
+			const ele = $(this.domainsSelectEle);
+			this.populateSelectEle(ele, overprotOptions);
+			console.log('domains select populated');
+		} else {
+			console.log(`domainsSelectElement not present, skipping loadDomainsSelectOptions(${familyId})`);
+		}
 	}
 }
 
-$.LoadingOverlaySetup({
-	background      : "rgba(0, 0, 0, 0.8)",
-	image           : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><circle r="80" cx="500" cy="90"/><circle r="80" cx="500" cy="910"/><circle r="80" cx="90" cy="500"/><circle r="80" cx="910" cy="500"/><circle r="80" cx="212" cy="212"/><circle r="80" cx="788" cy="212"/><circle r="80" cx="212" cy="788"/><circle r="80" cx="788" cy="788"/></svg>',
-	imageAnimation  : "2.0s rotate_right",
-	imageColor      : "#FAFAFA",
-	text			: "Loading domain data...",
-	textColor 		: "#D3D3D3",
-	textResizeFactor: 0.3,
-});
+function initOverprotIntegratedViewer(setting){
+	// setting should contain IDs of various involved HTML elements
+	// e.g.:
+	// const setting = {
+	// 	view1dDiv: 'overprot-wrapper',
+	// 	view2dDiv: 'pdb-topology-viewer',
+	// 	view3dDiv: 'myViewer',
+	// 	familyAndDomainForm: 'familyAndDomainForm', 
+	// 	familySelect: 'familiesSelector',
+	// 	domainSelect: 'domainsSelector',
+	// 	submitButton: 'submitFamilyAndDomainForm',
+	// 	currentFamilyDiv: 'currentFamilyIdEle',
+	// 	currentDomainDiv: 'currentDomainIdEle'
+	// };
+	$.LoadingOverlaySetup({
+		background      : "rgba(0, 0, 0, 0.8)",
+		image           : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><circle r="80" cx="500" cy="90"/><circle r="80" cx="500" cy="910"/><circle r="80" cx="90" cy="500"/><circle r="80" cx="910" cy="500"/><circle r="80" cx="212" cy="212"/><circle r="80" cx="788" cy="212"/><circle r="80" cx="212" cy="788"/><circle r="80" cx="788" cy="788"/></svg>',
+		imageAnimation  : "2.0s rotate_right",
+		imageColor      : "#FAFAFA",
+		text			: "Loading domain data...",
+		textColor 		: "#D3D3D3",
+		textResizeFactor: 0.3,
+	});
 
-const instance = new IntegratedViewer();
-instance.parseUrl();
-if (!instance.wellcomePage) instance.showCurrentFamilyAndDomain();
-instance.bindFormSubmitListener();
+	const instance = new IntegratedViewer(setting);
+	instance.parseUrl();
+	if (!instance.wellcomePage) instance.showCurrentFamilyAndDomain();
+	instance.bindFormSubmitListener();
 
-// on programmatic or user change of families selector, load domains select options and set value (either [0] or instance.domainId if page is with query params)
-$(instance.familiesSelectEle).on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-	// console.log(e, clickedIndex, isSelected, previousValue);
-	instance.submitButton.disabled = true;
-	const ele = $(instance.domainsSelectEle);
-	$.LoadingOverlay('show');
-	ele.attr('disabled', true).selectpicker('refresh');
-	const selectedFamilyId = $(this).selectpicker('val');
-	instance.loadDomainsSelectOptions(selectedFamilyId).then(() => {
-		// if it was programmatic change && if it is a wellcome page OR if it was the user's change => select first domain in the list
-		if ((clickedIndex === null && instance.wellcomePage) || clickedIndex !== null) {
-			// select [0] and refresh.....
-			try {
-				// Here it breaks if the user clicks on family selector many times and too fast: "... prop 'value' of undefined"
-				// E.g. 6.10.160.10 has empty domain list: https://overprot.ncbr.muni.cz/data/db/family/lists/6.10.160.10/domains.json
-				// Or maybe we should just disable family selector as well until everything is ready? Seems not.						
-				console.log('selecting default domain option');
-				const defaultOption = ele[0].options[0].value;
-				ele.selectpicker('val', defaultOption);
+	// on programmatic or user change of families selector, load domains select options and set value (either [0] or instance.domainId if page is with query params)
+	$(instance.familiesSelectEle).on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+		// console.log(e, clickedIndex, isSelected, previousValue);
+		instance.submitButton.disabled = true;
+		const ele = $(instance.domainsSelectEle);
+		$.LoadingOverlay('show');
+		ele.attr('disabled', true).selectpicker('refresh');
+		const selectedFamilyId = $(this).selectpicker('val');
+
+		instance.loadDomainsSelectOptions(selectedFamilyId).then(() => {
+			// if it was programmatic change && if it is a wellcome page OR if it was the user's change => select first domain in the list
+			if ((clickedIndex === null && instance.wellcomePage) || clickedIndex !== null) {
+				// select [0] and refresh.....
+				try {
+					// Here it breaks if the user clicks on family selector many times and too fast: "... prop 'value' of undefined"
+					// E.g. 6.10.160.10 has empty domain list: ${OVERPROT_BASE_URL}/data/db/family/lists/6.10.160.10/domains.json
+					// Or maybe we should just disable family selector as well until everything is ready? Seems not.						
+					console.log('selecting default domain option');
+					const defaultOption = ele[0].options[0].value;
+					ele.selectpicker('val', defaultOption);
+					instance.submitButton.disabled = false;
+					ele.attr('disabled', false);
+					ele.selectpicker('refresh');
+					ele.selectpicker('refresh');
+				} catch(error) {
+					console.log(error);
+					alert('An error occured. Most likely the selected family is empty (i.e. has no domains). Please select another family.');
+				}
+			// if it was a programmatic change (on page with query params we set selectors values equal to that params)
+			} else if (clickedIndex === null && !instance.wellcomePage) {
+				// select instance.domainId and refresh.....
+				console.log('selecting current domain option');
+				ele.selectpicker('val', instance.domainId);
 				instance.submitButton.disabled = false;
 				ele.attr('disabled', false);
 				ele.selectpicker('refresh');
 				ele.selectpicker('refresh');
-			} catch(error) {
-				console.log(error);
-				alert('An error occured. Most likely the selected family is empty (i.e. has no domains). Please select another family.');
+				// $.LoadingOverlay('hide');
+				// console.log('select instance.domainId', ele, instance.domainId);
+			} else {
+				console.log('Something wrong happened');
+				console.log(e, clickedIndex, isSelected, previousValue);
 			}
-		// if it was a programmatic change (on page with query params we set selectors values equal to that params)
-		} else if (clickedIndex === null && !instance.wellcomePage) {
-			// select instance.domainId and refresh.....
-			console.log('selecting current domain option');
-			ele.selectpicker('val', instance.domainId);
-			instance.submitButton.disabled = false;
-			ele.attr('disabled', false);
-			ele.selectpicker('refresh');
-			ele.selectpicker('refresh');
-			// $.LoadingOverlay('hide');
-			// console.log('select instance.domainId', ele, instance.domainId);
-		} else {
-			console.log('Something wrong happened');
-			console.log(e, clickedIndex, isSelected, previousValue);
-		}
-		setTimeout(() => {
-			$.LoadingOverlay('hide');
-		}, 1000)
+			setTimeout(() => {
+				$.LoadingOverlay('hide');
+			}, 1000);
+		});
 	});
-});
 
-instance.loadFamiliesSelectOptions().then(() => {
-	const ele = $(instance.familiesSelectEle);
-	if (instance.wellcomePage) {
-		// select [0] and refresh.....
-		// const defaultOption = ele[0].options[0].value;
-		const defaultOption = instance.defaultFamilyId;
-		ele.selectpicker('val', defaultOption);
-		ele.selectpicker('refresh');
-		ele.selectpicker('refresh');
-		// console.log('select [0]', ele, defaultOption);
-	} else {
-		// select instance.familyId and refresh.....
-		ele.selectpicker('val', instance.familyId);
-		ele.selectpicker('refresh');
-		ele.selectpicker('refresh');
-		// console.log('select instance.domainId', ele, instance.domainId);
-	}
-})
+	instance.loadFamiliesSelectOptions().then(() => {
+		const ele = $(instance.familiesSelectEle);
+		if (instance.wellcomePage) {
+			// select [0] and refresh.....
+			// const defaultOption = ele[0].options[0].value;
+			const defaultOption = instance.defaultFamilyId;
+			ele.selectpicker('val', defaultOption);
+			ele.selectpicker('refresh');
+			ele.selectpicker('refresh');
+			// console.log('select [0]', ele, defaultOption);
+		} else {
+			// select instance.familyId and refresh.....
+			ele.selectpicker('val', instance.familyId);
+			ele.selectpicker('refresh');
+			ele.selectpicker('refresh');
+			// console.log('select instance.domainId', ele, instance.domainId);
+		}
+	});
 
-if (!instance.wellcomePage) {
-	document.addEventListener('DOMContentLoaded', () => {
-		console.log('dom loaded')
+	function setDataAndRenderViews() {
 		instance.setData()
 		.then(() => {
 			instance.render1D();
 			instance.render2D();
 			instance.render3D();
 		});
-	});
-}		
+	}
+
+	if (!instance.wellcomePage) {
+		if (document.readyState === 'loading') {  // Loading hasn't finished yet
+			document.addEventListener('DOMContentLoaded', setDataAndRenderViews);
+		  } else {  // `DOMContentLoaded` has already fired
+			setDataAndRenderViews();
+		  }
+	}		
+
+	return instance;
+}

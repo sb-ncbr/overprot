@@ -1052,8 +1052,6 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
     assert lib.are_unique(i for i, j in matching)
     assert lib.are_unique(j for i, j in matching)
     total_score = cumulative[m-1, n-1]
-    # if total_score != score2:
-    #     print(f'------------------------\n{total_score} != {score2}\n{matching}\n-{set(matching)-set(matching2)}\n+{set(matching2)-set(matching)}\nedges1:{edges1}\nedges2:{edges2}')  # DEBUG
     return matching, total_score
     # TODO try to vectorize computation of cumulative and direction
     # TODO put larger (or more branched) dag on rows, smaller on columns
@@ -1371,11 +1369,7 @@ class GuidedAcyclicClustering:
                     # lib.print_matrix(scores, 'tmp/scores_with_ladder_correction.tsv')
                 if weight_scores:
                     scores = scores * weights1.reshape((-1, 1)) * weights2.reshape((1, -1))
-
                 matching, matching_score = dynprog_match_dags(scores, prec_edges1, prec_edges2)
-                matching_old, matching_score_old = dynprog_match_dags__old(scores, prec_edges1, prec_edges2)  # DEBUG
-                assert matching_score >= matching_score_old, f'Score {matching_score} < old score {matching_score_old}'
-                
                 new_vertices, new_prec_edges = merge_dags(n1, n2, prec_edges1, prec_edges2, matching, draw_result=False and (i==2*n_leaves-2))
                 new_coords, new_weights = self.aggregate_coords_and_weights(new_vertices, coords1, coords2, weights1, weights2, sample_aggregation_function)
                 new_members = self.aggregate_members(new_vertices, members[left], members[right])

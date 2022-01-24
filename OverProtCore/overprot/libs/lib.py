@@ -54,8 +54,6 @@ def are_unique(iterable):
         else:
             seen.add(item)
     return True
-    # c = collections.Counter(iterable)
-    # return max(c.values()) == 1
 
 def single(iterable: Iterable[V]) -> V:
     '''Return the single element of the iterable, or raise ValueError if len(iterable) != 1'''

@@ -43,6 +43,8 @@ OverProt consists of three main parts: the main algorithm
 Server} presents the results on the web and allows user-defined
 computations.
 
+The source code is freely available at \url{https://gitlab.com/midlik/overprot}.
+
 
 
 
@@ -56,8 +58,9 @@ computations.
     coordinates. A structure consists of one or more \textbf{chains}. A
     chain is a sequence of \textbf{residues}, which consist of the
     individual \textbf{atoms}. OverProt works with structures in
-    \textbf{mmCIF format}. Structures deposited in the PDB {[}cite{]} are
-    referenced by their PDB ID (e.g.~\code{1tqn}). OverProt follows the
+    \textbf{mmCIF format}. Structures deposited in the PDB 
+    (\mycite{wwpdb2019}{wwPDB consortium, 2019})
+    are referenced by their PDB ID (e.g.~\code{1tqn}). OverProt follows the
     \emph{label*} numbering scheme when referencing chains and residues
     within a structure (i.e.~items \code{label\_asym\_id} and
     \code{label\_seq\_id} in the mmCIF file) -- this is sometimes
@@ -70,10 +73,10 @@ computations.
     \code{1n26,A,2:9,94:192}. Residue ranges include the start and end
     residue (e.g.~\code{5:8} means residues 5, 6, 7, 8).
   \item
-    \textbf{Protein family} -- a set of protein domains with reasonable
+    \textbf{Protein family} -- a set of protein domains with a reasonable
     structural similarity. The set can be provided by the user or it can
-    be defined based on the CATH database {[}cite{]}, in which case the
-    family (\emph{CATH superfamily}) is identified by its CATH ID
+    be defined based on the CATH database (\mycite{sillitoe2021}{Sillitoe \etal, 2021}), 
+    in which case the family (\emph{CATH superfamily}) is identified by its CATH ID
     (e.g.~\code{1.10.630.10}) and domains are identified by CATH domain
     ID (e.g.~\code{1tqnA00}).
   \item
@@ -88,13 +91,13 @@ computations.
     The term β-connectivity refers to the way in which the strands are
     connected: a \textbf{β-ladder} is a connection of two strands and can
     be either parallel or antiparallel; a \textbf{β-sheet} is a set of
-    strands which are connected by β-ladders.\\
+    strands which are connected by β-ladders (a connected component).\\
     This model is kept as simple as possible (different helix types
     (\(\alpha\), \(3_{10}\), \(\pi\)) are not distinguished; other SSE
     type (loops, turns) are not taken into account). Secondary structure
-    assignment (i.e.~detection of SSEs) is performed by
-    \textbf{SecStrAnnotator}, more details can be found in its original
-    paper {[}cite{]}.\\
+    assignment (detection of SSEs) is performed by
+    \textbf{SecStrAnnotator}, more details can be found in its original paper 
+    (\mycite{midlik2019}{Midlik \etal, 2019}).\\
     We will sometimes use the term \textbf{base SSEs} to distinguish SSEs from consensus SSEs.
   \item
     \textbf{Consensus SSE} -- a set of equivalent SSEs from different
@@ -104,7 +107,7 @@ computations.
     with a given order and β-connectivity.
 \end{itemize}
 
-    
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,16 +133,16 @@ in a number of steps.
   \item
     Select sample: If \code{--sample\_size} is different from
     \code{all} (default), a random subset of the domain list is selected.\\
-    The family may contain multiple domains from the same PDB entry. If
-    \code{[sample\_selection]{\allowbreak}unique\_pdb} is \code{True}, then
+    The family may contain multiple domains from the same PDB entry. If 
+    \code{[sample\_selec{\allowbreak}tion]{\allowbreak}unique\_pdb} is \code{True}, then
     these are treated as duplicates and only one of them is selected (the
     first in alphabetical order).
   \item
     Download structures: The structures of listed domains are downloaded
-    in mmCIF format, domains are cut out from the structures and saved in
+    in mmCIF format, the domains are cut out from the structures and saved in
     separate files. The sources of structures are given by
     \code{-\/-structure\_source} and
-    \code{{[}download{]}structure\_sources}. Structures are also
+    \code{{[}download{]}structure\_sources}. The structures are also
     converted to PDB format for some later steps (MAPSCI). The download
     step is performed by \code{StructureCutter} written in C\#.
   \end{itemize}
@@ -153,7 +156,7 @@ Multiple structure alignment is performed in 2 steps:
 
 \begin{itemize}
 \item
-  Program MAPSCI {[}cite Ilinkin et al., 2010{]} is used to calculate a
+  Program MAPSCI (\mycite{ilinkin2010}{Ilinkin \etal, 2020}) is used to calculate a
   consensus structure (\path{mapsci/consensus.cif}).
   For performance reasons, at most 100 domains are selected for this
   calculation (in a quasi-random way, i.e.~for the same family it selects 
@@ -169,9 +172,10 @@ Multiple structure alignment is performed in 2 steps:
   following re-alignment step is necessary.
 \item
   In the realignment step, all domains are structurally aligned onto the
-  MAPSCI consensus structure via \code{cealign} algorithm {[}cite Shindyalov
-  and Bourne, 1998{]} provided in PyMOL module {[}cite{]}. In rare cases
-  cealign fails (when the domain is too short) -- in such cases a
+  MAPSCI consensus structure via \code{cealign} algorithm 
+  (\mycite{shindyalov1998}{Shindyalov and Bourne, 1998})
+  provided in PyMOL module (\mycite{schrodinger}{Schrödinger, LLC.}). In rare cases
+  \code{cealign} fails (when the domain is too short) -- in such cases a
   simple alignment algorithm \code{DumbAlign} is used instead
   (theretically inefficient and not allowing gaps, but sufficient for these
   very short domains).
@@ -182,9 +186,9 @@ Multiple structure alignment is performed in 2 steps:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Secondary structure assignment}
 
-The SSEs in each domain are detected by \code{SecStrAnnotator} {[}cite
-Midlik et al., 2019, 2021{]} (options ~\code{-\/-onlyssa}
-~\code{-\/-verbose} ~\code{-\/-batch}).
+The SSEs in each domain are detected by \code{SecStrAnnotator} 
+(\mycite{midlik2019}{Midlik \etal, 2019}, \mycite{midlik2021}{2021}) 
+with options ~\code{-\/-onlyssa} ~\code{-\/-verbose} ~\code{-\/-batch}.
 
 
 
@@ -234,9 +238,9 @@ which is the tree root. The topology of the tree will be defined by
   \label{fig:guide_tree}
 \end{figure}
 
-The details of the algorithm are described in section \ref{sec:appendix} Appendix (distance function
-\(D^{*}\), which determines the nearest weighted structures; operation
-\code{merge\_structures}).
+The details of the algorithm are described in Appendix \ref{sec:appendix_ws_distance} 
+(distance function, which determines the nearest weighted structures) 
+and \ref{sec:appendix_ws_merging} (operation \code{merge\_structures}).
 
 
 
@@ -282,15 +286,14 @@ However, the clustering must fulfil these constraints:
       \Rightarrow R_n \Rightarrow Q\) where \(n \geq 0\) (in other words, \(\rightarrow\) 
       is the transitive closure of \(\Rightarrow\)).
     \item
-      There must be no clusters \(P, Q\), such that
-      \(P \rightarrow Q\) and \(Q \rightarrow P\).
+      There must be no cluster \(P\), such that \(P \rightarrow P\).
   \end{itemize}
 \end{enumerate}
 
 Note: The order of some clusters may be undefined (i.e.~neither 
 \(P \rightarrow Q\) nor \(Q \rightarrow P\)) if they contain no SSEs 
 from the same domain. Therefore \(\rightarrow\) is a partial order on the clusters (not a total order).
-We visualize the order by a directed acyclic graph (DAG), see Figure \ref{fig:dag_example}.
+We represent the order by a directed acyclic graph (DAG), see Figure \ref{fig:dag_example}.
 
 \begin{figure}[h!]
   \centering\includegraphics[width=0.6\linewidth]{figures/dag_ABCDE.png}
@@ -314,11 +317,11 @@ The root then contains the consensus SSEs of the whole family (see Figure \ref{f
   \label{fig:dag_merging}
 \end{figure}
 
-The matching and merging of two SSE DAGs is in principle similar to matching (aligning)
+The matching and merging of two SSE DAGs is in principle similar to matching
 and merging of two weighted structures. 
 The best matching is also found by dynamic programming.
 However, it is more complicated here, because 
-1) clusters of different type cannot be matched (this can cause the
+1) SSEs of different type cannot be matched (this can cause the
 branching in the resulting DAG), 
 and 2) the dynamic programming algorithm is not as straightforward 
 for matching DAGs as it is for matching sequences.
@@ -331,12 +334,10 @@ based on the β-connectivity of the base SSEs.
 
 A β-ladder \(PQo\) (connecting strand clusters \(P\) and \(Q\) with orientation \(o\) (parallel/antiparallel)) 
 is included in the resulting consensus if
-
-\[  \frac { n_{PQo} } { \min{\{n_P, n_Q\}} } \geq 0.5  \]
-
+  \[  \frac { n_{PQo} } { \min{\{n_P, n_Q\}} } \geq 0.5  \]
 where \(n_P\) is the number of strands in cluster \(P\), 
 \(n_Q\) is the number of strands in cluster \(Q\),
-and \(n_{PQo}\) is the number of ladders connecting a strand in \(P\) to a strand in \(Q\)
+and \(n_{PQo}\) is the number of base ladders connecting a base strand in \(P\) to a base strand in \(Q\)
 with orientation \(o\) (see Figure \ref{fig:dag_ladders}).
 
 \begin{figure}[h!]
@@ -345,7 +346,7 @@ with orientation \(o\) (see Figure \ref{fig:dag_ladders}).
   Lower arcs show parallel, upper arcs antiparallel ladders.
   Ladder A is included because \( n_{PQo} / \min{\{n_P, n_Q\}} = 1 / \min{\{1, 5\}} = 1 \geq 0.5\).
   Ladder B is not included because \( n_{PQo} / \min{\{n_P, n_Q\}} = 2 / \min{\{5, 5\}} = 0.4 < 0.5\).
-  The last column shows the separation of the consensus strands into sheets (connected components).}
+  The rightmost column shows the separation of the consensus strands into sheets (connected components).}
   \label{fig:dag_ladders}
 \end{figure}
 
@@ -359,9 +360,9 @@ After the clustering, a variety of statistics are computed for each consensus SS
   \item
     Average length -- measured as the number of residues.
   \item
-    Average line segment -- average starting and ending point in 3D.
+    Average line segment -- average start and end point in 3D.
   \item
-    3D variability -- variance of the starting and ending point.
+    3D variability -- variance of the start and end point.
 \end{itemize}
 
 Each consensus SSE also gets a unique label (containing its type and sequential number, e.g. E0, H1, H2...) and color.
@@ -391,11 +392,11 @@ The generated SSE consensus is visualized by several SVG diagrams with
 different settings and \path{diagram.json} file is produced, which
 will be used for interactive visualization by OverProt Viewer. 
 A PyMOL session (.pse) is created, with the MAPSCI consensus structure 
-shown as ribbon and the SSE consensus shown as cylinders and arrows.
+shown as ribbon and the consensus SSEs shown as cylinders and arrows.
 The width of each cylinder/arrow shows to the occurrence of the corresponding helix/strand.
 A PNG image is also rendered from the session. 
 A session with all domains and their SSEs is
-generated if \code{{[}visualization{]} create\_multi\_session} is
+generated if \code{[visual{\allowbreak}ization]{\allowbreak}create\_multi\_session} is
 \code{True} (very slow, not recommended for larger families).
 
 
@@ -414,7 +415,7 @@ Before the first execution, the dependencies must be installed:
 
 All steps of the algorithm are combined in \path{overprot.py}. 
 It is run in a Python virtual environment. 
-The arguments are the CATH family ID and the output directory:
+Its arguments are the CATH family ID and the output directory:
 
 \begin{codeblock}
   . venv/bin/activate
@@ -423,7 +424,7 @@ The arguments are the CATH family ID and the output directory:
 \end{codeblock}
 
 Multiple families can be processed in parallel using \path{overprot_multifamily.py}. 
-The arguments are the family list and the output directory:
+Its arguments are the family list and the output directory:
 
 \begin{codeblock}
   . venv/bin/activate
@@ -499,7 +500,7 @@ Visualization options include:
   Occurrence threshold:
   \begin{denseitemize}
     \item
-      Hides the SSEs with occurrence lower than the specified threshold. Can be set to any number from 0\% to 100\% (default 20\%).
+      Hides the SSEs with occurrence lower than the specified threshold. Can be set to any number from 0\% to 100\%.
   \end{denseitemize}
 \end{itemize}
 
@@ -509,8 +510,11 @@ The information about the selected elements is included in \code{event.detail}.
 Conversely, the viewer handles the incoming events (\code{PDB.overprot.do.hover} 
 or \code{PDB.overprot.do.select}) by highlighting the selected elements. 
 This allows interactivity across several web components, as demonstrated by 
-the Integrated Viewer in the OverProt web (\path{https://overprot.ncbr.muni.cz/static/integration/index.html?family_id=1.10.630.10&domain_id=1jfbA00})
--- hovering over an SSE in any of the three components (OverProt Viewer, interactive 2DProts, MolStar Viewer) highlights it in all three.
+the Integrated Viewer in the OverProt web 
+(\url{https://overprot.ncbr.muni.cz/static/integration/index.html})
+-- hovering over an SSE in any of the three components (OverProt Viewer, 
+interactive 2DProts (\mycite{hutarova2021}{Hutařová \etal, 2021}), 
+MolStar Viewer (\mycite{sehnal2021}{Sehnal \etal, 2021})) highlights it in all three.
 
 
 
@@ -523,6 +527,7 @@ the Integrated Viewer in the OverProt web (\path{https://overprot.ncbr.muni.cz/s
 \textbf{OverProt Server} serves precomputed SSE consensuses (database)
 and runs the OverProt Core algorithm for user-defined sets of domains (jobs). 
 OverProt Server is implemented using Python (Flask), Gunicorn, Redis Queue, Nginx, and Docker.
+A running instance is available at \url{https://overprot.ncbr.muni.cz}.
 
 
 The database is constructed in this way:
@@ -550,12 +555,11 @@ The database is constructed in this way:
 The whole process is realized by:
 
 \begin{codeblock}
-    python  overprot_multifamily.py  --download_family_list_by_size
-    --config working_scripts/overprot-config-overprotserverdb.ini
-    --collect  -  $UPDATE_DIRECTORY                                                           $
+  . venv/bin/activate
+  python  overprot_multifamily.py  --download_family_list_by_size \
+      --config working_scripts/overprot-config-overprotserverdb.ini \
+      --collect  -  $UPDATE_DIRECTORY                                                           $
 \end{codeblock}
-
-The database is updated weekly.
 
 
 
@@ -568,6 +572,7 @@ The database is updated weekly.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Distance function for two weighted structures}
+\label{sec:appendix_ws_distance}
 
 A weighted structure \(A\) is a tuple
 \( (n^A, \mathbf{R}^A, \mathbf{W}^A, k^A) \) where \(n^A\) is the length
@@ -575,14 +580,12 @@ of the weighted structure (number of points), \(\mathbf{R}^A\) is the
 matrix of their coordinates (\(n^A \times 3\)), \(\mathbf{W}^A\) is the
 vector of their relative weights \(\in (0,1]\), and \(k^A\) is the
 absolute weight of \(A\). Example of a weighted structure:
-
-\[
-  n^A = 4 \quad
-  \mathbf{R}^A = \begin{bmatrix}-1.1&-2.9&0.1&0.4\\0.0&1.1&0.9&-2.7\\5.2&2.1&0.0&0.8\end{bmatrix} \quad
-  \mathbf{W}^A = \begin{bmatrix}1&0.5&0.8&1\end{bmatrix} \quad
-  k^A = 10
-\]
-
+  \[
+    n^A = 4 \quad
+    \mathbf{R}^A = \begin{bmatrix}-1.1&-2.9&0.1&0.4\\0.0&1.1&0.9&-2.7\\5.2&2.1&0.0&0.8\end{bmatrix} \quad
+    \mathbf{W}^A = \begin{bmatrix}1&0.5&0.8&1\end{bmatrix} \quad
+    k^A = 10
+  \]
 \(\mathbf{r}^A_i\) and \(w^A_i\) will refer to \(i\)-th column of
 \(\mathbf{R}^A\) and \(\mathbf{W}^A\).
 
@@ -591,66 +594,49 @@ A protein domain can be converted into a weighted structure as follows:
 C-alpha atom of \(i\)-th residue, \(w^A_i\) is 1, and \(k^A\) is 1.
 
 The distance function \(d\) is defined for two weighted points:
-
-\[
-  d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
-  = \left( 1 - e^{-\lVert \mathbf{r}^A_i-\mathbf{r}^B_j \rVert / R_0} \right) \cdot \min\{ w^A_i, w^B_j \} + \frac{1}{2} \lvert w^A_i-w^B_j \rvert
-\]
-
+  \[
+    d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
+    = \left( 1 - e^{-\lVert \mathbf{r}^A_i-\mathbf{r}^B_j \rVert / R_0} \right) \cdot \min\{ w^A_i, w^B_j \} + \frac{1}{2} \lvert w^A_i-w^B_j \rvert
+  \]
 In case that one of the weighted points is undefined (\(\bot\)), \(d\)
 is still defined:
-
-\[
-  d \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = \frac{1}{2} w^A_i \qquad 
-  d \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = \frac{1}{2} w^B_j
-\]
-
+  \[
+    d \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = \frac{1}{2} w^A_i \qquad 
+    d \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = \frac{1}{2} w^B_j
+  \]
 (Note: Distance \(d\) is not the Euclidean distance of the two points.
 \(d \in [0,1)\).)
 
-An alignment of two weighted structures \(A\), \(B\) is a sequence of
-pairs \([(p_1, q_1), (p_2, q_2), ..., (p_n, q_n)]\) (for better reading
-written as a matrix
-\(\begin{bmatrix}p_1&p_2&...&p_n\\q_1&q_2&...&q_n\end{bmatrix}\)), where
-\(p_i\) and \(q_i\) are indices of the points of \(A\) and \(B\).
+A matching (or alignment) of two weighted structures \(A\), \(B\) is a sequence of
+pairs \([(p_1, q_1), (p_2, q_2), \allowbreak ...\allowbreak(p_n, q_n)]\), 
+where \(p_i\) and \(q_i\) are indices of the points of \(A\) and \(B\).
 Indices must be increasing and must include each index exactly once for
 both \(A\) and \(B\). Value \(\bot\) means that a particular point was
-not matched. Example of a valid alignment for \(n^A = 4, n^B = 5\):
-
-\[\begin{bmatrix}1&2&3&4&\bot&\bot\\1&\bot&2&3&4&5\end{bmatrix}\]
-
-The distance function \(D\) for two weighted structures \(A\) and \(B\) with a given alignment \(M\) is defined:
-
-\[  D(A, B, M) = \sum\limits_{(p, q) \in M}{d \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}  \]
-
+not matched. Example of a valid matching for \(n^A = 4, n^B = 5\):
+  \[  [(1, 1),\ (2, \bot),\ (3, 2),\ (4, 3),\ (\bot, 4),\ (\bot, 5)]  \]
+The distance function \(D\) for two weighted structures \(A\) and \(B\) with a given matching \(M\) is defined:
+  \[  D(A, B, M) = \sum\limits_{(p, q) \in M}{d \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}  \]
 The distance function \(D^*\) of two weighted structures \(A\) and \(B\) is then:
+  \[  D^*(A, B) = D(A, B, M^*)  \]
+where \(M^*\) is the best matching of \(A\) and \(B\), i.e. the matching which minimizes \(D(A, B, M^*)\).
 
-\[  D^*(A, B) = D(A, B, M^*)  \]
-
-where \(M^*\) is the best alignment of \(A\) and \(B\), i.e. the alignment which minimizes \(D(A, B, M^*)\).
-
-The best alignment is found by dynamic programming (this is basically
-the Needleman-Wunsch algorithm {[}cite{]}). For this, the distance
-function \(d\) is converted into a score function \(s\):
-
-\[
-  s \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
-  = \frac{1}{2} w^A_i + \frac{1}{2} w^B_j - d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right)
-\]
-
-\[
-  s \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = 0 \qquad 
-  s \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = 0
-\]
-
+The best matching is found by dynamic programming (this is basically
+the Needleman-Wunsch algorithm (\mycite{needleman1970}{Needleman and Wunsch, 1970})). 
+For this, the distance  function \(d\) is converted into a score function \(s\):
+  \[
+    s \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right) 
+    = \frac{1}{2} w^A_i + \frac{1}{2} w^B_j - d \left( (\mathbf{r}^A_i, w^A_i), (\mathbf{r}^B_j, w^B_j) \right)
+  \]
+  \[
+    s \left( (\mathbf{r}^A_i, w^A_i), \bot \right) = 0 \qquad 
+    s \left( \bot, (\mathbf{r}^B_j, w^B_j) \right) = 0
+  \]
 Similarly, \(D\) is converted into \(S\):
-
-\[
-  S(A, B, M) 
-  = \sum\limits_{(p, q) \in M}{s \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}
-  = \sum\limits_{i=1}^{n^A}{w^A_i} + \sum\limits_{j=1}^{n^B}{w^B_j} - D(A, B, M)
-\]
-
+  \[
+    S(A, B, M) 
+    = \sum\limits_{(p, q) \in M}{s \left( (\mathbf{r}^A_{p}, w^A_{p}), (\mathbf{r}^B_{q}, w^B_{q}) \right)}
+    = \frac{1}{2} \sum\limits_{i=1}^{n^A}{w^A_i} + \frac{1}{2} \sum\limits_{j=1}^{n^B}{w^B_j} - D(A, B, M)
+  \]
 From this equation it can be seen, that maximizing \(S\) by dynamic
 programming also minimizes \(D\).
 
@@ -659,7 +645,7 @@ metric (i.e.~\(D^*(A,A) = 0\), \(D^*(A,B) = D^*(B,A)\), and
 \(D^*(A,B) + D^*(B,C) \geq D^*(A,C)\) for any weighted structures
 \(A, B, C\)).
 
-Remark: When finding the two nearest items in the work set, it is not
+Note: When finding the two nearest items in the workset, it is not
 necessary to calculate the distance \(D^*\) for every pair of items --
 there are specialized data structures that can significantly decrease
 the number of distance calculations. We use a non-standard structure
@@ -675,21 +661,16 @@ is a metric.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Merging two weighted structures}
+\label{sec:appendix_ws_merging}
 
-Having two weighted structures \(A, B\) and their best alignment
-\(M^*(A, B) = [(p_1, q_1), ..., (p_n, q_n)]\), we can define operation
-\(merge\_structures\) as follows:
-
-\[  merge\_structures(A, B) = C = (n^C, \mathbf{R}^C, \mathbf{W}^C, k^C)  \]
-
-\[  n^C = n  \]
-
-\[  \mathbf{r}^C_i = \frac {\mathbf{r}^A_{p_i} w^A_{p_i} k^A + \mathbf{r}^B_{q_i} w^B_{q_i} k^B} {w^A_{p_i} k^A + w^B_{q_i} k^B}  \]
-
-\[  w^C_i = w^A_{p_i} k^A + w^B_{q_i} k^B  \]
-
-\[  k^C = k^A + k^B  \]
-
+Having two weighted structures \(A, B\) and their best matching
+\(M^* = [(p_1, q_1), ... (p_n, q_n)]\), we can define 
+operation \(merge\_structures\) as follows:
+  \[  merge\_structures(A, B) = C = (n^C, \mathbf{R}^C, \mathbf{W}^C, k^C)  \]
+  \[  n^C = n  \]
+  \[  \mathbf{r}^C_i = \frac {\mathbf{r}^A_{p_i} w^A_{p_i} k^A + \mathbf{r}^B_{q_i} w^B_{q_i} k^B} {w^A_{p_i} k^A + w^B_{q_i} k^B}  \]
+  \[  w^C_i = w^A_{p_i} k^A + w^B_{q_i} k^B  \]
+  \[  k^C = k^A + k^B  \]
 (If \(p_i=\bot\), the values can be calculated by setting
 \(w^A_{p_i} = 0\), thus simplifying to
 \(\mathbf{r}^C_i = \mathbf{r}^B_{q_i}, w^C_i = w^B_{q_i}\). Similarly for \(q_i=\bot\).)
@@ -702,20 +683,17 @@ Having two weighted structures \(A, B\) and their best alignment
 
 The distance function \(d\) for two SSEs \(P\) and \(Q\) is defined 
 as the sum of Euclidean distances between their start points and between their end points:
-
-\[  d(P, Q) = \lVert \mathbf{u}_P - \mathbf{u}_Q \rVert + \lVert \mathbf{v}_P - \mathbf{v}_Q \rVert  \]
-
+  \[  d(P, Q) = \lVert \mathbf{u}_P - \mathbf{u}_Q \rVert + \lVert \mathbf{v}_P - \mathbf{v}_Q \rVert  \]
 where \(\mathbf{u}_P, \mathbf{v}_P\) is the start and end point of SSE \(P\), 
 \(\mathbf{u}_Q, \mathbf{v}_Q\) is the start and end point of SSE \(Q\).
 
 The score function \(s\) is then defined:
-\[
-  s(P, Q) = \begin{cases}
-              SR(d(P, Q)) \quad & \mathrm{if}\ P, Q\ \mathrm{are\ of\ the\ same\ type\ (helix/strand)} \\
-              0           \quad & \mathrm{otherwise}
-            \end{cases}
-\]
-
+  \[
+    s(P, Q) = \begin{cases}
+                SR(d(P, Q)) \quad & \mathrm{if}\ P, Q\ \mathrm{are\ of\ the\ same\ type\ (helix/strand)} \\
+                0           \quad & \mathrm{otherwise}
+              \end{cases}
+  \]
 where \(SR\) is the ``smoothed ramp'' function, which is basically 
 a smooth, strictly decreasing version of the function \(y = \max\{0, 1 - x/d_0\} \). \\
 \(SR\) is defined by the implicit equation 
@@ -723,7 +701,7 @@ a smooth, strictly decreasing version of the function \(y = \max\{0, 1 - x/d_0\}
 When solving this quadratic equation, the greater root is selected.
 The parameters were set to \(d_0 = 30\) and \(\alpha = 0.01\).
 
-The distance function \(d\) and score function \(s\) can be easily 
+The distance function \(d\) and the score function \(s\) can be easily 
 extended from base SSEs to consensus SSEs. 
 For a consensus SSE \(P\), the point \(\mathbf{u}_P\) is simply 
 the arithmetic mean of \(\mathbf{u}\) of all base SSEs included in \(P\).
@@ -736,46 +714,68 @@ Similarly, we will define the weights of the consensus β-ladders:
 a base strand in \(P\) to a base strand in \(Q\),
 \(w_{PQa}\) is the number of antiparallel ladders connecting 
 a base strand in \(P\) to a base strand in \(Q\). 
-(Note: base SSEs/ladders can be understood as consensus SSEs/ladders with weight equal to 1.)
+(Base SSEs/ladders can be understood as consensus SSEs/ladders with weight 1.)
 
-In order to reflect the beta-connectivity in the score function, 
+In order to reflect the β-connectivity in the score function, 
 the ``ladder correction'' is applied to the strands:
-
-\[  s_\mathrm{corr}(P_i, Q_j) = \frac{1}{2} \left( s(P_i, Q_j) + \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) s(P_k, Q_l) \right)  \]
-
+  \[  s_\mathrm{corr}(P_i, Q_j) = \frac{1}{2} \left( s(P_i, Q_j) + \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) s(P_k, Q_l) \right)  \]
 where \(P_i, P_k\) are strands in the first matched DAG, 
 \(Q_j, Q_l\) are strands in the second matched DAG, 
 and the coefficients \(\alpha_{ijkl}, \beta_{ijkl}\) 
 maximize the value of \(s_\mathrm{corr}(P_i, Q_j)\)
 while fulfilling the following constraints:
-
-\[  \alpha_{ijkl} \geq 0 \qquad  \beta_{ijkl} \geq 0  \]
-
-\[  \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) \leq 1  \]
-
-\[  \sum_l \alpha_{ijkl} \leq \frac{w_{P_i P_k a}}{w_{P_i}}  \qquad  \sum_l \beta{ijkl} \leq \frac{w_{P_i P_k p}}{w_{P_i}}  \]
-
-\[  \sum_k \alpha_{ijkl} \leq \frac{w_{Q_j Q_l a}}{w_{Q_j}}  \qquad  \sum_k \beta{ijkl} \leq \frac{w_{Q_j Q_l p}}{w_{Q_j}}  \]
+  \[  \alpha_{ijkl} \geq 0 \qquad  \beta_{ijkl} \geq 0  \]
+  \[  \sum_k \sum_l (\alpha_{ijkl} + \beta_{ijkl}) \leq 1  \]
+  \[  \sum_l \alpha_{ijkl} \leq \frac{w_{P_i P_k a}}{w_{P_i}}  \qquad  \sum_l \beta{ijkl} \leq \frac{w_{P_i P_k p}}{w_{P_i}}  \]
+  \[  \sum_k \alpha_{ijkl} \leq \frac{w_{Q_j Q_l a}}{w_{Q_j}}  \qquad  \sum_k \beta{ijkl} \leq \frac{w_{Q_j Q_l p}}{w_{Q_j}}  \]
 
 For each pair \(P_i, Q_j\), the values of coefficients \(\alpha_{ijkl}, \beta_{ijkl}\) 
 are determined by a greedy algorithm (i.e.~first assigning the greatest possible value 
-to coefficients corresponding to the highest \(s(P_k, Q_l)\), then second highest etc.). 
+to the coefficients corresponding to the highest \(s(P_k, Q_l)\), then second highest etc.). 
 
 For helices, no ``ladder correction'' is necessary, so \(s_\mathrm{corr}(P_i, Q_j) = s(P_i, Q_j)\).
 
-The best matching of two SSE DAGs is the one which maximizes the total score without breaking any of the three constraints stated in Section \ref{sec:merging}.
+A matching of two SSE DAGs \(\graph{G}, \graph{H}\) is a set of pairs 
+\(M = \{(P_1, Q_1), (P_2, Q_2), ... (P_n, Q_n)\}\),
+where \(P_i \in V(\graph{G}), Q_j \in V(\graph{H})\), fulfilling these conditions:
 
-\[  S(A, B, M) = \sum_{(P_i, Q_j) \in M} s_\mathrm{corr}(P_i, Q_j)  \]
+\begin{denseitemize}     
+  \item Each vertex is matched at most once: \(\forall i, j: P_i \neq P_j \Leftrightarrow Q_i \neq Q_j\)
+  \item Only vertices of the same type are matched: \(\forall i: \mathrm{type}(P_i) = \mathrm{type}(Q_i)\)
+  \item No cycle is created: \(\nexists i, j: P_i \rightarrow P_j \wedge Q_j \rightarrow Q_i\)
+\end{denseitemize}
 
-Problem decomposition for dynamic programming:
+The best matching \(M^*\) of DAGs \(\graph{G}, \graph{H}\) is the matching which maximizes 
+the total score \(S\):
+  \[  S(\graph{G}, \graph{H}, M^*) = \sum_{(P, Q) \in M^*} w_{P} w_{Q} s_\mathrm{corr}(P, Q)  \]
+The corresponding best score is \(S^*\):
+  \[  S^*(\graph{G}, \graph{H}) = S(\graph{G}, \graph{H}, M^*)  \]
+The problem of finding the best matching and the best score 
+for two DAGs \(\graph{G}, \graph{H}\) can be decomposed 
+to smaller problems:
+  \[ \begin{aligned}
+    S^*(\graph{G}, \graph{H}) = \max\Big( & \{ S^*(\graph{G}-P, \graph{H}) \mid P \in \mathrm{sinks}(\graph{G}) \} \\
+                                \cup\     & \{ S^*(\graph{G}, \graph{H}-Q) \mid Q \in \mathrm{sinks}(\graph{H}) \} \\
+                                \cup\     & \{ S^*(\graph{G}-P, \graph{H}-Q) + w_{P} w_{Q} s_\mathrm{corr}(P, Q) \mid P \in \mathrm{sinks}(\graph{G}), Q \in \mathrm{sinks}(\graph{H}) \} \Big)  
+  \end{aligned} \]
+The trivial subproblems can be solved directly without decomposition: 
+  \[  S^*(\graph{G}, \graph{K_0}) = S^*(\graph{K_0}, \graph{H}) = 0  \qquad \qquad \qquad  
+      M^*(\graph{G}, \graph{K_0}) = M^*(\graph{K_0}, \graph{H}) = \{\}  
+  \]
+where \(\graph{K_0}\) is a graph with no vertices.
 
-\[ \begin{aligned}
-  S(\graph{G}, \graph{H}) = \max\Big( & \{ S(\graph{G}-P, \graph{H}) \mid P \in \mathrm{sinks}(\graph{G}) \} \\
-                            \cup\     & \{ S(\graph{G}, \graph{H}-Q) \mid Q \in \mathrm{sinks}(\graph{H}) \} \\
-                            \cup\     & \{ S(\graph{G}-P, \graph{H}-Q) + s_\mathrm{corr}(P, Q) \mid P \in \mathrm{sinks}(\graph{G}), Q \in \mathrm{sinks}(\graph{H}) \} \Big)  
-\end{aligned} \]
+OverProt finds the best matching by a dynamic programming 
+algorithm based on the described decomposition.
 
-\TODO{continue with the matching and merging algorithm (at least its outline, or move the text from the main text)}
+After the best matching is found, the matched pairs of vertices are merged. 
+The resulting DAG contains the merged matched vertices 
+plus the nonmatched vertices from the original DAGs \(\graph{G}, \graph{H}\).
+The edges are merged accordingly and transitive closure is applied.
+If vertices \(P, Q\) are matched and merged into a vertex \(R\), then:
+  \[  w_R = w_P + w_Q  \qquad\qquad
+      \mathbf{u}_R = \frac{\mathbf{u}_P w_P + \mathbf{u}_Q w_Q}{w_P + w_Q}  \qquad\qquad
+      \mathbf{v}_R = \frac{\mathbf{v}_P w_P + \mathbf{v}_Q w_Q}{w_P + w_Q}  
+  \]
 
 
 
@@ -783,7 +783,73 @@ Problem decomposition for dynamic programming:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{References}
 
-\TODO{}
+\myreference
+{hutarova2021}
+{Hutařová Vařeková,I. \etal\ (2021) 
+2DProts: database of family-wide protein secondary structure diagrams. 
+\emph{Bioinformatics}, \textbf{37}, 4599--4601.}
+{https://doi.org/10.1093/bioinformatics/btab505}
+
+\myreference
+{ilinkin2010}
+{Ilinkin,I. \etal\ (2010) 
+Multiple structure alignment and consensus identification for proteins. 
+\emph{BMC Bioinformatics}, \textbf{11}, 71.}
+{https://doi.org/10.1186/1471-2105-11-71}
+
+\myreference
+{midlik2019}
+{Midlik,A. \etal\ (2019) 
+Automated family-wide annotation of secondary structure elements. 
+\emph{Methods Mol Biol}, \textbf{1958}, 47--71.}
+{https://doi.org/10.1007/978-1-4939-9161-7_3}
+
+\myreference
+{midlik2021}
+{Midlik,A. \etal\ (2021) 
+Uncovering of cytochrome P450 anatomy by SecStrAnnotator. 
+\emph{Sci Rep}, \textbf{11}, 12345.}
+{https://doi.org/10.1038/s41598-021-91494-8}
+
+\myreference
+{needleman1970}
+{Needleman,S.B. and Wunsch,C.D. (1970)
+A general method applicable to the search for similarities in the amino acid sequence of two proteins.
+\emph{J Mol Biol}, \textbf{48}, 443--453.}
+{https://doi.org/10.1016/0022-2836(70)90057-4}
+
+\myreference
+{schrodinger}
+{Schrödinger, LLC. The PyMOL Molecular Graphics System, Version 2.3}
+{https://pymol.org/2/}
+
+\myreference
+{sehnal2021}
+{Sehnal,D. \etal\ (2021)
+Mol* Viewer: modern web app for 3D visualization and analysis of large biomolecular structures. 
+\emph{Nucleic Acids Res}, \textbf{49}, W431--W437.}
+{https://doi.org/10.1093/nar/gkab314}
+
+\myreference
+{shindyalov1998}
+{Shindyalov,I.N. and Bourne,P.E. (1998) 
+Protein structure alignment by incremental combinatorial extension (CE) of the optimal path. 
+\emph{Protein Eng}, \textbf{11}, 739--747.}
+{https://doi.org/10.1093/protein/11.9.739}
+
+\myreference
+{sillitoe2021}
+{Sillitoe,I. \etal\ (2021) 
+CATH: increased structural coverage of functional space. 
+\emph{Nucleic Acids Res}, \textbf{49}, D266--D273.}
+{https://doi.org/10.1093/nar/gkaa1079}
+
+\myreference
+{wwpdb2019}
+{wwPDB consortium. (2019) 
+Protein Data Bank: the single global archive for 3D macromolecular structure data. 
+\emph{Nucleic Acids Res}, \textbf{47}, D520-D528.}
+{https://doi.org/10.1093/nar/gky949}
 
 
 \end{document}

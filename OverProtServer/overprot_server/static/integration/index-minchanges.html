@@ -1,0 +1,142 @@
+<html>
+
+  <head>
+	<!-- Molstar CSS & JS -->
+    <link crossorigin="anonymous"rel="stylesheet" type="text/css" href="https://www.ebi.ac.uk/pdbe/pdb-component-library/css/pdbe-molstar-1.2.0.css">
+    <script type="text/javascript" src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/pdbe-molstar-plugin-1.2.0.js"></script>
+	
+    <!-- d3.js dependency script -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@5.9.2"></script>
+    
+    <!-- PDB Topology Viewer JS -->
+    <script type="text/javascript" src="build/pdb-topology-viewer-plugin-2.0.0.js" defer></script>
+	
+	<!-- math.js -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.3/math.min.js" integrity="sha512-h6sl9arHHMneDTSQwIiJ6NUSx3/wGWKr9P25MQCnwmTsPMBHIscEtk/5k/zA+IOjvGQUuvn2003cRhX2BUpgqw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	
+	<!-- OverProt CSS and scripts -->
+	<!-- All links are copied from the overprot.ncbr.muni.cz pages -->
+	<link crossorigin="anonymous" rel='stylesheet' type='text/css' href='https://overprot.ncbr.muni.cz/static/overprot-viewer/overprot-viewer.min.css'>
+	<script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/d3.v5.min.js'></script>
+	<script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/d3-selection-multi.v1.min.js'></script>
+	<script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/overprot-viewer.min.js'></script>
+	
+	
+	<!-- Bootstrap selects CSS & JS, popper js is required -->
+	<link crossorigin="anonymous" rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+	<!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script> -->
+	<script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js"
+        integrity="sha384-FzT3vTVGXqf7wRfy8k4BiyzvbNfeYjK+frTVqZeNDFl8woCbF0CYG6g2fMEFFo/i"
+        crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+	
+	<!-- jQuery loading overlay -->
+	<script type='text/javascript' src='https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js'></script>
+		
+	<link crossorigin="anonymous" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+	
+	
+	
+    <style>
+		.flex-container {
+			display: flex;
+		}
+		
+        #pdb-topology-viewer {
+			/* minus navbar (56px) and overprot-wrapper*/
+			/* without max in case browser does not support it */
+			height: calc(100vh - 70px - 200px);
+            height: max(320px, calc(100vh - 70px - 200px));
+			/*position: relative;
+            width: calc(400px*1.0);
+            height: 400px;
+			margin-left: 0px;*/
+        }
+		
+		#myViewer{
+			/* minus navbar (56px) and overprot-wrapper*/
+			/* without max in case browser does not support it */
+			height: calc(100vh - 70px - 200px);
+			height: max(320px, calc(100vh - 70px - 200px));
+			/*margin-left: 50px;
+			width: 500px;
+			position: relative;*/
+		}
+		
+		#overprot-wrapper {
+			
+			height: 200px;
+		}
+		
+		.msp-plugin .msp-btn-link-toggle-off, .msp-plugin .msp-btn-link-toggle-on {
+			background-color: rgb(200, 200, 200) !important;
+		}
+		
+		.msp-plugin .msp-btn-link-toggle-on {
+			color: #637ca0 !important;
+		}
+		
+		.msp-plugin .msp-btn-link-toggle-on:hover {
+			color: #51A2FB !important;
+		}
+		
+    </style>
+
+  </head>
+
+  <body>
+  <main>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark text-white">
+				<a class="navbar-brand" href="./index.html">Integrated Viewer</a>
+				<div class="col">
+					<div class='row'>
+						<div class='col'>
+							<div id='currentFamilyIdEle'></div>	
+						</div>
+					</div>
+					<div class='row'>
+						<div class='col'>
+							<div id='currentDomainIdEle'></div>
+						</div>
+					</div>
+				</div>
+				<form id="familyAndDomainForm" class="form-inline ml-auto my-0">
+					<label for="familiesSelector" class="mx-3 pl-3">Protein family (CATH):</label>
+					
+						<select id="familiesSelector" class="mr-3 selectpicker form-control form-control-sm show-tick" data-live-search="true" data-size="5" data-hide-disabled="false"  onchange="" data-width="auto"></select>
+					<label for="domainsSelector" class="mx-3 pl-3">Protein domain:</label>
+					<select id="domainsSelector" class="mr-3 selectpicker form-control form-control-sm show-tick" data-live-search="true" data-size="5" data-hide-disabled="false"  onchange="" data-width="auto"></select>
+					
+					
+						<button type="submit" id="submitFamilyAndDomainForm" class="btn btn-primary" disabled>Submit</button>
+					
+				</form>
+		</nav>
+	<div class="container">		
+		<div class="row">
+			<div id="overprot-wrapper" class="col">
+			</div>
+		</div>		
+		
+		<!-- PDB Topology Viewer and PDBe Mol* containers -->
+		<div class="row no-gutters">
+			<div class="col-sm-6">
+				<div id="pdb-topology-viewer"></div>
+			</div>
+			<div class="col-sm-6">
+				<div id="myViewer"></div>
+			</div>
+		</div>
+  </main>
+	<script type="text/javascript" src="index.js" defer></script>
+  </body>
+
+</html>
