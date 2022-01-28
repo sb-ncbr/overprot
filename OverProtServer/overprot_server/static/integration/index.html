@@ -132,6 +132,8 @@
 
 	<script type="text/javascript">
 		const setting = {  
+			// Data source base URL (e.g. 'https://overprot.ncbr.muni.cz'), leave null to use relative URLs instead
+			overprotDatabaseUrl: 'https://overprot.ncbr.muni.cz',
 			// IDs of involved HTML elements
 			view1dDiv: 'overprot-wrapper',
 			view2dDiv: 'pdb-topology-viewer',
@@ -141,7 +143,10 @@
 			domainSelect: 'domainsSelector',
 			submitButton: 'submitFamilyAndDomainForm',
 			currentFamilyDiv: 'currentFamilyIdEle',
-			currentDomainDiv: 'currentDomainIdEle'
+			currentDomainDiv: 'currentDomainIdEle',
+			// Family and domain ID, leave null to parse them from URL (?family_id=...&domain_id=...)
+			familyId: null,
+			domainId: null
 		};
 		initOverprotIntegratedViewer(setting);
 	</script>

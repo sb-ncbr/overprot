@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
 
-{% block title %} OverProt - PDB {{pdb}} {% endblock %}
+{% block title %} OverProt - {{pdb}} {% endblock %}
 
 
 {% block content %}
 
-<div class="row">
+<div class="row mb-3">
     <div class="col">
         <h2>
             PDB entry: {{pdb}}
@@ -15,13 +15,21 @@
 </div>
 
 <div class="row">
+    <div class="col col-sm-5 col-md-4 col-lg-3" style="text-align: center">
+        <img class="img-fluid mx-auto mb-2" style="border: 1px solid gray;" src="https://www.ebi.ac.uk/pdbe/static/entry/{{pdb}}_deposited_chain_front_image-200x200.png">
+        <br>
+            <a href="https://www.ebi.ac.uk/pdbe/entry/pdb/{{pdb}}" target="_blank">
+                <img src="/static/images/pdbe-logo.png" style="height: 1em;">
+                PDBe&nbsp;&UpperRightArrow;
+            </a>
+    </div>
     <div class="col">
         <h4>{{n_domains}} {{'domain' if n_domains==1 else 'domains'}}:</h4>
         <table>
             {% for domain, family in domains_families %}
             <tr>
-                <td><a target="_blank" href="/view_domain?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}}</a></td>
-                <td>(<a href="/view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a>)</td>
+                <td><a href="/domain_view?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}}</a></td>
+                <td>(<a href="/family_view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a>)</td>
             </tr>
             {% endfor %}
         </table>

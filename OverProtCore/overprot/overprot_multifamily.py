@@ -26,6 +26,7 @@ from .libs.lib_logging import Timing, ProgressBar
 from . import get_cath_family_list
 from . import get_cath_example_domains
 from . import get_cath_family_names
+from . import get_pdb_entry_list
 from . import domains_from_pdbeapi
 from . import overprot
 
@@ -209,10 +210,10 @@ def main(family_list_file: Path, directory: Path, sample_size: int|str|None = No
         directory.mkdir(parents=True, exist_ok=True)
         if download_family_list_by_size:
             family_list_file = directory/'families.txt'
-            get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file, sort_by_size=True)
+            get_cath_family_list.main(directory/'cath-superfamily-list.txt', download=True, out=family_list_file, sort_by_size=True)
         elif download_family_list:
             family_list_file = directory/'families.txt'
-            get_cath_family_list.main(directory/'cath-domain-list.txt', download=True, output=family_list_file)
+            get_cath_family_list.main(directory/'cath-superfamily-list.txt', download=True, out=family_list_file)
         print('Family list file:', family_list_file)
         text = family_list_file.read_text()
         families = text.split()
@@ -220,6 +221,7 @@ def main(family_list_file: Path, directory: Path, sample_size: int|str|None = No
         get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_csv=directory/'domain_list.csv', processes=processes)
         get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
         get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
+        get_pdb_entry_list.main(out=directory/'pdbs.txt')
         if only_get_lists:
             return None
         out_err_dir = directory/'stdout_stderr'
@@ -265,6 +267,7 @@ def main(family_list_file: Path, directory: Path, sample_size: int|str|None = No
                 lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
                 
                 lib_sh.cp(directory/'families.txt', c)
+                lib_sh.cp(directory/'pdbs.txt', c)
                 lib_sh.cp(directory/'domain_list.json', c)
                 lib_sh.cp(directory/'domain_list.csv', c)
                 lib_sh.cp(directory/'cath_example_domains.csv', c)

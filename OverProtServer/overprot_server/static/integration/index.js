@@ -1,5 +1,3 @@
-// const OVERPROT_BASE_URL = ''
-const OVERPROT_BASE_URL = 'https://overprot.ncbr.muni.cz'
 
 // Converts color name ('grey', 'gray' will work) to HEX
 function colorNameToHex(colorName){
@@ -47,9 +45,9 @@ class IntegratedViewer {
 		};
 		this.wellcomePage = true;
 		this.currentUrl = new URL(window.location.href);
-		this.familyId;
+		this.familyId = setting.familyId;
 		// the one that is used by overprot! not by 2dprots
-		this.domainId;
+		this.domainId = setting.domainId;
 		
 		this.defaultFamilyId = '2.160.10.30';
 		this.defaultDomainId = '3oh1A02';
@@ -61,6 +59,8 @@ class IntegratedViewer {
 		this.structAsymId;
 		this.authAsymId;
 		this.entityId;		
+
+		this.overprotDatabaseUrl = setting.overprotDatabaseUrl ?? '';
 
 		this.view1dDiv = getElementByIdAndCheck(setting.view1dDiv, true);
 		this.view2dDiv = getElementByIdAndCheck(setting.view2dDiv, true);
@@ -75,9 +75,13 @@ class IntegratedViewer {
 		this.currentDomainIdEle = getElementByIdAndCheck(setting.currentDomainDiv);		
 	}
 	
-	parseUrl() {
-		this.familyId = this.currentUrl.searchParams.get('family_id');
-		this.domainId = this.currentUrl.searchParams.get('domain_id');
+	parseUrl(force=false) {
+		if (!this.familyId || force){
+			this.familyId = this.currentUrl.searchParams.get('family_id');
+		}
+		if (!this.domainId || force){
+			this.domainId = this.currentUrl.searchParams.get('domain_id');
+		}
 		if (this.familyId && this.domainId) {
 			this.wellcomePage = false;
 		}
@@ -94,10 +98,11 @@ class IntegratedViewer {
 	
 	async setData() {	
 		// domains we need to get current domain data, ranges - to get entityId from chainId (=== chain_id(PDBeAPI))
-		const domainsResponse = await fetch(`${OVERPROT_BASE_URL}/data/db/family/lists/${this.familyId}/domains.json`);
-		const domains = await domainsResponse.json();
-		
-		const currentDomainData = domains.filter(d => d.domain === this.domainId)[0];
+		// const domainsResponse = await fetch(`${this.overprotDatabaseUrl}/data/db/family/lists/${this.familyId}/domains.json`);
+		// const domains = await domainsResponse.json();
+		// const currentDomainData = domains.filter(d => d.domain === this.domainId)[0];
+		const domainResponse = await fetch(`${this.overprotDatabaseUrl}/api/domain/info/${this.domainId}.json`);
+		const currentDomainData = await domainResponse.json();
 		this.pdbId = currentDomainData['pdb'];
 		// in overprot API chain_id corresponds to struct_asym_id (PDBeAPI)
 		this.structAsymId = currentDomainData['chain_id'];
@@ -370,16 +375,15 @@ class IntegratedViewer {
 	
 	render1D() {
 		// Actually insert in HTML rather than render
-		const html = `<overprot-viewer id="anything" file="${OVERPROT_BASE_URL}/data/db/family/diagram/diagram-${this.familyId}.json" width="1800" height="200" color-method="rainbow" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%" dispatch-events="true" listen-events="true"></overprot-viewer>`;
+		const html = `<overprot-viewer id="anything" file="${this.overprotDatabaseUrl}/data/db/family/diagram/diagram-${this.familyId}.json" width="1800" height="200" color-method="rainbow" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%" dispatch-events="true" listen-events="true"></overprot-viewer>`;
 		this.view1dDiv.innerHTML = html;
 	}
 	
-	// TODO don't run these 2 function if select elements not present (adam)
 	async loadFamiliesSelectOptions() {
 		if (this.familiesSelectEle) {
 			console.log('families request sent');
 			// Get txt from overprot API
-			const response = await fetch(`${OVERPROT_BASE_URL}/data/db/families.txt`);
+			const response = await fetch(`${this.overprotDatabaseUrl}/data/db/families.txt`);
 			const txt = await response.text();
 			console.log('families request parsed');
 			// Parse txt to get arr with family IDs
@@ -388,6 +392,8 @@ class IntegratedViewer {
 			const ele = $(this.familiesSelectEle);
 			this.populateSelectEle(ele, options);
 			console.log('families select populated');
+		} else {
+			console.log(`familiesSelectEle not present, skipping loadFamiliesSelectOptions()`);
 		}
 	}
 	
@@ -395,7 +401,7 @@ class IntegratedViewer {
 		if (this.domainsSelectEle) {
 			// Get json from overprot API
 			console.log('domains request sent');
-			const responseOverprotDomains = await fetch(`${OVERPROT_BASE_URL}/data/db/family/lists/${familyId}/domains.json`);
+			const responseOverprotDomains = await fetch(`${this.overprotDatabaseUrl}/data/db/family/lists/${familyId}/domains.json`);
 			const overprotDomains = await responseOverprotDomains.json();
 			console.log('domains request parsed');
 			// Potentially both domain lists from Overprot and 2DProts are consistent
@@ -425,19 +431,22 @@ class IntegratedViewer {
 }
 
 function initOverprotIntegratedViewer(setting){
-	// setting should contain IDs of various involved HTML elements
 	// e.g.:
 	// const setting = {
-	// 	view1dDiv: 'overprot-wrapper',
-	// 	view2dDiv: 'pdb-topology-viewer',
-	// 	view3dDiv: 'myViewer',
-	// 	familyAndDomainForm: 'familyAndDomainForm', 
-	// 	familySelect: 'familiesSelector',
-	// 	domainSelect: 'domainsSelector',
-	// 	submitButton: 'submitFamilyAndDomainForm',
-	// 	currentFamilyDiv: 'currentFamilyIdEle',
-	// 	currentDomainDiv: 'currentDomainIdEle'
+    //     // Data source base URL (e.g. 'https://overprot.ncbr.muni.cz'), leave '' to use relative URLs instead
+    //     overprotDatabaseUrl: '',
+    //     // IDs of involved HTML elements
+    //     view1dDiv: 'view-1d',
+    //     view2dDiv: 'view-2d',
+    //     view3dDiv: 'view-3d',
+    //     familyAndDomainForm: null, 
+    //     familySelect: null,
+    //     domainSelect: null,
+    //     submitButton: null,
+    //     currentFamilyDiv: null,
+    //     currentDomainDiv: null
 	// };
+	
 	$.LoadingOverlaySetup({
 		background      : "rgba(0, 0, 0, 0.8)",
 		image           : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><circle r="80" cx="500" cy="90"/><circle r="80" cx="500" cy="910"/><circle r="80" cx="90" cy="500"/><circle r="80" cx="910" cy="500"/><circle r="80" cx="212" cy="212"/><circle r="80" cx="788" cy="212"/><circle r="80" cx="212" cy="788"/><circle r="80" cx="788" cy="788"/></svg>',
@@ -468,7 +477,7 @@ function initOverprotIntegratedViewer(setting){
 				// select [0] and refresh.....
 				try {
 					// Here it breaks if the user clicks on family selector many times and too fast: "... prop 'value' of undefined"
-					// E.g. 6.10.160.10 has empty domain list: ${OVERPROT_BASE_URL}/data/db/family/lists/6.10.160.10/domains.json
+					// E.g. 6.10.160.10 has empty domain list: ${this.overprotDatabaseUrl}/data/db/family/lists/6.10.160.10/domains.json
 					// Or maybe we should just disable family selector as well until everything is ready? Seems not.						
 					console.log('selecting default domain option');
 					const defaultOption = ele[0].options[0].value;
@@ -522,6 +531,7 @@ function initOverprotIntegratedViewer(setting){
 	});
 
 	function setDataAndRenderViews() {
+		console.log('dom loaded');
 		instance.setData()
 		.then(() => {
 			instance.render1D();

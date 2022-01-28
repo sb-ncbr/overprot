@@ -51,7 +51,7 @@
             </tr>
             <tr>
                 <th>Example domain:</th>
-                <td><a href="/domain/{{example_domain}}">{{example_domain}}</a> (<a target="_blank" href="/view_domain?family_id={{family_id}}&domain_id={{example_domain}}">Interactive view</a>)</td>
+                <td class="num"><a href="/domain/{{example_domain}}" title="Go to interactive view for domain {{example_domain}}">{{example_domain}}</a></td>
                 <td><span class="info" title="Example domain for the family, as defined by CATH."></span></td>
             </tr>
         </table>
@@ -61,7 +61,7 @@
             <div class="col">
                 <b>External links:</b>
                 &emsp;
-                <a href="https://cathdb.info/version/latest/superfamily/{{family_id}}" target="_blank">
+                <a href="http://cathdb.info/version/latest/superfamily/{{family_id}}" target="_blank">
                     <img src="/static/images/cath-logo.png" style="height: 1em;">
                     CATH&nbsp;&UpperRightArrow;
                 </a>
@@ -69,15 +69,13 @@
                 <a href="https://2dprots.ncbr.muni.cz/family/{{family_id}}" target="_blank">
                     2DProts&nbsp;&UpperRightArrow;
                 </a>
-                &emsp;
-                <!-- <input type="button" value="Save SVG" onclick="saveViewerSvg('main-viewer', 'overprot-{{family_id}}.svg')"> -->
             </div>
         </div>
         <div class="row mb-3">
             <div class="col">
                 <b>Download:</b>
                 &emsp;
-                <a href="/data/db/family/zip_results/results-{{family_id}}.zip" target="_blank">
+                <a href="/data/db/family/zip_results/results-{{family_id}}.zip" download>
                     results.zip
                 </a>
             </div>

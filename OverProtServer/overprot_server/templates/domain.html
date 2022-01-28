@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 
-{% block title %} OverProt - PDB {{pdb}} {% endblock %}
+{% block title %} OverProt - {{domain}} {% endblock %}
 
 
 {% block content %}
@@ -19,7 +19,7 @@
         <table>
             <tr>
                 <th>Family:</th>
-                <td><a href="/view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a></td>
+                <td><a href="/family_view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a></td>
             </tr>
             <tr>
                 <th>PDB:</th>
@@ -35,7 +35,7 @@
             </tr>
             <tr>
                 <th>Domain:</th>
-                <td><a target="_blank" href="/view_domain?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}} &ndash; Interactive view</a></td>
+                <td><a target="_blank" href="/domain_view?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}} &ndash; Interactive view</a></td>
             </tr>
         </table>
     </div>

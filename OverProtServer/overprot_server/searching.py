@@ -12,7 +12,7 @@ class Searcher(object):
     domain2family: dict[str, str]  # domain -> family
     domain2pdb: dict[str, str]  # domain -> family
 
-    def __init__(self, domain_list_txt: Path) -> None:
+    def __init__(self, domain_list_csv: Path, pdb_list_txt: Path|None = None) -> None:
         SEPARATOR = ';'
         self.domains = set()
         self.pdbs = set()
@@ -23,7 +23,15 @@ class Searcher(object):
         self.domain2family = {}
         self.domain2pdb = {}
         self.domain2chain_ranges = {}
-        with open(domain_list_txt) as f:
+        if pdb_list_txt is not None:
+            with open(pdb_list_txt) as f:
+                for line in f:
+                    line = line.strip()
+                    if line != '':
+                        pdb = line
+                        self.pdbs.add(pdb)
+                        self.regular_pdbs[pdb.upper()] = pdb
+        with open(domain_list_csv) as f:
             for line in f:
                 line = line.strip()
                 if line != '':
@@ -39,6 +47,7 @@ class Searcher(object):
                     self.domain2family[domain] = family
                     self.domain2pdb[domain] = pdb
                     self.domain2chain_ranges[domain] = (chain,ranges)
+                    
     def has_pdb(self, pdb: str) -> bool:
         return pdb in self.pdbs
     def has_domain(self, domain: str) -> bool:
