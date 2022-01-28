@@ -9,22 +9,10 @@
     <link crossorigin="anonymous" rel="stylesheet" type="text/css" href="https://www.ebi.ac.uk/pdbe/pdb-component-library/css/pdbe-molstar-1.2.0.css">
     <script type="text/javascript" src="https://www.ebi.ac.uk/pdbe/pdb-component-library/js/pdbe-molstar-plugin-1.2.0.js"></script>
 
-    <!-- d3.js dependency script -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/d3@5.9.2"></script> -->
-
     <!-- math.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.3/math.min.js" integrity="sha512-h6sl9arHHMneDTSQwIiJ6NUSx3/wGWKr9P25MQCnwmTsPMBHIscEtk/5k/zA+IOjvGQUuvn2003cRhX2BUpgqw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <!-- OverProt CSS and scripts -->
-    <!-- All links are copied from the overprot.ncbr.muni.cz pages -->
-    <!-- <link crossorigin="anonymous" rel='stylesheet' type='text/css' href='https://overprot.ncbr.muni.cz/static/overprot-viewer/overprot-viewer.min.css'> -->
-    <!-- <script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/d3.v5.min.js'></script> -->
-    <!-- <script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/d3-selection-multi.v1.min.js'></script> -->
-    <!-- <script type='text/javascript' src='https://overprot.ncbr.muni.cz/static/overprot-viewer/overprot-viewer.min.js'></script> -->
-
     <!-- Bootstrap selects CSS & JS, popper js is required -->
-    <!-- <link crossorigin="anonymous" rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous"> -->
-    <!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script> -->
     <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js" integrity="sha384-FzT3vTVGXqf7wRfy8k4BiyzvbNfeYjK+frTVqZeNDFl8woCbF0CYG6g2fMEFFo/i" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
@@ -42,20 +30,36 @@
     <!--Integrated Viewer-->
     <script src="/static/integration/index.js"></script>
 
-    <!--Style from Aliaksei-->
     <style>
 		.flex-container {
 			display: flex;
 		}
 		#view-1d {
-			height: 200px;
+            height: 200px; /* OverProtViewer height set in Integrated Viewer */
 		}
 		#view-2d {
-            aspect-ratio: 1;
+            height: calc(100vh - 4.5rem - 2 * (2.06rem + 2px) - 200px - 8px);  /* 100vh - 4.5*rem [navbar] - 2 * (1.2*1.3rem [h3 line-height*fontsize, web.css] + 0.5rem [.h3 margin-bottom, bootstap.css] + 2px [td padding] - 200px [#view-1d] - 8px [bottom margin]) */
+            min-height: 200px;  /* Do not shrink on small phones landscape */
+            max-height: 60vmin;  /* Do not become a noodle on phones portrait */
 		}
 		#view-3d {
-            aspect-ratio: 1;
+            /* Same as #view-2d */
+            height: calc(100vh - 4.5rem - 2 * (2.06rem + 2px) - 200px - 8px);
+            min-height: 200px;
+            max-height: 60vmin;
 		}
+        #view-1d .overprot-viewer svg.canvas {
+            border: solid 1px gray !important;  /* Match in all 3 viewers */
+        }
+        #view-2d #pdb-topology-viewer>div {
+            border: solid 1px gray !important;  /* Match in all 3 viewers */
+            border-top: none !important;
+            border-right: none !important;
+        }
+        #view-3d .msp-plugin-content {
+            border: solid 1px gray !important;  /* Match in all 3 viewers */
+            border-top: none !important;
+        }
 		.msp-plugin .msp-btn-link-toggle-off,
 		.msp-plugin .msp-btn-link-toggle-on {
 			background-color: rgb(200, 200, 200) !important;
@@ -72,6 +76,7 @@
 
 {% block content %}
 
+<!--Title-->
 <div class="row">
     <div class="col">
         <table>
@@ -87,20 +92,22 @@
     </div>
 </div>
 	
-<!--Aliaksei's part-->
+<!--Viewers-->
 <div class="row">
-    <div id="view-1d" class="col">
+    <div class="col">
+        <div id="view-1d"></div>
     </div>
 </div>		
 <div class="row no-gutters">
-    <div class="col-sm-6">
+    <div class="col-12 col-sm-6">
         <div id="view-2d"></div>
     </div>
-    <div class="col-sm-6">
+    <div class="col-12 col-sm-6">
         <div id="view-3d"></div>
     </div>
 </div>
 
+<!--Other info-->
 <div class="row mt-3">
     <div class="col-12 col-md-6">
         <h3>Domain info</h3>
