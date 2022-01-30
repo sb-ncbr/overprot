@@ -5,15 +5,13 @@ Example usage:
     python3  -m overprot.draw_diagram  input_data/  --dag  --output diagram.svg  --json_output diagram.json
 '''
 
-
-import argparse
 import json
 import re
 import sys
 from pathlib import Path
 from collections import defaultdict
 import numpy as np
-from typing import Dict, Any, Optional, Final, Literal, get_args
+from typing import Optional, Final, Literal, get_args
 import svgwrite as svg  # type: ignore
 
 from .libs import lib
@@ -22,8 +20,6 @@ from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
-COMMENT_SYMBOL = '#'
-RE_DTYPE = re.compile('^\s*'+re.escape(COMMENT_SYMBOL)+'\s*dtype\s*=\s*(\w+)\s*$')
 Shape = Literal['rectangle', 'arrow', 'cdf', 'symcdf', 'symcdf0']
 SHAPES = get_args(Shape)
 SIMPLE_SHAPES = ['rectangle', 'arrow']  # Shapes which do not require CDF
@@ -44,19 +40,6 @@ DEFAULT_TEXT_FILL = 'black'
 
 
 #  FUNCTIONS  ################################################################################
-
-def log(*args):
-    print(*args)
-
-def get_occurrence_and_average(matrix):
-    m, n = matrix.shape
-    occurence = []
-    sums = []
-    for i in range(m):
-        occurence.append(len([j for j in range(n) if matrix[i, j] !=0]))
-        sums.append(sum(matrix[i,:]))
-    avg = [sums[i]/occurence[i] for i in range(m)]
-    return occurence, avg
 
 def make_color_palette():
     MAX=255
@@ -94,15 +77,9 @@ def heatmap_color(value, norm=50):
     MAX=255
     LOW=50
     x = np.exp(-value / norm)
-    # x = value
     colors = [(255, 0, 0), (255, 200, 255), (0, 0, 255)] # from hottest (value inf) to coolest (value 0)
     rgb = interpolate(x, colors)
-    # print(f'{x}: {rgb}')
     return svg.rgb(*rgb)
-    # red = LOW * (1 - 2*y) + MAX * 2*y if y < 0.5 else MAX
-    # blue = MAX * (2 - 2*y) + LOW * (2*y - 1) if y > 0.5 else MAX
-    # green = red if y <0.5 else blue
-    # return svg.rgb(red, green, blue)
 
 def renumber_sheets_by_importance(sheet_ids, occurrences, avg_lengths):
     if len(sheet_ids) == 0:
@@ -120,20 +97,6 @@ def renumber_sheets_by_importance(sheet_ids, occurrences, avg_lengths):
     new_ids = [ranks[sheet] for sheet in sheet_ids]
     return new_ids
 
-def add_arc(drawing, group, p0, p1, semiaxes, stroke='black', fill='none'):
-    """ Adds an arc that bulges to the right as it moves from p0 to p1 """
-    args = {'x0':p0[0], 
-        'y0':p0[1], 
-        'xradius':semiaxes[0], 
-        'yradius':semiaxes[1] if len(semiaxes) > 1 else semiaxes[0], 
-        'ellipseRotation':0, #has no effect for circles
-        'x1':(p1[0]-p0[0]), 
-        'y1':(p1[1]-p0[1])}
-    group.add(drawing.path(d="M %(x0)f,%(y0)f a %(xradius)f,%(yradius)f %(ellipseRotation)f 0,0 %(x1)f,%(y1)f" % args,
-            fill=fill, 
-            stroke=stroke
-            ))
-
 def add_nice_arc(drawing, p0, p1, max_deviation, smart_deviation_param = None, **kwargs):
     if max_deviation == 0:
         drawing.add(drawing.line(p0, p1, **kwargs))
@@ -148,7 +111,6 @@ def add_nice_arc(drawing, p0, p1, max_deviation, smart_deviation_param = None, *
             max_deviation *= distance / (distance + smart_deviation_param)
         radius = max_deviation / 2 + sq_distance / (8 * max_deviation)
         drawing.add(drawing.path(d=f'M {p1[0]},{p1[1]} a {radius},{radius} 0 0,0 {-dx},{-dy}', **kwargs))
-        # group.add(drawing.path(d="M %(x0)f,%(y0)f a %(xradius)f,%(yradius)f %(ellipseRotation)f 0,0 %(x1)f,%(y1)f" % args, **kwargs))
 
 def draw_strand(drawing, left_top, width_height, 
         measure_by_head=False, head_height_ratio=1.4, head_width_fraction=0.5, extra_width_fraction=0, 
@@ -170,9 +132,7 @@ def draw_strand(drawing, left_top, width_height,
     x0 = x0_orig - width*extra_width_fraction/2
     x1 = x0 + augmented_width*(1-head_width_fraction)
     x2 = x0 + augmented_width
-    # group.add(drawing.rect((x0, y0), (width, height), **kwargs))
     group.add(drawing.polygon([(x0,y1), (x1,y1), (x1,y0), (x2,y2), (x1,y4), (x1,y3), (x0,y3)], **kwargs))
-    # group.add(drawing.rect((x0, y0), (width, height), **kwargs))
 
 def cdf_xy_pairs(values):
     values = sorted(values)
@@ -236,166 +196,6 @@ def filter_by_occurrence_without_orphan_strands(labels, rel_occurrence, beta_con
             mate = max(neighbours[i], key=lambda j: rel_occurrence[j])
             selected[mate] = True
     return [ i for i in range(n) if selected[i] ]
-
-def make_diagram_old(labels, rel_occurrence, avg_lengths, 
-        precedence=None, sheet_ids=None, occurrence_threshold=0, beta_connectivity=[], show_beta_connectivity=False,
-        sse_shape='rectangle', cdfs=None, variances=None, label2manual_label={}):  # if precedence is None, the diagram will be drawn as a path, otherwise as a DAG
-    indices = filter_by_occurrence_without_orphan_strands(labels, rel_occurrence, beta_connectivity=beta_connectivity, occurrence_threshold=occurrence_threshold)
-    
-    if len(indices) == 0:
-        message = 'No secondary structure elements.'
-        dwg = svg.Drawing(style='font-size:' + str(FONT_SIZE)+ ';font-family:Sans, Arial;stroke-width:1;fill:none')
-        TOTAL_X = FLOOR_HEIGHT + 2*X_MARGIN
-        TOTAL_Y = FLOOR_HEIGHT + 2*Y_MARGIN
-        dwg.add(dwg.rect((0, 0), (TOTAL_X, TOTAL_Y), stroke='none', fill='none'))
-        dwg.add(dwg.text(message, (X_MARGIN, Y_MARGIN + TEXT_HEIGHT), fill = DEFAULT_TEXT_FILL))
-        return dwg
-
-    labels = [labels[i] for i in indices]
-    sheet_ids = [sheet_ids[i] for i in indices]
-    rel_occurrence = [rel_occurrence[i] for i in indices]
-    avg_lengths = [avg_lengths[i] for i in indices]
-    if sse_shape not in SIMPLE_SHAPES and cdfs is None:
-        raise Exception(f'cdfs cannot be None when sse_shape={sse_shape}')
-    if sse_shape in SIMPLE_SHAPES:
-        repr_lengths = avg_lengths
-    else:
-        cdfs = [ cdfs[i] for i in indices ]
-        repr_lengths = [ cdf[-1][0] for cdf in cdfs ]
-    if precedence is not None:
-        precedence = lib.submatrix_int_indexing(precedence, indices, indices)
-    if variances is not None:
-        variances = [ variances[i] for i in indices ]
-    
-    n = len(labels)
-    types = [('H' if label[0] in 'GHIh' else 'E') for label in labels]
-    sheet_ids = renumber_sheets_by_importance(sheet_ids, rel_occurrence, avg_lengths)
-
-    STRAND2HELIX_WIDTH_RATIO = 2
-    avg_lengths = [ length*STRAND2HELIX_WIDTH_RATIO if typ=='E' else length for length, typ in zip(avg_lengths, types) ]
-
-    GAP_RESIDUES = 4
-    KNOB_RESIDUES = 1
-    
-    # Place SSEs into levels (horizontal) and floors (vertical), calculate x starts and ends, edges
-    if precedence is not None:  # draw as DAG
-        dag = lib_graphs.Dag.from_precedence_matrix(precedence)
-        levels = dag.levels
-        edges = dag.edges
-        starts = [0] * n
-        ends = [0] * n
-        floors = [0] * n
-        current_res_count = 0
-        max_floors = max(len(level) for level in levels) if len(levels) > 0 else 0
-        for level in levels:
-            for floor, v in enumerate(level):
-                starts[v] = current_res_count
-                ends[v] = current_res_count + repr_lengths[v]
-                floors[v] = floor + (max_floors - len(level)) / 2
-            current_res_count = max(ends[v] for v in level) + GAP_RESIDUES
-        total_length = current_res_count - GAP_RESIDUES
-    else:  # draw as path
-        total_length = sum(repr_lengths) + (n-1)*GAP_RESIDUES
-        starts = []
-        ends = []
-        for i in range(n):
-            if len(starts) == 0:
-                starts.append(0)
-            else:
-                starts.append(ends[-1]+GAP_RESIDUES) 
-            ends.append(starts[-1] + repr_lengths[i])
-        floors = [0] * n
-        edges = [(i, i+1) for i in range(n-1)]
-
-    max_floor = max(floors) if len(floors) > 0 else 0
-
-    Y_CENTER = Y_MARGIN + UPPER_TEXT_HEIGHT + 0.5 * OCCUR_SCALE
-    Y_TEXT = Y_MARGIN + UPPER_TEXT_HEIGHT + OCCUR_SCALE + TEXT_HEIGHT
-    TOTAL_X = 2 * X_MARGIN + LENGTH_SCALE * total_length
-    TOTAL_Y = Y_TEXT + Y_MARGIN + FLOOR_HEIGHT * max_floor
-    # TOTAL_Y = 2*Y_MARGIN + UPPER_TEXT_HEIGHT + FLOOR_HEIGHT*(max_floor+1) + TEXT_HEIGHT
-
-    MAX_ARC_DEVIATION = (OCCUR_SCALE/2 + X_MARGIN)
-    SMART_ARC_DEVIATION_PARAM = TOTAL_X/5
-    
-    STROKE = svg.rgb(0,0,0)  # color for lines = black
-    HELIX_COLOR = svg.rgb(150, 150, 150)  # color for helices = gray
-    SHEETS_COLORS = make_color_palette()  # colors for sheets
-    fills = { 'H': svg.rgb(255,180,180), 'E': svg.rgb(180,180,255) }
-    text_fill = DEFAULT_TEXT_FILL
-    dwg = svg.Drawing(style='font-size:' + str(FONT_SIZE)+ ';font-family:Sans, Arial;stroke-width:1;fill:none')
-    dwg.add(dwg.rect((0, 0), (TOTAL_X, TOTAL_Y), stroke='none', fill='none'))
-
-    centers_by_label = {}
-    fill_colors_by_label = {}
-
-    for u, v in edges:
-        x_u = X_MARGIN + LENGTH_SCALE * starts[u]  # logically should be ends[u], but there's starts[u] so it will work nice with sse_shape=cdf
-        x_v = X_MARGIN + LENGTH_SCALE * starts[v]
-        x_u_knob = X_MARGIN + LENGTH_SCALE * ends[u] + KNOB_RESIDUES * LENGTH_SCALE
-        x_v_knob = x_v - KNOB_RESIDUES * LENGTH_SCALE
-        y_u = Y_CENTER + FLOOR_HEIGHT * floors[u]
-        y_v = Y_CENTER + FLOOR_HEIGHT * floors[v]
-        dwg.add(dwg.line((x_u, y_u), (x_u_knob, y_u), stroke=STROKE))
-        dwg.add(dwg.line((x_u_knob, y_u), (x_v_knob, y_v), stroke=STROKE))
-        dwg.add(dwg.line((x_v_knob, y_v), (x_v, y_v), stroke=STROKE))
-
-    for i in range(len(starts)):
-        x_left = X_MARGIN + LENGTH_SCALE * starts[i]
-        y_middle = Y_CENTER + FLOOR_HEIGHT * floors[i]
-        width = LENGTH_SCALE * repr_lengths[i]
-        height = OCCUR_SCALE * rel_occurrence[i]
-        x_middle = x_left + 0.5*width
-        y_top = y_middle - 0.5 * height
-        y_bottom = y_middle + 0.5 * height
-        y_text = y_bottom + TEXT_HEIGHT
-        y_upper_text = y_top - TEXT_ABOVE_LINE
-        if variances is not None:
-            fill_color = heatmap_color(variances[i]) # debug
-        elif sheet_ids is not None:
-            sheet_id = int(sheet_ids[i])
-            if sheet_id > 0:  # sheet
-                fill_color = SHEETS_COLORS[(sheet_id-1) % len(SHEETS_COLORS)]
-            else:  # helix
-                fill_color = HELIX_COLOR
-        else:
-            fill_color = fills[types[i]]
-
-        if sse_shape == 'rectangle':
-            dwg.add(dwg.rect((x_left, y_top), (width, height), stroke=STROKE, fill=fill_color))
-        elif sse_shape == 'arrow':
-            is_sheet = sheet_ids is not None and int(sheet_ids[i]) > 0
-            if is_sheet:
-                draw_strand(dwg, (x_left, y_top), (width, height), stroke=STROKE, fill=fill_color)
-            else:
-                dwg.add(dwg.rect((x_left, y_top), (width, height), stroke=STROKE, fill=fill_color))
-        else:
-            if sse_shape == 'cdf':
-                polygon = inverse_cdf_shape(cdfs[i], x_left, y_bottom, LENGTH_SCALE, OCCUR_SCALE, include_origin=True)
-            elif sse_shape == 'symcdf':
-                polygon = symmetrical_inverse_cdf_shape(cdfs[i], x_middle, y_middle, LENGTH_SCALE, OCCUR_SCALE, include_zero=False)
-            elif sse_shape == 'symcdf0':
-                polygon = symmetrical_inverse_cdf_shape(cdfs[i], x_middle, y_middle, LENGTH_SCALE, OCCUR_SCALE, include_zero=True)
-            else:
-                raise Exception(f'Unknown sse_shape: {sse_shape}')
-            dwg.add(dwg.polygon(polygon, stroke=STROKE, fill=fill_color))
-        label = labels[i]
-        centers_by_label[label] = (x_middle, y_middle)
-        fill_colors_by_label[label] = fill_color
-        if label in label2manual_label:
-            manual_label = label2manual_label[label]
-            dwg.add(dwg.text(manual_label, (x_left, y_upper_text), fill = text_fill))
-        dwg.add(dwg.text(label, (x_left, y_text), fill = text_fill))
-
-    if show_beta_connectivity:
-        for label1, label2, direction in beta_connectivity:
-            try:
-                add_nice_arc(dwg, centers_by_label[label1], centers_by_label[label2], -direction*MAX_ARC_DEVIATION, smart_deviation_param=SMART_ARC_DEVIATION_PARAM, stroke=fill_colors_by_label[label1], stroke_width=2)
-                add_nice_arc(dwg, centers_by_label[label1], centers_by_label[label2], -direction*MAX_ARC_DEVIATION, smart_deviation_param=SMART_ARC_DEVIATION_PARAM, stroke=STROKE, stroke_width=0.2)
-            except KeyError:
-                pass
-    
-    return dwg
 
 def make_diagram(labels, rel_occurrence, avg_lengths, 
         precedence=None, sheet_ids=None, occurrence_threshold=0, beta_connectivity=[], show_beta_connectivity=False,
@@ -525,8 +325,7 @@ def make_diagram(labels, rel_occurrence, avg_lengths,
                 add_nice_arc(dwg, centers_by_label[label1], centers_by_label[label2], -direction*max_deviation, smart_deviation_param, stroke=fill_colors_by_label[label1], stroke_width=2)
                 add_nice_arc(dwg, centers_by_label[label1], centers_by_label[label2], -direction*max_deviation, smart_deviation_param, stroke=STROKE, stroke_width=0.2)
             except KeyError:
-                pass
-    
+                pass    
     return dwg
 
 def get_label2manual_label(annotation):
@@ -657,9 +456,7 @@ def main(directory: Path, dag: bool = False, shape: Shape = DEFAULT_SHAPE, conne
         label2manual_label=label2manual_label)
 
     drawing.saveas(output)
-
     # TODO allow showing manual labels above the rectangles
-    return None
 
 
 if __name__ == '__main__':

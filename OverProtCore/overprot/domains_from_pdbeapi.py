@@ -1,5 +1,6 @@
 '''
-This Python3 script downloads the list of domains belonging to the specified Pfam family or CATH homologous superfamily and prints it in JSON in format { pdb: [[domain_name, chain, range]] }.
+This Python3 script downloads the list of domains belonging to the specified Pfam family 
+or CATH homologous superfamily and prints it in JSON in format { pdb: [[domain_name, chain, range]] }.
 
 Example usage:
     python3  -m domains_from_pdbeapi  1.10.630.10
@@ -8,8 +9,7 @@ Example usage:
 import sys
 import requests
 import json
-import argparse
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from .libs import lib
 from .libs.lib_domains import Domain
@@ -83,7 +83,6 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
             result.append(Domain(name=domain_name, pdb=pdb, chain=chain, ranges=ranges, auth_chain=auth_chain, auth_ranges=auth_ranges))
     else:
         # Some segments miss a domain name, creating new domain names.
-        # sys.stderr.write('Some segments miss a domain name, creating new domain names\n')
         ranges_by_chain = create_multidict( (seg.chain, seg) for seg in segments )
         result = []
         for chain, chain_segments in sorted(ranges_by_chain.items()):
@@ -104,7 +103,7 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
 #  MAIN  ###############################################################################
 
 @cli_command()
-def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: bool = False, chain_change_warning: bool = False) -> Optional[int]:
+def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: bool = False, chain_change_warning: bool = False) -> None:
     '''Download the list of domains belonging to the specified Pfam family or CATH homologous superfamily 
     and print it in JSON in format { pdb: [[domain_name, chain, range]] }.
     @param  `accession`              "accession" argument to PDBe API SIFTS Mappings, e.g. Pfam accession or CATH cathcode.
@@ -142,8 +141,8 @@ def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: b
     n_domains = sum( len(doms) for pdb, doms in output.items() )
     sys.stderr.write(f'Found {n_domains} domains in {n_pdbs} PDB entries.\n')
     lib.dump_json(output, sys.stdout)
-    return None
 
 
 if __name__ == '__main__':
     run_cli_command(main)
+    

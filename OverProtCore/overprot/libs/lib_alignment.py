@@ -295,7 +295,7 @@ def dist(structfileA: Path, structfileB: Path, with_cealign=True, with_iteration
 
 def bound_dist_dynprog_score_matrix(A: WeightedCoordinates, B: WeightedCoordinates, R0=10.0) -> np.ndarray:
     '''Create score matrix for dynamic programming alignment algorithm, for edit_distance_weighted'''
-    return bound_dist_dynprog_score_matrix_jit(A.coords, B.coords, A.relative_weights, B.relative_weights, R0)
+    # Original implementation:
     # rA = A.coords
     # rB = B.coords
     # dim, m = rA.shape
@@ -309,6 +309,7 @@ def bound_dist_dynprog_score_matrix(A: WeightedCoordinates, B: WeightedCoordinat
     # distance = bound_dist * np.minimum(wA, wB) + 0.5 * np.abs(wA - wB)
     # score = 0.5 * wA + 0.5 * wB - distance
     # return score
+    return bound_dist_dynprog_score_matrix_jit(A.coords, B.coords, A.relative_weights, B.relative_weights, R0)
 
 @jit(nopython=True)
 def bound_dist_dynprog_score_matrix_jit(rA: np.ndarray, rB: np.ndarray, wA_: np.ndarray, wB_: np.ndarray, R0: float) -> np.ndarray:
@@ -359,52 +360,6 @@ def test_edit_distance_weighted():
     lib.log_debug('abs. weight AB:', coordsAB.absolute_weight)
     for i in range(len(coordsAB)):
         lib.log_debug(matching[i], coordsAB.coords[:,i], coordsAB.relative_weights[i])
-
-
-def make_structure_tree(structs: List[Path], show_tree=False, with_cealign=True, with_iteration=True):
-    structs = list(structs)
-    n_structs = len(structs)
-    names = [struct.stem for struct in structs]
-
-    for i in range(n_structs):
-        try:
-            s = lib_pymol.read_cif(structs[i])
-        except ValueError:
-            print(names[i], file=sys.stderr)
-            raise
-        if not s.is_alpha_trace():
-            alpha_struct = structs[i].parent / f'{names[i]}.alphas.cif'
-            lib_pymol.extract_alpha_trace(structs[i], alpha_struct)
-            structs[i] = alpha_struct
-
-    distance_matrix = np.zeros((n_structs, n_structs), dtype=np.float64)
-    with ProgressBar(n_structs*(n_structs-1)//2, title=f'Calculating structure distance matrix for {n_structs} structures') as bar:
-        for i, j in itertools.combinations(range(n_structs), 2):
-            distance = dist(structs[i], structs[j], with_cealign=with_cealign, with_iteration=with_iteration)
-            distance_matrix[i,j] = distance_matrix[j,i] = distance
-            bar.step()
-
-    lib.print_matrix(distance_matrix, 'tmp/distance_matrix.tsv', names, names)
-
-    ac = lib_acyclic_clustering_simple.AcyclicClusteringSimple()
-    with Timing('ac.fit'):
-        ac.fit(distance_matrix, np.zeros_like(distance_matrix), type_vector=np.zeros(n_structs))
-    lib.log_debug(ac.n_clusters, ac.final_members, ac.labels, ac.children, sep='\n', file=sys.stderr)
-
-    sorted_leaves = lib_clustering.children_to_list(ac.children)
-    sorted_distance_matrix = lib.submatrix_int_indexing(distance_matrix, sorted_leaves, sorted_leaves)
-    sorted_names = lib.submatrix_int_indexing(names, sorted_leaves)
-    lib.log_debug('sorted_leaves:', sorted_leaves, sep='\n', file=sys.stderr)
-    lib.print_matrix(sorted_distance_matrix, 'tmp/distance_matrix_sorted.tsv', sorted_names, sorted_names)
-    
-    newi = lib_clustering.children_to_newick(ac.children, [-1], distances=ac.distances, node_names=names)
-    lib.log_debug(newi)
-    if show_tree:
-        t = Tree(newi)
-        t.show()
-    plt.hist(distance_matrix.flatten(), bins=range(0,int(distance_matrix.max()+1),10))  # type: ignore
-    plt.show()
-    return ac.children
 
 def make_structure_tree_with_merging(structs: List[Path], show_tree=False, progress_bar=False):
     

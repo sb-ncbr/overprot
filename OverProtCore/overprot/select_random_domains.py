@@ -24,7 +24,7 @@ RANDOMIZE_DOMAINS_WITHIN_PDB = False
 @cli_command(parsers={'size': lib.int_or_all})
 def main(domain_file: Path, 
          size: Optional[int] = None, or_all: bool = False,
-         unique_pdb: bool = False, unique_uniprot: bool = False) -> Optional[int]:
+         unique_pdb: bool = False, unique_uniprot: bool = False) -> None:
     '''Select a random sample from a set of domains.
     @param  `domain_file`     JSON file with format {pdb: [[domain_name, chain, range]]}.
     @param  `size`            Size of the selected sample (integer or 'all'). [default: "all"]
@@ -33,14 +33,9 @@ def main(domain_file: Path,
     @param  `unique_uniprot`  Take only the first domain listed for each UniProtID (input must be sorted by UniProtID).
     '''
     domains_by_pdb = lib_domains.load_domain_list_by_pdb(domain_file)
-
     if unique_uniprot:
-        raise NotImplementedError
+        raise NotImplementedError()
         # TODO implement using e.g. ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/csv/pdb_chain_cath_uniprot.csv, not PDBeAPI (request per entry)
-        # for uni, pdbs_domains in pdb_dict.items(): # expects different format of input
-        #     pdb = list(pdbs_domains)[0]
-        #     domain, chain, rang = pdbs_domains[pdb][0]
-        #     domains.append((pdb, domain, chain, rang))
     elif unique_pdb:
         if RANDOMIZE_DOMAINS_WITHIN_PDB:
             domains = [np.random.choice(doms) for doms in domains_by_pdb.values()]
@@ -69,7 +64,6 @@ def main(domain_file: Path,
     str_unique_pdb = ' unique-PDB' if unique_pdb else ''
     print(f'Selected {sample_size}{str_all} out of {N}{str_unique_pdb} domains', file=sys.stderr)
 
-    return None
 
 if __name__ == '__main__':
     run_cli_command(main)

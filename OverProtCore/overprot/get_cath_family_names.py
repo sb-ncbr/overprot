@@ -7,7 +7,6 @@ Example usage:
 '''
 
 from __future__ import annotations
-import argparse
 import sys
 from pathlib import Path
 import shutil
@@ -18,14 +17,12 @@ from typing import Dict, Any, Optional, Generic, TypeVar, Iterator
 from .libs import lib
 from .libs.lib_cli import cli_command, run_cli_command
 
-#  CONSTANTS  ################################################################################
 
 CATH_FAMILY_NAMES_URL = 'ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/daily-release/newest/cath-b-newest-names.gz'
 
 K = TypeVar('K')
 V = TypeVar('V')
 
-#  FUNCTIONS  ################################################################################
 
 def download_url(url: str, output_file: Path) -> None:
     print(f'Downloading {url}', file=sys.stderr) 
@@ -85,16 +82,6 @@ def layered_dict_to_options(dictio: dict[str, LayeredDictNode[str, str]], key_pr
 
 
 #  MAIN  #####################################################################################
-
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('cath_family_names', help='CATH domain list file (like ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/daily-release/newest/cath-b-newest-names.gz)', type=Path)    
-    parser.add_argument('--download', help='Download the CATH domain list file and save it in cath_domain_list', action='store_true')
-    parser.add_argument('--url', help=f'Specify URL for downloading CATH family names file (only useful with --download), default: {CATH_FAMILY_NAMES_URL}', type=str, default=CATH_FAMILY_NAMES_URL)
-    parser.add_argument('-o', '--output', help='Specify output file instead of stdout', type=Path, default=None)
-    args = parser.parse_args()
-    return vars(args)
 
 @cli_command()
 def main(cath_family_names: Path, download: bool = False, url: str = CATH_FAMILY_NAMES_URL, 

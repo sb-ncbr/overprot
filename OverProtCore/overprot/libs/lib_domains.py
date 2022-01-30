@@ -8,13 +8,23 @@ from collections import defaultdict, Counter
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
-from .constants import DOMAIN_NAME, PDB, CHAIN, RANGES, AUTH_CHAIN, AUTH_RANGES, UNIPROT_ID
 from . import lib
 
 
 COMMENT_SYMBOL = '#'
 DOMAIN_FIELD_SEPARATOR = ','
 DEFAULT_CHAIN = 'A'
+
+# Field names in SecStrAPI format - general and domain specification
+PDB = 'pdb'
+CHAIN = 'chain_id'
+AUTH_CHAIN = 'auth_chain_id'
+RANGES = 'ranges'
+AUTH_RANGES = 'auth_ranges'
+UNIPROT_ID = 'uniprot_id'
+UNIPROT_NAME = 'uniprot_name'
+MAPPINGS = 'domain_mappings'
+DOMAIN_NAME = 'domain'
 
 
 class Domain(dict):
@@ -144,4 +154,3 @@ def _group_domains_by_pdb(domains: List[Domain]) -> Dict[str, List[Domain]]:
 
 def _ungroup_domains_by_pdb(domains_by_pdb: Dict[str, List[Domain]]) -> List[Domain]:
     return [dom for doms in domains_by_pdb.values() for dom in doms]
-

@@ -15,6 +15,18 @@ from .libs.lib_cli import cli_command, run_cli_command
 
 #  FUNCTIONS  ################################################################################
 
+MAX_ROWS_IN_DEMO_TABLE = 50
+
+DOMAIN_FIELDS = [
+        ('Domain', 'domain'), 
+        ('PDB', 'pdb'), 
+        ('Chain', 'chain_id'), 
+        ('Ranges', 'ranges'), 
+        ('Chain (auth)', 'auth_chain_id'), 
+        ('Ranges (auth)', 'auth_ranges'), 
+    ]
+
+
 def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None, links: bool = False):
     pdbs = list(family.keys())
     n_total_rows = len(pdbs)
@@ -54,18 +66,6 @@ def format_pdbs_csv(family: dict, file: Path):
 def format_pdbs_json(family: dict, file: Path):
     pdb_list = list(family.keys())
     lib.dump_json(pdb_list, file)
-
-
-DOMAIN_FIELDS = [
-        ('Domain', 'domain'), 
-        ('PDB', 'pdb'), 
-        ('Chain', 'chain_id'), 
-        ('Ranges', 'ranges'), 
-        ('Chain (auth)', 'auth_chain_id'), 
-        ('Ranges (auth)', 'auth_ranges'), 
-    ]
-
-MAX_ROWS_IN_DEMO_TABLE = 50
 
 def format_domains_html(domains: List[dict], file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None, links: bool = False):
     n_total_rows = len(domains)
@@ -123,7 +123,7 @@ def format_domain_json(domain: dict, file: Path):
 
 @cli_command()
 def main(input_family_json: Path, input_sample_json: Path, out_dir: Path,
-        per_domain_out_dir: Optional[Path] = None, family_id: Optional[str] = None) -> Optional[int]:
+        per_domain_out_dir: Optional[Path] = None, family_id: Optional[str] = None) -> None:
     '''Convert domains in `input_family_json` and `input_sample_json` into diferent formats.
     @param  `input_family_json`   Input family.json.
     @param  `input_sample_json`   Input sample.json.
@@ -161,8 +161,6 @@ def main(input_family_json: Path, input_sample_json: Path, out_dir: Path,
             domain_id = domain['domain']
             domain['family'] = family_id
             format_domain_json(domain, per_domain_out_dir/f'{domain_id}.json')
-
-    return None
 
 
 if __name__ == '__main__':

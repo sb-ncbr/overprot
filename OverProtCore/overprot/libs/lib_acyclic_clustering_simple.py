@@ -514,93 +514,6 @@ class Antidiagonals(object):
         return anti
 
 
-def antidiagonals(matrix: np.ndarray):
-    '''Place elements of matrix into antidiags, so that antidiags[offsets[i]:offsets[i+1]] contains i-th antidiagonal of matrix.'''
-    m, n = matrix.shape
-    matrix_ = matrix.ravel()
-    n_diags = m+n-1
-    ds = np.arange(n_diags)
-    starts = np.empty_like(ds)
-    starts[:n] = ds[:n]
-    starts[n:] = n * ds[n:] - (n-1)**2
-    ends = np.empty_like(ds)
-    ends[:m] = n * ds[:m] + 1
-    ends[m:] = m*n - m - n + 2 + ds[m:]
-    lengths = np.minimum(np.minimum(ds + 1, n_diags - ds), min(m, n))  # type: ignore
-    step = n - 1
-    offsets = np.empty(n_diags+1, dtype=int)
-    offsets[0] = 0
-    np.cumsum(lengths, out=offsets[1:])  # type: ignore
-    antidiags = np.empty(m*n, dtype=matrix.dtype)  # type: ignore
-    for i in range(n_diags):
-        antidiags[offsets[i]:offsets[i+1]] = matrix_[starts[i]:ends[i]:step]
-    return antidiags, offsets
-    # TODO test
-
-def from_antidiagonals(m, n, antidiags):
-    n_diags = m+n-1
-    ds = np.arange(n_diags)
-    starts = np.empty_like(ds)
-    starts[:n] = ds[:n]
-    starts[n:] = n * ds[n:] - (n-1)**2
-    ends = np.empty_like(ds)
-    ends[:m] = n * ds[:m] + 1
-    ends[m:] = m*n - m - n + 2 + ds[m:]
-    lengths = np.minimum(np.minimum(ds + 1, n_diags - ds), min(m, n))
-    step = n - 1
-    offsets = np.empty(n_diags+1, dtype=int)
-    offsets[0] = 0
-    np.cumsum(lengths, out=offsets[1:])
-    result = np.empty((m, n), dtype=antidiags.dtype)
-    result_ = result.ravel()
-    for i in range(offsets.size - 1):
-        result_[starts[i]:ends[i]:step] = antidiags[offsets[i]:offsets[i+1]]
-    return result
-    
-def antidiagonal(X: np.ndarray, d: int):
-    '''Extracts d-th antidiagonal from a matrix X (0th antidiagonal is X[0,0], the last is X[-1,-1]).'''
-    m, n = X.shape
-    Y = X.reshape(-1)
-    if d > m + n - 2:
-        raise IndexError()
-    if d < n:  # start on top
-        start = d
-    else:  # start on right
-        start = n*d - (n-1)*(n-1)
-    if d < m:  # end on left
-        end = n*d + 1
-    else:  # end on bottom
-        end = m*n - m - n + 2 + d
-    return Y[start:end:n-1]
-
-def antidiagonal_indices(X: np.ndarray, d: int, skip_top_and_left=False) -> Tuple[int, int, int]:
-    '''Return (start, end, step) such that X[start:end:step] is the d-th antidiagonal of matrix X (0th antidiagonal is [X[0,0]], the last is [X[-1,-1]]).'''
-    M, N = X.shape
-    N1 = N - 1
-    if d > M + N - 2:
-        raise IndexError()
-    if d < N:  # start on top
-        start = d + N1 if skip_top_and_left else d
-    else:  # start on right
-        start = N*d - N1*N1
-    if d < M:  # end on left
-        end = N*d + 1 - N1 if skip_top_and_left else d
-    else:  # end on bottom
-        end = M*N - M - N + 2 + d
-    return start, end, N1
-
-def n_antidiagonals(X: np.ndarray) -> int:
-    m, n = X.shape
-    return m + n - 1
-
-# def dynprog_align2(scores: np.ndarray, include_nonmatched=False) -> Tuple[Matching, float]:
-#     m, n = scores.shape
-#     with lib.Timing('new'):
-#         total_score, direction = dynprog_matrices_diagonal_method2(scores)
-#     matching = trace_direction_matrix(direction, include_nonmatched)
-#     # total_score = cumulative[m, n]
-#     return matching, total_score
-
 def dynprog_total_scores_each_to_each(scores, offsets):
     n = len(offsets) - 1
     total_scores = np.zeros((n, n), dtype=float)
@@ -615,20 +528,6 @@ def dynprog_total_scores_each_to_each(scores, offsets):
             bar.step()
     return total_scores
 
-def dynprog_fuckup_indices_each_to_each(scores, offsets):
-    n = len(offsets) - 1
-    fuckups = np.empty_like(scores)
-    n_combinations = n * (n + 1) / 2
-    with ProgressBar(n_combinations, title='Dynprog...') as bar:
-        for i, j in itertools.combinations_with_replacement(range(n), 2):
-            ifrom, ito = offsets[i:i+2]
-            jfrom, jto = offsets[j:j+2]
-            fuckup = fuckup_indices(scores[ifrom:ito, jfrom:jto])
-            fuckups[ifrom:ito, jfrom:jto] = fuckup
-            fuckups[jfrom:jto, ifrom:ito] = fuckup.transpose()
-            bar.step()
-    return fuckups
-
 def fuckup_indices(scores):
     m, n = scores.shape
     cumulative,	direction = dynprog_matrices(scores)
@@ -637,25 +536,6 @@ def fuckup_indices(scores):
     alternative_scores = cumulative[:-1, :-1] + cumulative_rev[1:, 1:] + scores
     fuckup_indices = best_score - alternative_scores
     return fuckup_indices
-
-def dynprog_realign(scores, offsets, reference_weights=None):
-    '''Indices >= offsets[-1] correspond to reference SSEs'''
-    n = len(offsets) - 1
-    n_normal_sses = offsets[-1]
-    total_scores = np.zeros((n,), dtype=float)
-    new_labels = np.full((n_normal_sses,), UNLABELLED, dtype=int)
-    with ProgressBar(n, title='Dynprog realign...') as bar:
-        for i in range(n):
-            ifrom, ito = offsets[i:i+2]
-            sc = scores[ifrom:ito, n_normal_sses:]
-            if reference_weights is not None:
-                sc *= reference_weights
-            matching, total_score = dynprog_align(sc)
-            for normal_sse, ref_sse in matching:
-                new_labels[ifrom+normal_sse] = ref_sse
-            total_scores[i] = total_score
-            bar.step()
-    return new_labels, total_scores
 
 def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_labels: np.ndarray, edges, offsets, adhesion=0, max_iterations=np.inf) -> np.ndarray:
     if len(init_labels) == 0:
@@ -666,9 +546,6 @@ def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_l
     labels = np.empty((2, *init_labels.shape), dtype=init_labels.dtype)  # type: ignore
     new, old, final = 0, 1, 0
     labels[new] = init_labels
-    # labels = init_labels.copy()
-    # seen_labels = []  # for cycle detection
-    # old_labels = np.full_like(labels, UNLABELLED)
     sse_coords_rotated = sse_coords.copy()
 
     local_edges = []
@@ -707,8 +584,6 @@ def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_l
             ifrom, ito = offsets[i:i+2]
             R, t, matching, distance = iterative_superimposition(ref_coords, sse_coords[ifrom:ito, :], ref_type_vector, type_vector[ifrom:ito], 
                 edges1=ref_edges, edges2=local_edges[i], weights1=ref_weights, warning_on_empty_matching=f'iterative_rematching(): domain {i}')
-            # R, t, matching, distance = iterative_superimposition(ref_coords, sse_coords[ifrom:ito, :], ref_type_vector,type_vector[ifrom:ito], 
-            # 	edges1=ref_edges, edges2=local_edges[i], weights1=ref_weights, max_iterations=0)
             new_labels_here = labels[new, ifrom:ito]
             new_labels_here.fill(UNLABELLED)
             for (ref, query) in matching:
@@ -722,13 +597,11 @@ def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_l
         self_p[new] = self_classification_probabilities(sse_coords, type_vector, labels[new])[2]
         t3 = datetime.now()
         lib.log(f'Iterations, ANOVA-F, self_prob:\t{iterations}\t{f}\t{self_p[new]}')
-        # lib.log_debug(f'Times (iter, anova_f, self_prob): {t1-t0} {t2-t1} {t3-t2}')
         if self_p[new] > self_p[old]:
             final = new
         else:
             final = old
             break
-    # cycle_size = next(( len(seen_labels) - i for i, labs in enumerate(seen_labels) if np.all(labs == labels) ), 0)
     lib.log('Iterative rematching iterations:', iterations)
     return labels[final]
 
@@ -743,11 +616,6 @@ def rematch_with_SecStrAnnotator(domains: List[Domain], directory: Path, sses, o
             key = (annot_sse[lib_sses.CHAIN], annot_sse[lib_sses.START], annot_sse[lib_sses.END])
             label = lib.integer_suffix(annot_sse[lib_sses.LABEL])
             labels[index[key]] = label
-    return labels
-
-def filter_labels_by_count(labels: np.ndarray, min_count: int) -> np.ndarray:
-    counts = Counter(labels)
-    labels = np.array([ label if counts[label] >= min_count else UNLABELLED for label in labels ])
     return labels
 
 @overload
@@ -900,16 +768,6 @@ def labelling_agreement(labels1, labels2, allow_matching=False, include_both_unc
     else:
         return n_matched / n
 
-def make_precedence_matrix(offsets, sses=None):
-    n_domains = len(offsets) - 1
-    n_sses = offsets[-1]
-    precedence = np.zeros((n_sses, n_sses), dtype=bool)
-    for p in range(n_domains):
-        for i, j in itertools.combinations(range(offsets[p], offsets[p+1]), 2):
-            if sses is None or sses[i] != sses[j]:  # filter out cases when there is twice the same SSE (a strand = multiple sides)
-                precedence[i, j] = True
-    return precedence
-
 def linearly_decreasing_score(distance, type_vector, type_vector2=None, intercept=30):
     score = intercept - distance
     type_mismatch = lib.each_to_each(np.not_equal, type_vector, type_vector2)
@@ -925,85 +783,20 @@ def get_labels_from_memberlists(memberlists: List[List[int]]) -> np.ndarray:
         labels[members] = label
     return labels
 
-def dynprog_match_dags__old(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
-    '''Contains a bug (sorting vertices 1 doesn't guarantee the best matching).'''
-    n_vertices1, n_vertices2 = scores.shape
-    precedence1 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
-    precedence2 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
-    sorted_vertices1 = lib_graphs.sort_dag(range(n_vertices1), lambda u,v: precedence1[u,v])
-    tipsets2, tipset_edges2 = lib_graphs.left_subdag_tipsets(n_vertices2, edges2, precedence_matrix=precedence2)
-    # lib.log_debug('n1 n2 m2', len(sorted_vertices1), len(tipsets2), len(tipset_edges2))
-    m, n = len(sorted_vertices1) + 1, len(tipsets2)
-    cumulative = np.zeros((m, n))
-    direction = np.zeros((m, n), dtype=np.int32)  # 0 = move 1 up (skip tip1), -k = move k left (skip one of tipset2), +k = move 1 up and k left (match tip1 to one of tipset2)
-    tip2_matrix = np.empty((m, n), dtype=np.int32)  
-    tipset_edges2_by_outvertex = defaultdict(list)
-    for edge in tipset_edges2:
-        tipset_edges2_by_outvertex[edge.outvertex].append(edge)
-    for i in range(1, m):
-        tip1 = sorted_vertices1[i-1]
-        for j in range(1, n):
-            tipset2 = tipsets2[j]
-            inedges2 = tipset_edges2_by_outvertex[j]
-            # Skip tip1:
-            cumulative[i,j] = cumulative[i-1,j]
-            direction[i,j] = 0
-            # Skip any of tipset2:
-            for j_predecessor, _, tip2 in inedges2:
-                candidate_cum = cumulative[i, j_predecessor]
-                if candidate_cum > cumulative[i,j]:
-                    cumulative[i,j] = candidate_cum
-                    direction[i,j] = j_predecessor - j  # always negative
-            # Match tip1 to any of tipset2:
-            for j_predecessor, _, tip2 in inedges2:
-                candidate_cum = cumulative[i-1, j_predecessor] + scores[tip1, tip2]
-                if candidate_cum > cumulative[i,j]:
-                    cumulative[i,j] = candidate_cum
-                    direction[i,j] = j - j_predecessor  # always positive
-                    tip2_matrix[i,j] = tip2
-    # lib.print_matrix(cumulative, 'tmp/cumulative.tsv')
-    # lib.print_matrix(direction, 'tmp/direction.tsv')
-
-    # Reconstruct path (matching):
-    i, j = m-1, n-1
-    matching: Matching = []
-    while i > 0 and j > 0:
-        direct = direction[i, j]
-        if direct == 0:
-            i -= 1
-        elif direct < 0:
-            j += direct
-        else:
-            tip1 = sorted_vertices1[i-1]
-            tip2 = tip2_matrix[i, j]
-            matching.append((tip1, tip2))
-            i -= 1
-            j -= direct
-    matching.reverse()
-    assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges2)
-    assert lib.are_unique(i for i, j in matching)
-    assert lib.are_unique(j for i, j in matching)
-    total_score = cumulative[m-1, n-1]
-    return matching, total_score
-    # TODO try to vectorize computation of cumulative and direction
-    # TODO put larger (or more branched) dag on rows, smaller on columns
-    # TODO keep edge list or precedence matrix (decide which if more efficient)
-
 def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, float]:
+    # TODO try to vectorize computation of cumulative and direction
+    # TODO keep edge list or precedence matrix (decide which if more efficient)
     n_vertices1, n_vertices2 = scores.shape
     precedence1 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices1, edges1)
     precedence2 = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices2, edges2)
-    # sorted_vertices1 = lib_graphs.sort_dag(range(n_vertices1), lambda u,v: precedence1[u,v])
     tipsets1, tipset_edges1 = lib_graphs.left_subdag_tipsets(n_vertices1, edges1, precedence_matrix=precedence1)
     tipsets2, tipset_edges2 = lib_graphs.left_subdag_tipsets(n_vertices2, edges2, precedence_matrix=precedence2)
     assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges1)
     assert lib_graphs.are_edge_labels_unique_within_each_oriented_path(tipset_edges2)
-    # lib.log_debug('n1 n2 m2', len(sorted_vertices1), len(tipsets2), len(tipset_edges2))
     m, n = len(tipsets1), len(tipsets2)
     cumulative = np.full((m, n), -1.0)
     cumulative[0, :] = 0
     cumulative[:, 0] = 0
-    # direction = np.zeros((m, n), dtype=np.int32)  # 0 = move 1 up (skip tip1), -k = move k left (skip one of tipset2), +k = move 1 up and k left (match tip1 to one of tipset2)
     tip_matrix = np.empty((m, n, 2), dtype=np.int32)  
     tipset_edges1_by_outvertex = defaultdict(list)
     tipset_edges2_by_outvertex = defaultdict(list)
@@ -1013,22 +806,20 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
     for edge in tipset_edges2:
         tipset_edges2_by_outvertex[edge.outvertex].append(edge)
     for i in range(1, m):
-        tipset1 = tipsets1[i]
         inedges1 = tipset_edges1_by_outvertex[i]
         for j in range(1, n):
-            tipset2 = tipsets2[j]
             inedges2 = tipset_edges2_by_outvertex[j]
-            # Skip any of tipset1:
+            # Skip any of tipsets1[i]:
             for i_predecessor, _, tip1 in inedges1:
                 if cumulative[i_predecessor, j] > cumulative[i, j]:
                     cumulative[i, j] = cumulative[i_predecessor, j]
                     dir[i, j] = (i_predecessor, j)
-            # Skip any of tipset2:
+            # Skip any of tipsets2[j]:
             for j_predecessor, _, tip2 in inedges2:
                 if cumulative[i, j_predecessor] > cumulative[i, j]:
                     cumulative[i, j] = cumulative[i, j_predecessor]
                     dir[i, j] = (i, j_predecessor)
-            # Match any of tipset1 to any of tipset2:
+            # Match any of tipsets1[i] to any of tipsets2[j]:
             for i_predecessor, _, tip1 in inedges1:
                 for j_predecessor, _, tip2 in inedges2:
                     candidate_cum = cumulative[i_predecessor, j_predecessor] + scores[tip1, tip2]
@@ -1036,9 +827,6 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
                         cumulative[i,j] = candidate_cum
                         dir[i,j] = (i_predecessor, j_predecessor)
                         tip_matrix[i, j] = (tip1, tip2)
-    # lib.print_matrix(cumulative, 'tmp/cumulative.tsv')
-    # lib.print_matrix(direction, 'tmp/direction.tsv')
-
     # Reconstruct path (matching):
     i, j = m-1, n-1
     matching: Matching = []
@@ -1053,9 +841,6 @@ def dynprog_match_dags(scores: np.ndarray, edges1, edges2) -> Tuple[Matching, fl
     assert lib.are_unique(j for i, j in matching)
     total_score = cumulative[m-1, n-1]
     return matching, total_score
-    # TODO try to vectorize computation of cumulative and direction
-    # TODO put larger (or more branched) dag on rows, smaller on columns
-    # TODO keep edge list or precedence matrix (decide which if more efficient)
 
 def merge_dags(n_vertices1: int, n_vertices2: int, edges1, edges2, matching: Matching, draw_result=False):
     n_matches = len(matching)
@@ -1170,151 +955,6 @@ def test_dynprog_match_dags():
     matching, score = dynprog_match_dags(np.ones((n_vertices1, n_vertices2)), edges1, edges2)
     lib.log(matching, score)
 
-
-class AcyclicClusteringSimple:
-    def __init__(self, aggregate_function=lib_clustering.average_linkage_aggregate_function, max_joining_distance=np.inf):
-        # aggregate_function - how to compute a value (of distance) for the cluster joined from two clusters value1,size1,value2,size2 => result_value
-        self.aggregate_function = aggregate_function
-        self.max_joining_distance = max_joining_distance
-
-    def fit(self, distance_matrix, precedence_matrix, type_vector=None, domain_names=None, p_offsets=None, 
-            member_count_threshold=0, sses=None, output_dir: Optional[Path]=None):
-        # only samples with the same type can be linked
-        n_D = distance_matrix.shape[0] # number of samples = number of leaves
-        # assert n_D > 0
-        if n_D == 0:
-            # raise NotImplementedError('Cannot cluster 0 samples.')
-            sys.stderr.write('WARNING: AcyclicClusteringSimple.fit(): Clustering 0 samples.\n')
-            m = 0
-            self.distances = np.full(m, 0.0) # distances between the children of each internal node
-            self.children = np.full((m, 2), lib_clustering.NO_CHILD) # matrix of children pairs
-            self.final_members = []
-            self.n_clusters = 0
-            self.labels = np.full(n_D, UNLABELLED)
-            self.cluster_distance_matrix = lib.submatrix_int_indexing(distance_matrix, [], [])
-            self.cluster_precedence_matrix = lib.submatrix_int_indexing(precedence_matrix, [], [])
-            return
-        else:
-            m = 2*n_D - 1 # max. possible number of all nodes
-        if distance_matrix.shape[1] != n_D:
-            raise Exception('distance_matrix must be a square matrix')
-        if precedence_matrix.shape != (n_D, n_D):
-            raise Exception('precedence_matrix must have the same shape as distance_matrix')
-        curr_n_nodes = n_D
-        leader = list(range(n_D))
-        members = [[i] for i in range(n_D)]
-        children = np.full((m, 2), lib_clustering.NO_CHILD) # matrix of children pairs
-        self.distances = np.full(m, 0.0) # distances between the children of each internal node
-        self.children = children
-        active_nodes = set(range(n_D))
-        D = distance_matrix # no copying (to spare memory)
-        P = precedence_matrix # no copying (to spare memory)
-        T = type_vector if type_vector is not None else np.zeros(n_D, dtype=np.int8) # type vector
-
-        def can_join(ij):
-            i, j = ij
-            if i in active_nodes and j in active_nodes:
-                li = leader[i]
-                lj = leader[j]
-                if T[li] == T[lj] and not P[li, lj] and not P[lj, li]:
-                    return True
-            return False
-
-        distance_queue: Any
-        if n_D > SSE_COUNT_THRESHOLD_FOR_NUMPY_HEAP:
-            lib.log('Using Numpy Heap')
-            type_counts: dict[int, int] = Counter(type_vector)
-            # capacity = m * (m-1)
-            capacity = sum( c*(c-1) for c in type_counts.values() )  # TODO this capacity guess might not be sufficient!!! (use better guess or dynamic allocation)
-            distance_queue = lib.NumpyMinHeap((2,), int, capacity, key_type=float, 
-                keys_values=( (D[i, j], (i, j)) for (i, j) in itertools.combinations(active_nodes, 2) if can_join((i, j)) ))
-        else:
-            lib.log('Using Heapq')
-            distance_queue = lib.PriorityQueue( (D[i, j], (i, j)) for (i, j) in itertools.combinations(active_nodes, 2) if can_join((i, j)) )
-        
-
-        with ProgressBar(n_D-1, title=f'Clustering {n_D} samples') as bar:
-            while len(active_nodes) >= 2:
-                best_pair = distance_queue.pop_min_which(can_join)
-                if best_pair == None:
-                    break  # no joinable pairs, algorithm has converged
-                distance, (p, q) = best_pair
-                if distance > self.max_joining_distance:
-                    break  # no joinable pairs with lower distance than the limit, algorithm has converged
-                p_leader, q_leader = leader[p], leader[q]
-                new_leader = min(p_leader,  q_leader)
-                new = curr_n_nodes
-                curr_n_nodes += 1
-                leader.append(p_leader)
-                members.append(members[p] + members[q])  # TODO this can take much memory
-                children[new,:] = [p, q]
-                self.distances[new] = distance
-                active_nodes.remove(p)
-                active_nodes.remove(q)
-                active_nodes.add(new)
-
-                # Update precedence matrix (apply transitivity)
-                active_leaders = [ leader[i] for i in active_nodes ]
-                self.update_precedence(P, active_leaders, p_leader, q_leader)
-
-                # Update distance matrix (calculate distances from the new cluster)
-                for i in active_nodes:
-                    if i != new:
-                        i_leader = leader[i]
-                        new_distance = self.aggregate_function(D[p_leader, i_leader], len(members[p]), D[q_leader, i_leader], len(members[q]))
-                        D[new_leader, i_leader] = new_distance
-                        D[i_leader, new_leader] = new_distance
-                        if can_join((i, new)):
-                            distance_queue.add(new_distance, (i, new))
-                bar.step()
-
-        # Filter by cluster size (number of members)
-        active_nodes_list = [ node for node in active_nodes if len(members[node]) >= member_count_threshold ]
-        active_nodes_list = lib_graphs.sort_dag(active_nodes_list, lambda i, j: P[leader[i], leader[j]] )
-        active_leaders = [ leader[node] for node in active_nodes_list ]
-        
-        self.final_members = [ members[node] for node in active_nodes_list ]
-        
-        self.n_clusters = len(active_nodes_list)
-        self.labels = np.full(n_D, UNLABELLED)
-        for label in range(self.n_clusters):
-            self.labels[self.final_members[label]] = label
-
-        self.cluster_distance_matrix = lib.submatrix_int_indexing(D, active_leaders, active_leaders)
-        self.cluster_precedence_matrix = lib.submatrix_int_indexing(P, active_leaders, active_leaders)
-
-        names = [ ('H' if type_vector[l] == 0 else 'E') + str(i) for i, l in enumerate(active_leaders) ]
-        if sses is not None:
-            lengths = np.zeros((len(active_nodes_list), len(domain_names)), dtype=np.int32)
-            for i_domain in range(len(domain_names)):
-                fro, to = p_offsets[i_domain:i_domain+2]
-                for i_sse in range(fro, to):
-                    label = self.labels[i_sse]
-                    if label != UNLABELLED:  # label UNLABELLED means excluded (too small) cluster
-                        lengths[label, i_domain] = sses[i_sse]['length']
-            if output_dir is not None:
-                lib.print_matrix(lengths, output_dir/'lengths.tsv', row_names=names, col_names=domain_names)
-        if output_dir is not None:
-            lib.print_matrix(self.cluster_distance_matrix, output_dir/'cluster_distance_matrix.tsv', row_names=names, col_names=names)
-            lib.print_matrix(self.cluster_precedence_matrix, output_dir/'cluster_precedence_matrix.tsv', row_names=names, col_names=names)
-
-        return
-
-    @staticmethod
-    def update_precedence(P, active_leaders, p, q):  # joins clusters p and q in precedence matrix P, with active leaders p_active_leaders (+ formerly p and q)
-        # P[new_leader, :] = np.logical_or(P[p_leader, :], P[q_leader, :])
-        # P[:, new_leader] = np.logical_or(P[:, p_leader], P[:, q_leader])
-        to_p = [l for l in active_leaders if P[l, p] and not P[l, q]] + [p]
-        to_q = [l for l in active_leaders if P[l, q] and not P[l, p]] + [q]
-        from_p = [l for l in active_leaders if P[p, l] and not P[q, l]] + [p]
-        from_q = [l for l in active_leaders if P[q, l] and not P[p, l]] + [q]
-        for i in to_p:
-            for j in from_q:
-                P[i, j] = True
-        for i in to_q:
-            for j in from_p:
-                P[i, j] = True
-        # TODO rewrite more numpyically
 
 class GuidedAcyclicClustering:
     def __init__(self):

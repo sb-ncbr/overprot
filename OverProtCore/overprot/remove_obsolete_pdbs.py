@@ -8,7 +8,6 @@ Example usage:
 from pathlib import Path
 import json
 import requests
-from typing import Dict, Any, Optional
 
 from .libs import lib_domains
 from .libs import lib
@@ -35,7 +34,7 @@ def is_obsolete(pdb: str) -> bool:
 
 @cli_command()
 def main(sample_json: Path, missing_list: Path, 
-         output_sample_json: Path, output_missing_list: Path) -> Optional[int]:
+         output_sample_json: Path, output_missing_list: Path) -> int:
     '''Check missing PDB entries, if they are not obsolete.    
     @params  `sample_json`          Input file with all domains.
     @params  `missing_list`         Input file with the list of missing (possibly obsolete) PDB entries.

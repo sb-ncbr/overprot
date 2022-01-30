@@ -10,12 +10,8 @@ def optimal_rotation(A: numpy.ndarray, B: numpy.ndarray, allow_mirror: bool=Fals
     where columns of A, B are coordinates of corresponding points.
     If allow_mirror == True, allow also improper rotation (i.e. mirroring + rotation).
     '''
-    # norm_coef = numpy.sqrt(2 / (numpy.mean(A**2) + numpy.mean(B**2)))
-    # A = A * norm_coef
-    # B = B * norm_coef
     C = numpy.matmul(A, B.transpose())
     if allow_mirror and numpy.linalg.det(C) < 0:  # type: ignore
-        # print('mirror')
         dmir1 = C[1,0] + C[0,1]
         dmir2 = C[0,0] - C[1,1] 
         sumsq_d = dmir1*dmir1 + dmir2*dmir2
@@ -62,13 +58,11 @@ def rotate_and_translate(A: numpy.ndarray, rotation: numpy.ndarray, translation:
     where columns of A are coordinates of individual points.
     A_result = R * A + t
     '''
-    if isinstance(A, dict):
-        # on dictionaries:
+    if isinstance(A, dict):  # on dictionaries
         matrix = numpy.array(list(A.values())).transpose()
         matrix = rotate_and_translate(matrix, rotation, translation)
         return { name: list(matrix[:,i]) for i, name in enumerate(A.keys()) }
-    else:
-        # on matrices:
+    else:  # on matrices
         return numpy.matmul(rotation, A) + translation
 
 def rmsd(A: numpy.ndarray, B: numpy.ndarray, superimpose: bool=True, allow_mirror: bool=False) -> float:
@@ -124,10 +118,6 @@ def laying_rotation(A, force_left_to_right=False, force_clockwise=False):
         if a < 0:
             (a, b) = (-a, -b)
         R = numpy.array([[a, b], [-b, a]])
-
-        # print(force_left_to_right,  force_clockwise)
-        # print(numpy.matmul(R, A[:,0])[0], numpy.matmul(R, A[:,-1])[0], numpy.matmul(R, A[:,0])[0] > numpy.matmul(R, A[:,-1])[0])
-        # print(not is_clockwise(A))
         if force_left_to_right and numpy.matmul(R, A[:,0])[0] > numpy.matmul(R, A[:,-1])[0]:
             R = -R
         if force_clockwise and not is_clockwise(A):
@@ -141,7 +131,6 @@ def multi_superimpose(objects: List[Dict[Any, List[float]]], allow_mirror=False,
     e.g.:
         multi_superimpose([{'A':[0,1], 'B':[1,1], 'C':[1,0]}, {'A':[2,2], 'C':[1,1.1], 'D':[1.5,2]}], allow_mirror=True, plot=True)
     '''
-    # all_names = list({ key for obj in objects for key in obj.keys() })
     all_names = list(distinct( key for obj in objects for key in obj.keys() ))
     name2global_index = { name: j for j, name in enumerate(all_names) }
     local2globals = []
@@ -206,7 +195,6 @@ def multi_superimpose(objects: List[Dict[Any, List[float]]], allow_mirror=False,
         consensus_glob2loc = [-1] * n_points
         for loc, glob in enumerate(consensus_loc2glob):
             consensus_glob2loc[glob] = loc
-        # rel_RMSD = total_RMSD / len(used_points)
         if verbose: print(f'Iteration {iteration}: {n_aligned_objects} aligned objects, {len(used_points)} used points, RMSD {total_RMSD}')
         if plot: 
             plt.plot(consensus_matrix[0,:], consensus_matrix[1,:], 'x-k')
@@ -250,7 +238,6 @@ def test1(theta=None):
     A = numpy.matmul(R0, A) + t0
     R, t = optimal_rotation_translation(A, B, allow_mirror=True)
     At = numpy.matmul(R, A) + t
-    # print(theta*180/numpy.pi)
     print(rmsd(A, B, superimpose=False), rmsd(A, B, superimpose=True, allow_mirror=True))
     plt.plot(B[0,:], B[1,:], 'o-')
     plt.plot(A[0,:], A[1,:], 'o-')
@@ -329,4 +316,3 @@ def demo():
 
 if __name__ == "__main__":
     demo()
-    pass

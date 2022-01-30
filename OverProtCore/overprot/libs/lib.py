@@ -91,6 +91,13 @@ def insert_after(dictionary: Dict[K, V], after_what: K, new_key_value_pairs: Ite
             for k, v in new_key_value_pairs:
                 dictionary[k] = v
 
+def first_index_where(items: list[V], predicate: Callable[[V], bool]) -> int:
+    '''Return index of the first item fulfulling the predicate, -1 if there is no such item.'''
+    for i, item in enumerate(items):
+        if predicate(item):
+            return i
+    return -1
+
 def find_indices_where(iterable, predicate):
     return [i for i, elem in enumerate(iterable) if predicate(elem)]
 

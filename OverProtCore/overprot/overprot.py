@@ -6,11 +6,10 @@ Example usage:
 '''
 
 from __future__ import annotations
-import argparse
 import sys
 import contextlib
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from .libs import lib
 from .libs import lib_sh
@@ -39,7 +38,7 @@ from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL
 @cli_command(parsers={'sample_size': lib.int_or_all})
 def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
          domains: Optional[Path] = None, structure_source: Optional[str] = None, 
-         out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+         out: Optional[Path] = None, err: Optional[Path] = None) -> int:
     '''Run all steps of the OverProt algorithm.
     @param  `family`            Family identifier for PDBe API (e.g. CATH code).
     @param  `outdir`            Directory for results.
@@ -167,8 +166,7 @@ def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: O
             with RedirectIO(tee_stdout=outdir/'making_guide_tree.log'):
                 make_guide_tree.main(outdir/'cif_cealign', show_tree=False, progress_bar=True)
             with RedirectIO(tee_stdout=outdir/'clustering.log'):
-                acyclic_clustering.main(outdir/'cif_cealign', secstrannotator_rematching=conf.overprot.secstrannotator_rematching, 
-                    min_occurrence=0, fallback=30)
+                acyclic_clustering.main(outdir/'cif_cealign', secstrannotator_rematching=conf.overprot.secstrannotator_rematching, fallback=30)
         
         # Annotate whole family
         if conf.annotation.annotate_whole_family:
@@ -209,7 +207,7 @@ def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: O
 
         print('\n::: COMPLETED :::')
         # TODO write docs for each module/script, update README.txt
-    return None
+    return 0
 
 
 def _main():

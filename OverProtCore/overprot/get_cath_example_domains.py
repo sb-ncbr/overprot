@@ -13,11 +13,9 @@ from typing import Optional
 from .libs.lib_io import RedirectIO
 from .libs.lib_cli import cli_command, run_cli_command
 
-#  CONSTANTS  ################################################################################
 
 DEFAULT_URL = 'http://cathdb.info/version/v4_3_0/api/rest/cathtree/from_cath_id_to_depth/root/4?content-type=application/json'
 
-#  FUNCTIONS  ################################################################################
 
 def process_node(js: dict) -> None:
     node_id = js.get('cath_id', js['cath_id_padded'])
@@ -31,8 +29,6 @@ def process_node(js: dict) -> None:
         print(node_id, example, sep=';')
     for child in children:
         process_node(child)
-
-#  MAIN  #####################################################################################
 
 @cli_command()
 def main(url: Optional[str] = DEFAULT_URL, input_json: Optional[Path] = None, output: Optional[Path] = None) -> Optional[int]:

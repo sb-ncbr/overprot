@@ -1,6 +1,6 @@
 import numpy
 from numpy import linalg
-from typing import Any, List, Dict, Tuple
+from typing import Tuple
 
 def optimal_rotation(A: numpy.ndarray, B: numpy.ndarray, allow_mirror: bool=False, weights: numpy.ndarray=None) -> numpy.ndarray:
     ''' A, B - matrices 3*n, weights - vector n, result - matrix 3*3
@@ -85,7 +85,6 @@ def laying_rotation(A: numpy.ndarray) -> numpy.ndarray:
     2) starting coordinates tend to be more left-top (x < y), ending more right-bottom (x > y), 
     '''
     assert A.shape[0] == 3
-    # assert A.shape[1] >= 3  # ?
     n = A.shape[1]
     U, S, Vh = numpy.linalg.svd(A)
     R = U.T
@@ -93,15 +92,6 @@ def laying_rotation(A: numpy.ndarray) -> numpy.ndarray:
         R[-1,:] *= -1
     slope = numpy.linspace(-1, 1, n)
     vee_slope = v_slope(n)
-    # A_rot = R @ A
-    # left_to_right = numpy.dot(A_rot[0, :], slope) > 0
-    # front_to_front = numpy.dot(A_rot[2, :], vee_slope) > 0
-    # if left_to_right and not front_to_front:
-    #     R = numpy.diag([1, -1, -1]) @ R  # rotate around x
-    # elif not left_to_right and front_to_front:
-    #     R = numpy.diag([-1, -1, 1]) @ R  # rotate around z
-    # elif not left_to_right and not front_to_front:
-    #     R = numpy.diag([-1, 1, -1]) @ R  # rotate around y
     A_rot = R @ A
     front_to_front = numpy.dot(A_rot[2, :], vee_slope) > 0
     if not front_to_front:  # rotate around x
@@ -139,113 +129,3 @@ def dumb_align(A: numpy.ndarray, B: numpy.ndarray, allow_mirror: bool = False) -
         tranformations.append((rmsd_, shift, rot, trans))
     rmsd_, shift, rot, trans = min(tranformations)
     return (rot, trans, rmsd_)
-
-#region Testing
-
-# def random_transform_plus_noise(A, noise=0.01):
-#     A = A + numpy.random.normal(scale=noise, size=A.shape)
-#     if numpy.random.random() >= 0.5:
-#         A[0,:] = -A[0,:]
-#     theta = 2 * numpy.pi * numpy.random.random()
-#     R0 = numpy.array([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
-#     t0 = 10 * (numpy.random.random([2,1]) - 0.5)
-#     t0 = numpy.array([[4], [2]])
-#     A = numpy.matmul(R0, A) + t0
-#     return A
-
-# def test1(theta=None):
-#     from matplotlib import pyplot as plt
-#     B = 3 * numpy.random.random(size=(2,6))
-#     A = B + numpy.random.normal(scale=0.1, size=B.shape)
-#     if numpy.random.random() >= 0.5:
-#         A[0,:] = -A[0,:]
-#     if theta is None:
-#         theta = 2 * numpy.pi * numpy.random.random()
-#     R0 = numpy.array([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
-#     t0 = 10 * (numpy.random.random([2,1]) - 0.5)
-#     t0 = numpy.array([[4], [2]])
-#     A = numpy.matmul(R0, A) + t0
-#     R, t = optimal_rotation_translation(A, B, allow_mirror=True)
-#     At = numpy.matmul(R, A) + t
-#     # print(theta*180/numpy.pi)
-#     print(rmsd(A, B, superimpose=False), rmsd(A, B, superimpose=True, allow_mirror=True))
-#     plt.plot(B[0,:], B[1,:], 'o-')
-#     plt.plot(A[0,:], A[1,:], 'o-')
-#     plt.plot(At[0,:], At[1,:], 'o-')
-#     plt.axis('equal')
-#     plt.show()
-
-# def test2():
-#     n = 100
-#     k = 20
-#     k_ = 10
-#     X = numpy.random.random(size=(2,k))
-#     X[1,:] = 2 * X[1,:]
-#     Xs = [ random_transform_plus_noise(X, noise=0.02) for i in range(n) ]
-#     objects = [ { j: Xs[i][:,j] for j in numpy.random.choice(range(k), size=k_, replace=False) } for i in range(n) ]
-#     multi_superimpose(objects, allow_mirror=True, verbose=True, plot=True)
-
-# def test3():
-#     from matplotlib import pyplot as plt
-#     B = 2 * numpy.random.random(size=(2,5))
-#     B = B - B.mean(axis=1, keepdims=True)
-#     B[0,:] = 3 * B[0,:]
-#     theta = 2 * numpy.pi * numpy.random.random()
-#     R0 = numpy.array([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
-#     A = numpy.matmul(R0, B)
-
-#     R = laying_rotation(A, force_left_to_right=True, force_clockwise=True)
-#     print(R)
-#     At = numpy.matmul(R, A)
-#     plt.plot(A[0,:], A[1,:], 'o-')
-#     plt.plot(At[0,:], At[1,:], 'o-')
-#     plt.plot(A[0,0], A[1,0], 'xk')
-#     plt.plot(At[0,0], At[1,0], 'xk')
-#     plt.axis('equal')
-#     plt.show()
-
-# def demo():
-#     from matplotlib import pyplot as plt
-#     # Zadefinujeme objekty:
-#     # Mame 2 objekty, prvy obsahuje helixy H1, H2, H3, H4, druhy len H1, H2, H3. 
-#     # Pre jednoduchost vsetky helixy maju vahu 1 (1 atom).
-#     object_A = {'H1_0': [0,0], 'H2_0': [0,2], 'H3_0': [1,2], 'H4_0': [1,2.5]}
-#     object_B = {'H1_0': [1,0], 'H2_0': [3.2,0.2], 'H3_0': [3,1]}
-
-#     # Spustime zarovnanie (ziskame zarovnavacie rotacie a translacie):
-#     rotations_translations = multi_superimpose([object_A, object_B], allow_mirror=True)
-
-#     # Ziskame z objektov stlpcove matice:
-#     A = numpy.array(list(object_A.values())).transpose()
-#     B = numpy.array(list(object_B.values())).transpose()
-#     print('A =', A, 'B =', B, sep='\n')
-
-#     # Aplikujeme zarovnavacie rotacie a translacie:
-#     R, t = rotations_translations[0]
-#     A_aligned = rotate_and_translate(A, R, t)
-#     object_A_aligned = rotate_and_translate(object_A, R, t)
-#     A_aligned = numpy.array(list( list(c) for c in object_A_aligned.values() )).transpose()
-#     print(object_A)
-#     print(object_A_aligned)
-#     R, t = rotations_translations[1]
-#     B_aligned = rotate_and_translate(B, R, t)
-
-#     # Vykreslime:
-#     plt.subplot(1, 2, 1)
-#     plt.title('Pred zarovnanim')
-#     plt.plot(A[0,:], A[1,:], 'o-')
-#     plt.plot(B[0,:], B[1,:], 'o-')
-#     plt.axis('equal')
-
-#     plt.subplot(1, 2, 2)
-#     plt.title('Po zarovnani')
-#     plt.plot(A_aligned[0,:], A_aligned[1,:], 'o-')
-#     plt.plot(B_aligned[0,:], B_aligned[1,:], 'o-')
-#     plt.axis('equal')
-#     plt.show()
-
-# if __name__ == "__main__":
-#     demo()
-#     pass
-
-#endregion

@@ -7,7 +7,7 @@ Example usage:
 
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Optional, Literal, Final
+from typing import Literal, Final
 
 from .libs import lib
 from .libs import lib_sh
@@ -15,7 +15,6 @@ from .libs import lib_domains
 from .libs.lib_dependencies import MAPSCI_EXE
 from .libs.lib_cli import cli_command, run_cli_command
 
-#  CONSTANTS  ################################################################################
 
 DEFAULT_INIT: Final = 'center'
 
@@ -28,12 +27,11 @@ MAPSCI_CONSENSUS_FILE = 'consensus.pdb'
 STRUCTURE_EXT = '.pdb'
 ROTATED_EXT = '.pdb.rot'
 
-#  MAIN  #####################################################################################
 
 @cli_command()
 def main(input_file: Path, input_dir: Path, output_dir: Path, 
          init: Literal['center', 'minmax', 'median'] = DEFAULT_INIT, 
-         n_max: int = N_MAX_ALL, keep_rotated: bool = False) -> Optional[int]:
+         n_max: int = N_MAX_ALL, keep_rotated: bool = False) -> None:
     '''Prepare MAPSCI input file and run MAPSCI.
     @param  `input_file`    File with the list of protein domains in format [[pdb, domain_name, chain, range]].
     @param  `input_dir`     Directory with input PDB files, named {domain_name}.pdb.
@@ -42,7 +40,6 @@ def main(input_file: Path, input_dir: Path, output_dir: Path,
     @param  `n_max`         Maximum number of input domains. If there are more input domains, then `n_max` domains are selected quasi-randomly (default: always take all).
     @param  `keep_rotated`  Do not delete the rotated structure files produced by MAPSCII.
     '''
-
     # Convert to absolute paths (important when calling MAPSCI)
     input_file = input_file.resolve()
     input_dir = input_dir.resolve()
@@ -88,8 +85,6 @@ def main(input_file: Path, input_dir: Path, output_dir: Path,
         for domain in domains:
             lib_sh.rm(output_dir / (domain.name+ROTATED_EXT), ignore_errors=True)
     
-    return None
-
 
 if __name__ == '__main__':
     run_cli_command(main)

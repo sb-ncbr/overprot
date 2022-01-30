@@ -8,12 +8,10 @@ Example usage:
 from __future__ import annotations
 import os
 import sys
-import argparse
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Iterable, Callable
+from typing import Optional, List, Iterable, Callable
 import traceback
 import contextlib
-import shutil
 import json
 from datetime import datetime
 
@@ -29,8 +27,6 @@ from . import get_pdb_entry_list
 from . import domains_from_pdbeapi
 from . import overprot
 from .libs.lib_cli import cli_command, run_cli_command
-
-#  CONSTANTS  ################################################################################
 
 
 #  FUNCTIONS  ################################################################################
@@ -72,7 +68,7 @@ def failed_diagram_content(family: str, is_empty: bool) -> str:
         error_message += " The family is empty."
     return json.dumps({'error': error_message})
 
-def collect_results2(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: Path, out_subpath: str, 
+def collect_results(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: Path, out_subpath: str, 
         alternative_content: Callable[[str], str]|None = None, print_missing: bool = False, 
         breakout_function: Callable[[Path], Path|str]|None = None) -> List[str]:
     '''Collect results of the same type. Return the list of families with missing results.'''
@@ -80,7 +76,6 @@ def collect_results2(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: 
     for x in xs:
         in_file = in_dir / in_subpath.format(x=x)
         out_file = out_dir / out_subpath.format(x=x)
-        # is_dir = in_file.is_dir()
         glob = '*' in in_file.name
         zip = out_file.suffix == '.zip'
         if glob:
@@ -109,48 +104,7 @@ def collect_results2(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: 
                     print('Missing results:', in_subpath.format(x=x), file=sys.stderr)
     return missing
 
-
-def collect_results(families: List[str], input_dir: Path, path_parts: List[str], output_dir: Path, 
-        zip: bool = False, hide_missing: bool = False, include_original_name: bool = True, print_missing: bool = False,
-        extension: Optional[str] = None, remove_if_exists: bool = True) -> List[str]:
-    '''Collect results of the same type. Return the list of families with missing results.'''
-    if output_dir.is_dir() and remove_if_exists:
-        lib_sh.rm(output_dir, recursive=True)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    missing = []
-    for family in families:
-        inp = Path(input_dir, 'families', family, *path_parts)
-        filename = Path(path_parts[-1])
-        if include_original_name:
-            if extension is not None:
-                ext = extension
-                assert filename.name.endswith(ext)  # might be e.g. '.sses.json'
-                name = filename.name[:-len(ext)]
-            else:
-                ext = filename.suffix
-                name = filename.stem
-            out = output_dir / f'{name}-{family}{ext}'
-        else:
-            out = output_dir / family
-        if inp.exists():
-            if zip:
-                shutil.make_archive(str(out), 'zip', str(inp))
-            else:
-                lib_sh.cp(inp, out)
-        elif hide_missing:
-            missing.append(family)
-            is_empty = (input_dir/'families'/family/'EMPTY_FAMILY').exists()
-            error_message = f"Failed to generate consensus for '{family}'."
-            if is_empty:
-                error_message += " The family is empty."
-            lib.dump_json({'error': error_message}, out)
-        else:
-            missing.append(family)
-            if print_missing:
-                print('Missing results/ directory:', family, file=sys.stderr)
-    return missing
-
-def _download_domains(outdir: Path, family: str) -> None:
+def download_domains(outdir: Path, family: str) -> None:
     with RedirectIO(stdout=outdir/f'{family}.json', stderr=os.devnull):
         domains_from_pdbeapi.main(family, join_domains_in_chain=True)
 
@@ -158,7 +112,7 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
                      processes: Optional[int] = None) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     print(f'Downloading domain lists for {len(families)} families:')
-    jobs = [lib_multiprocessing.Job(name=family, func=_download_domains, args=(outdir, family)) for family in families]
+    jobs = [lib_multiprocessing.Job(name=family, func=download_domains, args=(outdir, family)) for family in families]
     lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True)
     if collected_output_json is not None or collected_output_csv is not None:
         collected = {}
@@ -186,7 +140,7 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
 @cli_command(parsers={'sample_size': lib.int_or_all}, short_options={'download_family_list': '-d', 'download_family_list_by_size': '-D'})
 def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = None, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
-         only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+         only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> None:
     '''Run OverProt algorithm for multiple families in parallel processes.
     @param  `family_list_file`  File with list of family codes (whitespace-separated).
     @param  `directory`         Directory for results.
@@ -219,7 +173,7 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
         get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
         get_pdb_entry_list.main(out=directory/'pdbs.txt')
         if only_get_lists:
-            return None
+            return
         out_err_dir = directory/'stdout_stderr'
         out_err_dir.mkdir(exist_ok=True)
         current_dir = directory/'current'
@@ -249,16 +203,16 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
             with Timing('Collecting results'):
                 f = directory/'families'
                 c = directory/'collected_results'
-                collect_results2(families, f, '{x}/lists/family_info.txt',                c, 'family/info/family_info-{x}.txt')
-                collect_results2(families, f, '{x}/lists/*',                              c, 'family/lists/{x}/')
-                collect_results2(families, f, '{x}/results/',                             c, 'family/zip_results/results-{x}.zip')
-                collect_results2(families, f, '{x}/results/diagram.json',                 c, 'family/diagram/diagram-{x}.json', alternative_content = lambda fam: failed_diagram_content(fam, (f/fam/'EMPTY_FAMILY').exists()))
-                collect_results2(families, f, '{x}/results/consensus.cif',                c, 'family/consensus_cif/consensus-{x}.cif')
-                collect_results2(families, f, '{x}/results/consensus.sses.json',          c, 'family/consensus_sses/consensus-{x}.sses.json')
-                collect_results2(families, f, '{x}/results/consensus.png',                c, 'family/consensus_3d/consensus-{x}.png')
-                collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
-                collect_results2(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
-                collect_results2(families, f, '{x}/domain_info/*.json', c, 'domain/info/', breakout_function = lambda file: file.name[1:3])
+                collect_results(families, f, '{x}/lists/family_info.txt',                c, 'family/info/family_info-{x}.txt')
+                collect_results(families, f, '{x}/lists/*',                              c, 'family/lists/{x}/')
+                collect_results(families, f, '{x}/results/',                             c, 'family/zip_results/results-{x}.zip')
+                collect_results(families, f, '{x}/results/diagram.json',                 c, 'family/diagram/diagram-{x}.json', alternative_content = lambda fam: failed_diagram_content(fam, (f/fam/'EMPTY_FAMILY').exists()))
+                collect_results(families, f, '{x}/results/consensus.cif',                c, 'family/consensus_cif/consensus-{x}.cif')
+                collect_results(families, f, '{x}/results/consensus.sses.json',          c, 'family/consensus_sses/consensus-{x}.sses.json')
+                collect_results(families, f, '{x}/results/consensus.png',                c, 'family/consensus_3d/consensus-{x}.png')
+                collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
+                collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
+                collect_results(families, f, '{x}/domain_info/*.json', c, 'domain/info/', breakout_function = lambda file: file.name[1:3])
                 lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
                 lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
                 
@@ -273,7 +227,6 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
 
                 missing = [family for family in families if not (c/'family'/'consensus_3d'/f'consensus-{family}.png').is_file()]
                 (directory/'missing_results.txt').write_text('\n'.join(missing))
-        return None
 
 
 def _main():

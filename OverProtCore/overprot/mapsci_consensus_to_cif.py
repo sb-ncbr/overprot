@@ -7,7 +7,6 @@ Example usage:
 
 from pathlib import Path
 import numpy as np
-from typing import Optional
 
 from .libs import superimpose3d
 from .libs.lib_cli import cli_command, run_cli_command
@@ -41,7 +40,7 @@ class AtomTable:
         return range(len(self.index))
 
 
-def read_pdb_line(line):
+def read_pdb_line(line: str):
     if line[0:6]=='ATOM  ':
         hetatm = False
     elif line[0:6]=='HETATM':
@@ -59,7 +58,7 @@ def read_pdb_line(line):
     z = line[46:54]
     return (hetatm, int(index), name, resn, chain, int(resi), altloc, float(x), float(y), float(z))
 
-def read_pdb(filename: Path):
+def read_pdb(filename: Path) -> AtomTable:
     table = AtomTable()
     with open(filename) as f:
         for line in iter(f.readline, ''):
@@ -76,13 +75,9 @@ def read_pdb(filename: Path):
                 table.x.append(x)
                 table.y.append(y)
                 table.z.append(z)
-    return table # AtomTable
+    return table
 
-def group_pdb_text(is_hetatm):
-    return 'HETATM' if is_hetatm else 'ATOM'
-
-def print_cif_minimal(atom_table, filename: Path, structure_name='structure'):
-    table = atom_table
+def print_cif_minimal(table: AtomTable, filename: Path, structure_name='structure'):
     fields_values = [ ('group_PDB', ['HETATM' if het else 'ATOM' for het in table.hetatm]), 
                     ('id', table.index), ('type_symbol', table.symbol), ('label_atom_id', table.name), ('label_alt_id', table.altloc), 
                     ('label_comp_id', table.resn), ('label_asym_id', table.chain), ('label_entity_id', table.entity), ('label_seq_id', table.resi), ('auth_asym_id', table.chain), 
@@ -111,7 +106,7 @@ def apply_laying_rotation_translation(atoms: AtomTable) -> None:
 #  MAIN  #####################################################################################
 
 @cli_command()
-def main(input_pdb: Path, output_cif: Path) -> Optional[int]:
+def main(input_pdb: Path, output_cif: Path) -> None:
     '''Convert MAPSCI consensus structure from the original PDB to mmCIF format.
     @param  `input_pdb`   Consensus PDB from MAPSCI.
     @param  `output_cif`  File for mmCIF output.    
@@ -122,7 +117,6 @@ def main(input_pdb: Path, output_cif: Path) -> Optional[int]:
     atoms.symbol = [DEFAULT_SYMBOL] * atoms.count()
     apply_laying_rotation_translation(atoms)  # Center and align PCA axes with XYZ. Place starting and ending more in front, place starting more top-left
     print_cif_minimal(atoms, output_cif, structure_name='consensus')
-    return None
 
 
 if __name__ == '__main__':

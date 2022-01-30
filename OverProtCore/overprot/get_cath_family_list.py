@@ -16,11 +16,9 @@ from typing import Optional, Counter
 from .libs.lib_io import RedirectIO
 from .libs.lib_cli import cli_command, run_cli_command
 
-#  CONSTANTS  ################################################################################
 
 CATH_FAMILY_LIST_URL = 'http://download.cathdb.info/cath/releases/latest-release/cath-classification-data/cath-superfamily-list.txt'
 
-#  FUNCTIONS  ################################################################################
 
 def download_url(url: str, output_file: Path) -> None:
     print(f'Downloading {url}', file=sys.stderr) 
@@ -28,8 +26,6 @@ def download_url(url: str, output_file: Path) -> None:
         with open(output_file, 'wb') as w:
             shutil.copyfileobj(r, w)
     print('Download finished.', file=sys.stderr) 
-
-#  MAIN  #####################################################################################
 
 @cli_command()
 def main(cath_family_list: Path, download: bool = False, url: str = CATH_FAMILY_LIST_URL, 

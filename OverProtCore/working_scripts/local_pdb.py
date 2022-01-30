@@ -1,10 +1,6 @@
 import datetime
 import re
-from re import match
-from collections import defaultdict, namedtuple, Counter  # change namedtuple to typing.NamedTuple
-from typing import Optional, Sequence, Tuple, List, Dict, Any, Literal
-
-from . import lib
+from typing import Tuple, List, Dict
 
 # List of entries: ftp://ftp.ebi.ac.uk/pub/databases/pdb/data/structures/ls-lR, between ./all/mmCIF:\ntotal 0 and empty line
 
@@ -75,8 +71,6 @@ def make_month_dict() -> Dict[str, int]:
     return month_dict
 
 MONTH_DICT = make_month_dict()
-
-
 
 
 def ls_time_to_iso(ls_time_string: str) -> str:
