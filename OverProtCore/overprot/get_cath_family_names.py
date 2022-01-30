@@ -1,10 +1,10 @@
 '''
-This Python3 script does foo ...
+xtract family names from a CATH family names file.
+Output as a JSON format prepared for the hierarchical combobox on OverProt web (cath_b_names_options.json).
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
+    python3  -m overprot.get_cath_family_names  -help
 '''
-# TODO add description and example usage in docstring
 
 from __future__ import annotations
 import argparse
@@ -13,10 +13,10 @@ from pathlib import Path
 import shutil
 from urllib import request
 import gzip
-from typing import Dict, Any, Optional, Counter, Generic, TypeVar, Iterator
+from typing import Dict, Any, Optional, Generic, TypeVar, Iterator
 
 from .libs import lib
-from .libs.lib_io import RedirectIO
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -84,8 +84,6 @@ def layered_dict_to_options(dictio: dict[str, LayeredDictNode[str, str]], key_pr
     return result
 
 
-
-
 #  MAIN  #####################################################################################
 
 def parse_args() -> Dict[str, Any]:
@@ -98,12 +96,15 @@ def parse_args() -> Dict[str, Any]:
     args = parser.parse_args()
     return vars(args)
 
-
+@cli_command()
 def main(cath_family_names: Path, download: bool = False, url: str = CATH_FAMILY_NAMES_URL, 
          output: Optional[Path] = None) -> Optional[int]:
-    '''Extract family names from a CATH family names file (like ftp://orengoftp.biochem.ucl.ac.uk/cath/releases/latest-release/cath-classification-data/cath-domain-list.txt).
-    If download==True, first download the file from url to cath_family_names.
-    Output as a JSON format prepared for hierarchical dropbox on OverProt web (cath_b_names_options.json).
+    '''Extract family names from a CATH family names file.
+    Output as a JSON format prepared for the hierarchical combobox on OverProt web (cath_b_names_options.json).
+    @param  `cath_family_names`  CATH domain list file.
+    @param  `download`           Download the CATH domain list file from `url` and save it in `cath_domain_list`/
+    @param  `url`                Specify URL for downloading CATH family names file (only useful with --download).
+    @param  `output`             Output file.
     '''
     if download:
         download_url(url, cath_family_names)
@@ -130,7 +131,4 @@ def main(cath_family_names: Path, download: bool = False, url: str = CATH_FAMILY
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

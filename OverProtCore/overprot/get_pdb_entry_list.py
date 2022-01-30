@@ -1,5 +1,5 @@
 '''
-This Python script download and extract the list of PDB entries.
+Download and extract the list of PDB entries.
 All lines before a line starting with --- are treated as header.
 PDB ID is selected as the first column (whitespace-separated) in the file.
 
@@ -8,15 +8,12 @@ Example usage:
 '''
 
 from __future__ import annotations
-import argparse
-import sys
 from pathlib import Path
-import shutil
 from urllib import request
 from typing import Any, Optional, TypeVar, Callable
 
-from .libs import lib
 from .libs.lib_io import RedirectIO
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -35,19 +32,13 @@ def first_where(items: list[T], predicate: Callable[[T], bool]) -> int:
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--url', help=f'Specify URL for downloading PDB entry list file, default: {PDB_ENTRY_LIST_URL}', type=str, default=PDB_ENTRY_LIST_URL)
-    parser.add_argument('--out', help='Specify output file instead of stdout', type=Path, default=None)
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(url: str = PDB_ENTRY_LIST_URL, out: Optional[Path] = None) -> Optional[int]:
     '''Download and extract the list of PDB entries.
     All lines before a line starting with --- are treated as header.
     PDB ID is selected as the first column (whitespace-separated) in the file.
+    @param  `url`  URL for downloading PDB entry list file.
+    @param  `out`  Output file.
     '''
     with request.urlopen(url) as r:
         content: bytes = r.read() 
@@ -68,7 +59,4 @@ def main(url: str = PDB_ENTRY_LIST_URL, out: Optional[Path] = None) -> Optional[
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

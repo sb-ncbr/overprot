@@ -25,7 +25,7 @@ will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save
 
 ## Steps
 
-The following steps are performed. (Individual steps can be skipped by commenting out corresponding sections in `overprot.py`.)
+The following steps are performed. (Individual steps can be skipped by commenting out corresponding sections in `overprot.py`.) Detailed description of each step is provided in `doc/Description_of_methods.pdf`.
 
 - **Download the list of domains** for the family (by `domains_from_pdbeapi.py`).
 Output:
@@ -67,3 +67,8 @@ Output:
 Output:
   - `results/consensus.pse` - consensus structure with generated SSE consensus (flat ends = helices, round ends = strands, width = occurrence)
   - `results/clustered.pse` - consensus + all structures and their clustered SSEs
+
+TODO: OverProt Server manual - remove mention of Safari bug (fixed)
+TODO: create sample files (JSON...) in a directory and reference them here and in docstrings
+TODO: prune code and remove unnecessary settings
+TODO: document important library functions

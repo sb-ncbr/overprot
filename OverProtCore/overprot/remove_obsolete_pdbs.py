@@ -1,12 +1,10 @@
 '''
-This Python3 script checks suspicious PDB entry whether they are obsolete. If yes it removes them from sample_json (printed to output), otherwise it raises an error.
+Check missing PDB entries, if they are not obsolete.  
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
+    python3  -m overprot.remove_obsolete_pdbs  --help
 '''
-# TODO add description and example usage in docstring
 
-import argparse
 from pathlib import Path
 import json
 import requests
@@ -14,6 +12,7 @@ from typing import Dict, Any, Optional
 
 from .libs import lib_domains
 from .libs import lib
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -34,22 +33,15 @@ def is_obsolete(pdb: str) -> bool:
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('sample_json', help='Input file with domains', type=Path)
-    parser.add_argument('missing_list', help='File with the list of missing (possibly obsolete) PDB structures', type=Path)
-    parser.add_argument('output_sample_json', help='Output file with non-obsolete domains', type=Path)
-    parser.add_argument('output_missing_list', help='Filename for the list of missing non-obsolete PDB structures', type=Path)
-    # TODO add command line arguments
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(sample_json: Path, missing_list: Path, 
          output_sample_json: Path, output_missing_list: Path) -> Optional[int]:
-    '''Foo'''
-    # TODO add docstring
+    '''Check missing PDB entries, if they are not obsolete.    
+    @params  `sample_json`          Input file with all domains.
+    @params  `missing_list`         Input file with the list of missing (possibly obsolete) PDB entries.
+    @params  `output_sample_json`   Output file with non-obsolete domains.
+    @params  `output_missing_list`  Output file with the list of missing non-obsolete PDB entries.
+    '''
     domains = lib_domains.load_domain_list(sample_json)
     obsolete = []
     still_missing = []
@@ -70,7 +62,4 @@ def main(sample_json: Path, missing_list: Path,
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

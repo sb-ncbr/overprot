@@ -1,52 +1,24 @@
 '''
-This Python3 script does foo ...
+Download file with CATH example domains for all families and print as CSV.
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
+    python3  -m overprot.get_cath_example_domains  --help
 '''
-# TODO add description and example usage in docstring
 
-import argparse
 import requests
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from .libs.lib_io import RedirectIO
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
-URL = 'http://cathdb.info/version/v4_3_0/api/rest/cathtree/from_cath_id_to_depth/root/4?content-type=application/json'
+DEFAULT_URL = 'http://cathdb.info/version/v4_3_0/api/rest/cathtree/from_cath_id_to_depth/root/4?content-type=application/json'
 
 #  FUNCTIONS  ################################################################################
 
-#  MAIN  #####################################################################################
-
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input_json', help=f'Input JSON (default: download from {URL})', type=Path)
-    parser.add_argument('--output', help=f'Output file (default: stdout)', type=Path)
-    args = parser.parse_args()
-    return vars(args)
-
-
-def main(input_json: Optional[Path] = None, output: Optional[Path] = None) -> Optional[int]:
-    # TODO add parameters
-    '''Foo'''
-    # TODO add docstring
-    if input_json is None:
-        response = requests.get(URL)
-        assert response.status_code == 200
-        # print(response.text)
-        js = json.loads(response.text)
-    else: 
-        with open(input_json) as f:
-            js = json.load(f)
-    with RedirectIO(stdout=output):
-        print('cath_node;example_domain')
-        process_node(js)
-    
 def process_node(js: dict) -> None:
     node_id = js.get('cath_id', js['cath_id_padded'])
     example = js.get('example_domain_id')
@@ -60,9 +32,26 @@ def process_node(js: dict) -> None:
     for child in children:
         process_node(child)
 
+#  MAIN  #####################################################################################
+
+@cli_command()
+def main(url: Optional[str] = DEFAULT_URL, input_json: Optional[Path] = None, output: Optional[Path] = None) -> Optional[int]:
+    '''Download file with CATH example domains for all families and print as CSV.
+    @param  `url`         Address of the downloaded file.
+    @param  `input_json`  Do not download but read from this local file.
+    @param  `output`      Output file.
+    '''
+    if input_json is None:
+        response = requests.get(url)
+        assert response.status_code == 200
+        js = json.loads(response.text)
+    else: 
+        with open(input_json) as f:
+            js = json.load(f)
+    with RedirectIO(stdout=output):
+        print('cath_node;example_domain')
+        process_node(js)
+    
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

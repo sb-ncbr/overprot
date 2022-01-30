@@ -1,8 +1,8 @@
 '''
-This Python3 script does foo ...
+Run all steps of the OverProt algorithm.
 
 Example usage:
-    python3  overprot.py  FAMILY_ID  SAMPLE_SIZE  BASE_DIRECTORY 
+    python3  -m overprot.oveprot  1.10.10.1020  data/1.10.10.1020  --sample_size all
 '''
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import contextlib
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from .libs import lib
 from .libs import lib_sh
 from .libs import lib_run
 from .libs import lib_domains
@@ -20,6 +21,7 @@ from .libs import lib_pymol
 from .libs.lib_logging import Timing
 from .libs.lib_io import RedirectIO
 from .libs.lib_overprot_config import OverProtConfig, ConfigException
+from .libs.lib_cli import cli_command, run_cli_command
 
 from . import domains_from_pdbeapi
 from . import select_random_domains
@@ -34,30 +36,20 @@ from . import format_domains
 from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL
 
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('family', help='Family identifier for PDBe API (e.g. CATH code)', type=str)
-    parser.add_argument('outdir', help='Directory to save everything in', type=Path)
-    parser.add_argument('--sample_size', help='Number of domains to process (integer or "all", default: "all")', type=str, default='all')
-    parser.add_argument('--config', help=f'Configuration file (default: {DEFAULT_CONFIG_FILE})', type=Path, default=DEFAULT_CONFIG_FILE)
-    parser.add_argument('--domains', help='File with the list of input domains (do not download domain list)', type=Path)
-    parser.add_argument('--structure_source', help='Prepend a structure source to download.structure_sources parameter from the config file.', type=str)
-    parser.add_argument('--out', help='File for stdout.', type=Path)
-    parser.add_argument('--err', help='File for stderr.', type=Path)
-    args = parser.parse_args()
-    if args.sample_size != 'all':
-        try:
-            args.sample_size = int(args.sample_size)
-        except ValueError:
-            parser.error(f"argument sample_size: invalid value: '{args.sample_size}', must be int or 'all'")
-    return vars(args)
-
-
-def main(family: str, outdir: Path, sample_size: int|str|None = None, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
+@cli_command(parsers={'sample_size': lib.int_or_all})
+def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: Optional[Path] = DEFAULT_CONFIG_FILE, 
          domains: Optional[Path] = None, structure_source: Optional[str] = None, 
          out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
-
+    '''Run all steps of the OverProt algorithm.
+    @param  `family`            Family identifier for PDBe API (e.g. CATH code).
+    @param  `outdir`            Directory for results.
+    @param  `sample_size`       Number of domains to process (integer or "all"). [default: "all"]
+    @param  `config`            Configuration file.
+    @param  `domains`           File with the list of input domains (do not download domain list).
+    @param  `structure_source`  Prepend a structure source to download.structure_sources parameter from the config file.
+    @param  `out`               File for stdout.
+    @param  `err`               File for stderr.
+    '''
     if config is None:
         config = DEFAULT_CONFIG_FILE
     try:
@@ -175,7 +167,7 @@ def main(family: str, outdir: Path, sample_size: int|str|None = None, config: Op
             with RedirectIO(tee_stdout=outdir/'making_guide_tree.log'):
                 make_guide_tree.main(outdir/'cif_cealign', show_tree=False, progress_bar=True)
             with RedirectIO(tee_stdout=outdir/'clustering.log'):
-                acyclic_clustering.main(outdir/'cif_cealign', force_ssa=conf.overprot.force_ssa, secstrannotator_rematching=conf.overprot.secstrannotator_rematching, 
+                acyclic_clustering.main(outdir/'cif_cealign', secstrannotator_rematching=conf.overprot.secstrannotator_rematching, 
                     min_occurrence=0, fallback=30)
         
         # Annotate whole family
@@ -221,10 +213,7 @@ def main(family: str, outdir: Path, sample_size: int|str|None = None, config: Op
 
 
 def _main():
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
 '''
 Performs clustering of SSEs from a set of domains, preserving SSE order and type.
+Example usage:
+    python3  -m overprot.acyclic_clustering  --help
 '''
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from .libs import lib_sses
 from .libs import lib_clustering
 from .libs import lib_acyclic_clustering_simple
 from .libs.lib_logging import ProgressBar
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -1027,27 +1030,19 @@ def run_clustering_with_sides(samples, directory: Path, protein_similarity_weigh
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('directory', help='Directory with sample.json and structure files', type=Path)
-    parser.add_argument('--force_ssa', help='Run SecStrAnnotator to calculate secondary structure assignment files even if they already exist', action='store_true')
-    parser.add_argument('--secstrannotator_rematching', help='Run 1 iteration of final rematching with SecStrAnnotator', action='store_true')
-    parser.add_argument('--min_length_h', help='Minimal length of a helix to be considered', type=int, default=0)
-    parser.add_argument('--min_length_e', help='Minimal length of a strand to be considered', type=int, default=0)
-    parser.add_argument('--protsim', help='Protein similarity weight (w.r.t. to SSE similarity), default=0', type=float, default=0)
-    parser.add_argument('--min_occurrence', help='Minimal occurrence of SSE cluster to be included in the result (0 to 1), default=0', type=float, default=0)
-    parser.add_argument('--fallback', help='Parameter "fallback" for SecStrAnnotator', type=float, default=None)
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(directory: Path,
-         force_ssa: bool = False, secstrannotator_rematching: bool = False, min_length_h: int = 0, min_length_e: int = 0, 
+         secstrannotator_rematching: bool = False, min_length_h: int = 0, min_length_e: int = 0, 
          protsim: float = 0, min_occurrence: float = 0, fallback: Optional[float] = None) -> Optional[int]:
-    '''Foo'''
-    # TODO add docstring
-
+    '''Perform clustering of SSEs from a set of domains, preserving SSE order and type.
+    @param  `directory`       Directory with sample.json and structure files.
+    @param  `secstrannotator_rematching`  Run 1 iteration of final rematching with SecStrAnnotator.
+    @param  `min_length_h`    Minimal length of a helix to be considered.
+    @param  `min_length_e`    Minimal length of a strand to be considered.
+    @param  `protsim`         Protein similarity weight (w.r.t. to SSE similarity).
+    @param  `min_occurrence`  Minimal occurrence of SSE cluster to be included in the result (0 to 1).
+    @param  `fallback`        Parameter "fallback" for SecStrAnnotator.
+    '''
     domains = lib_domains.load_domain_list(directory/'sample.json')
     lib.log(len(domains), 'domains')
 
@@ -1072,7 +1067,4 @@ def main(directory: Path,
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

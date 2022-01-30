@@ -1,10 +1,9 @@
 '''
-This Python3 script does foo ...
+Run OverProt algorithm for multiple families in parallel processes.
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
+    python3  -m overprot.overprot_multifamily  -  data/  --download_family_list
 '''
-# TODO add description and example usage in docstring
 
 from __future__ import annotations
 import os
@@ -22,13 +21,14 @@ from .libs import lib
 from .libs import lib_sh
 from .libs import lib_multiprocessing
 from .libs.lib_io import RedirectIO
-from .libs.lib_logging import Timing, ProgressBar
+from .libs.lib_logging import Timing
 from . import get_cath_family_list
 from . import get_cath_example_domains
 from . import get_cath_family_names
 from . import get_pdb_entry_list
 from . import domains_from_pdbeapi
 from . import overprot
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -183,27 +183,23 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('family_list_file', help='File with list of family codes (whitespace-separated)', type=Path)
-    parser.add_argument('directory', help='Directory to save everything in', type=Path)
-    parser.add_argument('--sample_size', help='Number of domains to process per family (integer or "all", default: "all")', type=str, default='all')
-    parser.add_argument('-d', '--download_family_list', help='Download the current list of all CATH families (ignore family_list_file)', action='store_true')
-    parser.add_argument('-D', '--download_family_list_by_size', help='Same as -d, but sort the families by size (largest first)', action='store_true')
-    parser.add_argument('--config', help=f'Configuration file for OverProt', type=Path, default=None)
-    parser.add_argument('--collect', help='Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/', action='store_true')
-    parser.add_argument('--only_get_lists', help='Get domain lists for families and exit', action='store_true')
-    parser.add_argument('--processes', help='Number of processes to run (default: number of CPUs)', type=int)
-    parser.add_argument('--out', help='File for stdout.', type=Path)
-    parser.add_argument('--err', help='File for stderr.', type=Path)
-    args = parser.parse_args()
-    return vars(args)
-
-
-def main(family_list_file: Path, directory: Path, sample_size: int|str|None = None, 
+@cli_command(parsers={'sample_size': lib.int_or_all}, short_options={'download_family_list': '-d', 'download_family_list_by_size': '-D'})
+def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = None, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
          only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> Optional[int]:
+    '''Run OverProt algorithm for multiple families in parallel processes.
+    @param  `family_list_file`  File with list of family codes (whitespace-separated).
+    @param  `directory`         Directory for results.
+    @param  `sample_size`       Number of domains to process per family (integer or "all"). [default: "all"]
+    @param  `download_family_list`          Download the current list of all CATH families (ignore family_list_file).
+    @param  `download_family_list_by_size`  Same as --download_family_list, but sort the families by size (largest first).
+    @param  `config`            Configuration file for OverProt.
+    @param  `collect`           Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/.
+    @param  `only_get_lists`    Get domain lists for families and exit.
+    @param  `processes`         Number of processes to run. [default: number of CPUs]
+    @param  `out`               File for stdout.
+    @param  `err`               File for stderr.
+    '''
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
         start_time = datetime.now().astimezone()
         print('Output directory:', directory)
@@ -279,11 +275,10 @@ def main(family_list_file: Path, directory: Path, sample_size: int|str|None = No
                 (directory/'missing_results.txt').write_text('\n'.join(missing))
         return None
 
+
 def _main():
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)
+
 
 if __name__ == '__main__':
     _main()

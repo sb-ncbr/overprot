@@ -1,30 +1,35 @@
+% Build the PDF from this file by running:
+%     sh build_doc.sh
+
 \documentclass{article}
 \usepackage{Description_of_methods}
 
 
 \begin{document}
 
-\hypersetup{
-  pdftitle = {OverProt -- Supplementary information}
-  % pdftitle = {OverProt -- Description of methods}
-}
 
-\title{Supplementary information for \\ ``OverProt: secondary structure consensus \\for protein families''}
-% \title{OverProt -- Description of methods}
+\hypersetup{ pdftitle = {OverProt -- Description of methods} }
+\title{OverProt -- Description of methods}
+\author{}
+\date{}
 
-\author[1,2]{Adam Midlik}
-\author[2,3,4]{Ivana Hutařová Vařeková}
-\author[1,2]{Jan Hutař}
-\author[1,2]{Aliaksei Chareshneu}
-\author[4,*]{Karel Berka}
-\author[1,2,*]{Radka Svobodová}
+% \hypersetup{ pdftitle = {OverProt -- Supplementary information} }
+% \title{Supplementary information for \\ ``OverProt: secondary structure consensus \\for protein families''}
+% \author[1,2]{Adam Midlik}
+% \author[2,3,4]{Ivana Hutařová Vařeková}
+% \author[1,2]{Jan Hutař}
+% \author[1,2]{Aliaksei Chareshneu}
+% \author[4,*]{Karel Berka}
+% \author[1,2,*]{Radka Svobodová}
+% \affil[1]{CEITEC -- Central European Institute of Technology, Masaryk University, 625 00 Brno, Czech Republic}
+% \affil[2]{National Centre for Biomolecular Research, Faculty of Science, Masaryk University, 625 00 Brno, Czech Republic}
+% \affil[3]{Faculty of Informatics, Masaryk University, 602 00 Brno, Czech Republic}
+% \affil[4]{Department of Physical Chemistry, Faculty of Science, Palacký University, 771 46 Olomouc, Czech Republic}
+% \affil[*]{To whom correspondence should be addressed.}
+% \date{}  % omit date
 
-\affil[1]{CEITEC -- Central European Institute of Technology, Masaryk University, 625 00 Brno, Czech Republic}
-\affil[2]{National Centre for Biomolecular Research, Faculty of Science, Masaryk University, 625 00 Brno, Czech Republic}
-\affil[3]{Faculty of Informatics, Masaryk University, 602 00 Brno, Czech Republic}
-\affil[4]{Department of Physical Chemistry, Faculty of Science, Palacký University, 771 46 Olomouc, Czech Republic}
-\affil[*]{To whom correspondence should be addressed.}
-\date{}  % omit date
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \maketitle
 
@@ -33,9 +38,9 @@
 \clearpage
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
 OverProt is a tool for constructing and visualizing the secondary
@@ -52,10 +57,9 @@ computations.
 The source code is freely available at \url{https://gitlab.com/midlik/overprot}.
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Terminology}
 
 \begin{itemize}
@@ -115,10 +119,9 @@ The source code is freely available at \url{https://gitlab.com/midlik/overprot}.
 \end{itemize}
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Methods -- OverProt Core}
 
 \textbf{OverProt Core} is an algorithm that constructs the secondary
@@ -128,8 +131,8 @@ in several steps.
 \code{[xx]yy} refers to a setting yy in section xx in the configuration file (\path{overprot-config.ini}).)
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Preparation}
 
 \begin{itemize}
@@ -154,10 +157,10 @@ in several steps.
     The download step is performed by an auxiliary program \code{StructureCutter} 
     written in C\# (a part of the OverProt project).
   \end{itemize}
-  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
 \subsection{Structural alignment}
 
 Multiple structure alignment is performed in 2 steps:
@@ -191,8 +194,8 @@ Multiple structure alignment is performed in 2 steps:
 \end{itemize}
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Secondary structure assignment}
 
 The SSEs in each domain are detected by \code{SecStrAnnotator} 
@@ -200,8 +203,8 @@ The SSEs in each domain are detected by \code{SecStrAnnotator}
 with options ~\code{-\/-onlyssa} ~\code{-\/-verbose} ~\code{-\/-batch}.
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Guide tree}
 
 The domains are clustered by agglomerative clustering to produce a \textbf{guide
@@ -250,9 +253,10 @@ The details of the algorithm are described in Appendix \ref{sec:appendix_ws_dist
 and \ref{sec:appendix_ws_merging} (operation \code{merge\_structures}).
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Merging}
+
 \label{sec:merging}
 
 This step is the core of the consensus generation algorithm. As an input, we
@@ -374,7 +378,9 @@ After the clustering, a variety of statistics are computed for each consensus SS
 
 Each consensus SSE also gets a unique label (containing its type and sequential number, e.g. E0, H1, H2...) and color.
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Annotation}
 
 In this optional step, the generated SSE consensus is used
@@ -391,8 +397,8 @@ Option \code{-\/-unannotated} includes also the unannotated SSEs in the resultin
 with labels prefixed by underscore (e.g. \code{\_H0}).
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Visualization}
 
 The generated SSE consensus is visualized by several SVG diagrams with
@@ -407,8 +413,8 @@ generated if \code{[visual{\allowbreak}ization]{\allowbreak}create\_multi\_sessi
 \code{True} (very slow, not recommended for larger families).
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Execution}
 
 OverProt Core is implemented mostly in Python3 
@@ -445,6 +451,7 @@ in the project repository.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Interactive visualization by OverProt Viewer}
 
 \textbf{OverProt Viewer} is a web component for interactive
@@ -528,18 +535,15 @@ interactive 2DProts (\mycite{hutarova2021}{Hutařová \etal, 2021}),
 MolStar Viewer (\mycite{sehnal2021}{Sehnal \etal, 2021})) highlights it in all three.
 
 
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Data computation for OverProt Server}
 
 \textbf{OverProt Server} provides precomputed SSE consensuses (database)
 and runs the OverProt Core algorithm for user-defined sets of domains (jobs). 
 OverProt Server is implemented using Python (Flask), Gunicorn, Redis Queue, Nginx, and Docker.
 A running instance is available at \url{https://overprot.ncbr.muni.cz}.
-
 
 The database is constructed in this way:
 
@@ -571,16 +575,18 @@ The whole process is realized by:
 \end{codeblock}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Appendix} 
+
 \label{sec:appendix}
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Distance function for two weighted structures}
+
 \label{sec:appendix_ws_distance}
 
 To be able to compare the real structures of the input domains as well as the artificial 
@@ -690,10 +696,10 @@ for this particular application.) This is only possible because \(D^*\)
 is a metric.
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Merging two weighted structures}
+
 \label{sec:appendix_ws_merging}
 
 Having two weighted structures \(A, B\) and their best matching
@@ -709,9 +715,10 @@ operation \(merge\_structures\) as follows:
 \(\mathbf{r}^C_i = \mathbf{r}^B_{q_i}, w^C_i = w^B_{q_i}\). Similarly for \(q_i=\bot\).)
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Matching two SSE directed acyclic graphs (DAGs)}
+
 \label{sec:appendix_matching_dags}
 
 The distance function \(d\) for two SSEs \(P\) and \(Q\) is defined 
@@ -811,9 +818,9 @@ If vertices \(P, Q\) are matched and merged into a vertex \(R\), then:
   \]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{References}
 
 \myreference

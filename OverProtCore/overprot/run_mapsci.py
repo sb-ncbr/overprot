@@ -1,13 +1,11 @@
 '''
-This Python3 script prepares MAPSCI input file and runs MAPSCI (multiple structural alignment program)
+Prepare MAPSCI input file and run MAPSCI.
 
 Example usage:
-    python3 run_mapsci.py domains.json input_dir/ output_dir/ --mapsci ./mapsci --init center --n_max 100 --keep_rotated
+    python3  -m overprot.run_mapsci  domains.json  input_dir/  output_dir/  --init center  --n_max 100  --keep_rotated
 '''
-# TODO add description and example usage in docstring
 
 import subprocess
-import argparse
 from pathlib import Path
 from typing import Dict, Any, Optional, Literal, Final
 
@@ -15,6 +13,7 @@ from .libs import lib
 from .libs import lib_sh
 from .libs import lib_domains
 from .libs.lib_dependencies import MAPSCI_EXE
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -29,29 +28,20 @@ MAPSCI_CONSENSUS_FILE = 'consensus.pdb'
 STRUCTURE_EXT = '.pdb'
 ROTATED_EXT = '.pdb.rot'
 
-#  FUNCTIONS  ################################################################################
-
-
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_file', help='File with the list of protein domains in format [[pdb, domain_name, chain, range]]', type=Path)
-    parser.add_argument('input_dir', help='Directory with input PDB files, named <domain_name>.pdb', type=Path)
-    parser.add_argument('output_dir', help='Directory for output', type=Path)
-    parser.add_argument('--init', help=f'Initial consensus selection method (default: {DEFAULT_INIT}, fastest: median, see MAPSCI documentation)', type=str, choices=['center', 'minmax', 'median'], default='center')
-    parser.add_argument('--n_max', help=f'Maximum number of input domains. If there are more input domains, then N_MAX domains are selected randomly. Default: {N_MAX_ALL} (always take all).', type=int, default=N_MAX_ALL)
-    parser.add_argument('--keep_rotated', help=f'Do not delete the rotated structure files ({ROTATED_EXT}) produced by MAPSCII', action='store_true')
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(input_file: Path, input_dir: Path, output_dir: Path, 
          init: Literal['center', 'minmax', 'median'] = DEFAULT_INIT, 
          n_max: int = N_MAX_ALL, keep_rotated: bool = False) -> Optional[int]:
-    '''Prepare MAPSCI input file and run MAPSCI'''
-    # TODO add docstring
+    '''Prepare MAPSCI input file and run MAPSCI.
+    @param  `input_file`    File with the list of protein domains in format [[pdb, domain_name, chain, range]].
+    @param  `input_dir`     Directory with input PDB files, named {domain_name}.pdb.
+    @param  `output_dir`    Directory for output.
+    @param  `init`          Initial consensus selection method (fastest: median, see MAPSCI documentation).
+    @param  `n_max`         Maximum number of input domains. If there are more input domains, then `n_max` domains are selected quasi-randomly (default: always take all).
+    @param  `keep_rotated`  Do not delete the rotated structure files produced by MAPSCII.
+    '''
 
     # Convert to absolute paths (important when calling MAPSCI)
     input_file = input_file.resolve()
@@ -81,7 +71,6 @@ def main(input_file: Path, input_dir: Path, output_dir: Path,
         with open(output_dir/MAPSCI_STDERR, 'w') as stderr_writer:
             subprocess.run([MAPSCI_EXE, MAPSCI_INPUT_FILE_NAME, init, '-p', str(input_dir)], cwd=str(output_dir), stdout=stdout_writer, stderr=stderr_writer)
 
-
     ok = (output_dir/MAPSCI_CONSENSUS_FILE).is_file()
     if ok:
         print('MAPSCI OK')
@@ -103,7 +92,4 @@ def main(input_file: Path, input_dir: Path, output_dir: Path,
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

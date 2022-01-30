@@ -340,6 +340,22 @@ def matrix_from_function(shape: Tuple[int, ...], function: Callable, dtype=float
                 matrix[idcs] = function(*idcs) if idcs[-2] != idcs[-1] else diag_value
     return matrix
 
+def int_or_all(string: str) -> int|None:
+    '''
+    >>> int_or_all('123')
+    123
+    >>> int_or_all('all')
+    None
+    '''
+    if string.strip() == 'all':
+        return None
+    else: 
+        try:
+            return int(string)
+        except ValueError:
+            raise ValueError(f"invalid value: {repr(string)}, must be an integer or 'all'")
+
+
 class Counter(Generic[K]):
     def __init__(self):
         self.dict = {}

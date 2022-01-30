@@ -1,17 +1,16 @@
 '''
-This Python3 script does foo ...
+Convert MAPSCI consensus structure from the original PDB to mmCIF format.
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
+    python3  -m overprot.mapsci_consensus_to_cif  --help
 '''
-# TODO add description and example usage in docstring
 
-import argparse
 from pathlib import Path
 import numpy as np
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from .libs import superimpose3d
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -111,18 +110,12 @@ def apply_laying_rotation_translation(atoms: AtomTable) -> None:
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_pdb', help='Consensus PDB from MAPSCI', type=Path)
-    parser.add_argument('output_cif', help='File for CIF output', type=Path)
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(input_pdb: Path, output_cif: Path) -> Optional[int]:
-    '''Foo'''
-    # TODO add docstring
+    '''Convert MAPSCI consensus structure from the original PDB to mmCIF format.
+    @param  `input_pdb`   Consensus PDB from MAPSCI.
+    @param  `output_cif`  File for mmCIF output.    
+    '''
     atoms = read_pdb(input_pdb)
     atoms.entity = [DEFAULT_ENTITY] * atoms.count()
     atoms.chain = [DEFAULT_CHAIN] * atoms.count()
@@ -133,7 +126,4 @@ def main(input_pdb: Path, output_cif: Path) -> Optional[int]:
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

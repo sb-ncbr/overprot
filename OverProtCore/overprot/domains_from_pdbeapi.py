@@ -13,6 +13,7 @@ from typing import Dict, Any, Optional
 
 from .libs import lib
 from .libs.lib_domains import Domain
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -102,20 +103,15 @@ def get_domains_multisegment(mappings, pdb, join_domains_in_chain=False, chain_c
 
 #  MAIN  ###############################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('accession', help='"accession" argument to PDBe API SIFTS Mappings, e.g. Pfam accession or CATH cathcode.', type=str)
-    parser.add_argument('--source', help=f'URL with PDBeAPI server (default = {DEFAULT_API_URL})', default=DEFAULT_API_URL)
-    parser.add_argument('--join_domains_in_chain', help='Join all domains in one chain if their names are not provided by the source', action='store_true')
-    parser.add_argument('--chain_change_warning', help='Print warning if struct_asym_id != chain_id (label_ vs auth_ chain numbering)', action='store_true')
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: bool = False, chain_change_warning: bool = False) -> Optional[int]:
-    '''Download the list of domains belonging to the specified Pfam family or CATH homologous superfamily and print it in JSON in format { pdb: [[domain_name, chain, range]] }.'''
-    
+    '''Download the list of domains belonging to the specified Pfam family or CATH homologous superfamily 
+    and print it in JSON in format { pdb: [[domain_name, chain, range]] }.
+    @param  `accession`              "accession" argument to PDBe API SIFTS Mappings, e.g. Pfam accession or CATH cathcode.
+    @param  `source`                 URL with PDBeAPI server.
+    @param  `join_domains_in_chain`  Join all domains in one chain if their names are not provided by the source.
+    @param  `chain_change_warning`   Print warning if struct_asym_id != chain_id (label_ vs auth_ chain numbering.
+    '''    
     output = {}
 
     if accession is None or accession == '':
@@ -150,7 +146,4 @@ def main(accession: str, source: str = DEFAULT_API_URL, join_domains_in_chain: b
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

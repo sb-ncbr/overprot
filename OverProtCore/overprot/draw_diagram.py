@@ -1,9 +1,8 @@
 '''
-This Python3 script generates a simple diagram of occurrence and length of SSEs (height and width of the rectangles).
+Generate a simple diagram of occurrence and length of SSEs (height and width of the rectangles).
 
 Example usage:
-    python3  foo.py  --foo 4  foo.txt 
-    python3 draw_diagram.py results/ --dag --output results/diagram.svg --json_output results/diagram.json
+    python3  -m overprot.draw_diagram  input_data/  --dag  --output diagram.svg  --json_output diagram.json
 '''
 
 
@@ -19,6 +18,7 @@ import svgwrite as svg  # type: ignore
 
 from .libs import lib
 from .libs import lib_graphs
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -579,30 +579,19 @@ def remove_self_connections(beta_connectivity, print_warnings=False):
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('directory', help='Directory with the input files (statistics.tsv, consensus.sses.json, cluster_precedence_matrix.tsv)', type=Path)
-    parser.add_argument('--dag', help='Draw the diagram as a DAG instead of a path (requires cluster_precedence_matrix.tsv)', action='store_true')
-    parser.add_argument('--shape', help='Specify shape of SSEs', type=str, choices=SHAPES, default=DEFAULT_SHAPE)
-    parser.add_argument('--connectivity', help='Draw arcs to show connectivity of beta-strands (antiparallel connections = up, parallel connections = down)', action='store_true')
-    parser.add_argument('--occurrence_threshold', help='Do not show SSEs with lower relative occurrence', type=float, default=0.0)
-    parser.add_argument('--heatmap', help='Colour the SSEs based on their variance of coordinates', action='store_true')
-    parser.add_argument('--output', help='Output SVG file (default: <directory>/diagram.svg)', type=Path, default=None)
-    parser.add_argument('--json_output', help='Output JSON file with preprocessed info (default: no output)', type=Path, default=None)
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(directory: Path, dag: bool = False, shape: Shape = DEFAULT_SHAPE, connectivity: bool = False, occurrence_threshold: float = 0.0, 
         heatmap: bool = False, output: Optional[Path] = None, json_output: Optional[Path] = None) -> Optional[int]:
-    # TODO add parameters
-    '''Foo'''
-    # TODO add docstring
-    pass
-    # TODO add implementation
-    
-
+    '''Generate a simple diagram of occurrence and length of SSEs (height and width of the rectangles).
+    @param  `directory`     Directory with the input files (statistics.tsv, consensus.sses.json, cluster_precedence_matrix.tsv).
+    @param  `dag`           Draw the diagram as a DAG instead of a path (requires cluster_precedence_matrix.tsv).
+    @param  `shape`         Specify shape of SSEs.
+    @param  `connectivity`  Draw arcs to show connectivity of beta-strands (antiparallel connections = up, parallel connections = down).
+    @param  `occurrence_threshold`  Do not show SSEs with lower relative occurrence.
+    @param  `heatmap`       Colour the SSEs based on their variance of coordinates.
+    @param  `output`        Output SVG file (default: <directory>/diagram.svg).
+    @param  `json_output`   Output JSON file with preprocessed info.
+    '''
     if output is None:
         output = directory/'diagram.svg'
 
@@ -674,7 +663,4 @@ def main(directory: Path, dag: bool = False, shape: Shape = DEFAULT_SHAPE, conne
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

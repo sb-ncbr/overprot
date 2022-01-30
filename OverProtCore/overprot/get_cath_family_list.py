@@ -1,9 +1,5 @@
 '''
-This Python script extracts family IDs from a CATH family list file 
-(like http://download.cathdb.info/cath/releases/latest-release/cath-classification-data/cath-superfamily-list.txt).
-Prints the family IDs separated by newline.
-If download==True, it first downloads the file.
-If sort_by_size==True, it sorts the families by number of domains (largest first), otherwise sorts alphabetically.
+Extract family IDs from a CATH family list file.
 
 Example usage:
     python3  -m overprot.get_cath_family_list  ./cath-superfamily-list.txt  --download  --sort_by_size \
@@ -11,15 +7,14 @@ Example usage:
         --out ./families.txt
 '''
 
-import argparse
 import sys
 from pathlib import Path
 import shutil
 from urllib import request
-from typing import Dict, Any, Optional, Counter
+from typing import Optional, Counter
 
-from .libs import lib
 from .libs.lib_io import RedirectIO
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
 
@@ -36,24 +31,16 @@ def download_url(url: str, output_file: Path) -> None:
 
 #  MAIN  #####################################################################################
 
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('cath_family_list', help=f'CATH family list file (like {CATH_FAMILY_LIST_URL})', type=Path)    
-    parser.add_argument('--download', help='Download the CATH family list file and save it in cath_family_list', action='store_true')
-    parser.add_argument('--url', help=f'Specify URL for downloading CATH family list file (only useful with --download), default: {CATH_FAMILY_LIST_URL}', type=str, default=CATH_FAMILY_LIST_URL)
-    parser.add_argument('-o', '--out', help='Specify output file instead of stdout', type=Path, default=None)
-    parser.add_argument('-s', '--sort_by_size', help='Sort families by number of domains (largest first), rather than alphabetically', action='store_true')
-    args = parser.parse_args()
-    return vars(args)
-
-
+@cli_command()
 def main(cath_family_list: Path, download: bool = False, url: str = CATH_FAMILY_LIST_URL, 
          out: Optional[Path] = None, sort_by_size: bool = False) -> Optional[int]:
-    '''Extract family IDs from a CATH family list file (like http://download.cathdb.info/cath/releases/latest-release/cath-classification-data/cath-superfamily-list.txt).
+    '''Extract family IDs from a CATH family list file.
     Print the family IDs separated by newline.
-    If download==True, first download the file from url to cath_family_list.
-    If sort_by_size==True, sort the families by number of domains (largest first), otherwise sort alphabetically.
+    @param  `cath_family_list`  CATH family list file.
+    @param  `download`          Download the CATH family list file from `url` and save it in `cath_family_list`.
+    @param  `url`               URL for downloading CATH family list file (only useful with `download`).
+    @param  `out`               Output file.
+    @param  `sort_by_size`      Sort families by number of domains (largest first), rather than alphabetically.
     '''
     if download:
         download_url(url, cath_family_list)
@@ -74,7 +61,4 @@ def main(cath_family_list: Path, download: bool = False, url: str = CATH_FAMILY_
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    run_cli_command(main)

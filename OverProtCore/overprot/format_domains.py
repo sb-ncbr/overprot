@@ -1,35 +1,19 @@
-import argparse
+'''
+Convert domains in `input_family_json` and `input_sample_json` into diferent formats.
+
+Example usage:
+    python3  -m overprot.format_domains  --help
+'''
+
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Optional, List
 
 from .libs import lib
+from .libs.lib_cli import cli_command, run_cli_command
 
 #  FUNCTIONS  ################################################################################
-
-#  MAIN  #####################################################################################
-
-def parse_args() -> Dict[str, Any]:
-    '''Parse command line arguments.'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('input_family_json', help='Input family.json', type=Path)
-    parser.add_argument('input_sample_json', help='Input sample.json', type=Path)
-    parser.add_argument('--pdbs_html', help='Output pdbs.html', type=Path)
-    parser.add_argument('--pdbs_demo_html', help='Output pdbs-demo.html (limited number of rows)', type=Path)
-    parser.add_argument('--pdbs_json', help='Output pdbs.json', type=Path)
-    parser.add_argument('--pdbs_csv', help='Output pdbs.csv', type=Path)
-    parser.add_argument('--domains_html', help='Output domains.html', type=Path)
-    parser.add_argument('--domains_demo_html', help='Output domains-demo.html (limited number of rows)', type=Path)
-    parser.add_argument('--domains_json', help='Output domains.json', type=Path)
-    parser.add_argument('--domains_csv', help='Output domains.csv', type=Path)
-    parser.add_argument('--sample_html', help='Output sample.html', type=Path)
-    parser.add_argument('--sample_demo_html', help='Output sample-demo.html (limited number of rows)', type=Path)
-    parser.add_argument('--sample_json', help='Output sample.json', type=Path)
-    parser.add_argument('--sample_csv', help='Output sample.csv', type=Path)
-    parser.add_argument('--out_dir', help='Output directory for all output file, overrides all other options', type=Path)
-    args = parser.parse_args()
-    return vars(args)
 
 def format_pdbs_html(family: dict, file: Path, table_id: Optional[str] = None, max_rows: Optional[int] = None, links: bool = False):
     pdbs = list(family.keys())
@@ -135,63 +119,41 @@ def format_domain_json(domain: dict, file: Path):
     lib.dump_json(domain, file)
 
 
-def main(input_family_json: Path, input_sample_json: Path, 
-        pdbs_html: Optional[Path] = None, pdbs_demo_html: Optional[Path] = None, pdbs_json: Optional[Path] = None, pdbs_csv: Optional[Path] = None, 
-        domains_html: Optional[Path] = None, domains_demo_html: Optional[Path] = None, domains_json: Optional[Path] = None, domains_csv: Optional[Path] = None, 
-        sample_html: Optional[Path] = None, sample_demo_html: Optional[Path] = None, sample_json: Optional[Path] = None, sample_csv: Optional[Path] = None,
-        out_dir: Optional[Path] = None,
-        per_domain_out_dir: Optional[Path] = None,
-        family_id: Optional[str] = None) -> Optional[int]:
-    '''Foo'''
-    # TODO add docstring
+#  MAIN  #####################################################################################
+
+@cli_command()
+def main(input_family_json: Path, input_sample_json: Path, out_dir: Path,
+        per_domain_out_dir: Optional[Path] = None, family_id: Optional[str] = None) -> Optional[int]:
+    '''Convert domains in `input_family_json` and `input_sample_json` into diferent formats.
+    @param  `input_family_json`   Input family.json.
+    @param  `input_sample_json`   Input sample.json.
+    @param  `out_dir`             Output directory for per-family files.
+    @param  `per_domain_out_dir`  Output directory for per-domain files.
+    @param  `family_id`           Family ID to use in the formatted files.
+    '''
     with open(input_family_json) as r:
         family: dict[str, list[dict]] = json.load(r)
     domains = [dom for doms in family.values() for dom in doms]
     with open(input_sample_json) as r:
         sample = json.load(r)
 
-    if out_dir is not None:
-        out_dir.mkdir(exist_ok=True)
-        shutil.copy(input_family_json, out_dir/'family.json')
-        pdbs_html = out_dir/'pdbs.html'
-        pdbs_demo_html = out_dir/'pdbs-demo.html'
-        pdbs_json = out_dir/'pdbs.json'
-        pdbs_csv = out_dir/'pdbs.csv'
-        domains_html = out_dir/'domains.html'
-        domains_demo_html = out_dir/'domains-demo.html'
-        domains_json = out_dir/'domains.json'
-        domains_csv = out_dir/'domains.csv'
-        sample_html = out_dir/'sample.html'
-        sample_demo_html = out_dir/'sample-demo.html'
-        sample_json = out_dir/'sample.json'
-        sample_csv = out_dir/'sample.csv'
+    out_dir.mkdir(exist_ok=True)
+    shutil.copy(input_family_json, out_dir/'family.json')
 
-    if pdbs_html is not None:
-        format_pdbs_html(family, pdbs_html, table_id='pdbs', links=True)
-    if pdbs_demo_html is not None:
-        format_pdbs_html(family, pdbs_demo_html, table_id='pdbs', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
-    if pdbs_json is not None:
-        format_pdbs_json(family, pdbs_json)
-    if pdbs_csv is not None:
-        format_pdbs_csv(family, pdbs_csv)
+    format_pdbs_html(family, out_dir/'pdbs.html', table_id='pdbs', links=True)
+    format_pdbs_html(family, out_dir/'pdbs-demo.html', table_id='pdbs', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
+    format_pdbs_json(family, out_dir/'pdbs.json')
+    format_pdbs_csv(family, out_dir/'pdbs.csv')
 
-    if domains_html is not None:
-        format_domains_html(domains, domains_html, table_id='domains', links=True)
-    if domains_demo_html is not None:
-        format_domains_html(domains, domains_demo_html, table_id='domains', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
-    if domains_json is not None:
-        format_domains_json(domains, domains_json)
-    if domains_csv is not None:
-        format_domains_csv(domains, domains_csv)
-        
-    if sample_html is not None:
-        format_domains_html(sample, sample_html, table_id='sample', links=True)
-    if sample_demo_html is not None:
-        format_domains_html(sample, sample_demo_html, table_id='sample', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
-    if sample_json is not None:
-        format_domains_json(sample, sample_json)
-    if sample_csv is not None:
-        format_domains_csv(sample, sample_csv)
+    format_domains_html(domains, out_dir/'domains.html', table_id='domains', links=True)
+    format_domains_html(domains, out_dir/'domains-demo.html', table_id='domains', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
+    format_domains_json(domains, out_dir/'domains.json')
+    format_domains_csv(domains, out_dir/'domains.csv')
+    
+    format_domains_html(sample, out_dir/'sample.html', table_id='sample', links=True)
+    format_domains_html(sample, out_dir/'sample-demo.html', table_id='sample', max_rows=MAX_ROWS_IN_DEMO_TABLE, links=True)
+    format_domains_json(sample, out_dir/'sample.json')
+    format_domains_csv(sample, out_dir/'sample.csv')
 
     if per_domain_out_dir is not None:
         per_domain_out_dir.mkdir(parents=True, exist_ok=True)
@@ -202,14 +164,6 @@ def main(input_family_json: Path, input_sample_json: Path,
 
     return None
 
-def _main():
-    args = parse_args()
-    exit_code = main(**args)
-    if exit_code is not None:
-        exit(exit_code)
 
 if __name__ == '__main__':
-    _main()
-
-# #############################################################################################
-
+    run_cli_command(main)
