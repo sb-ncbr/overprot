@@ -1,8 +1,90 @@
 <html>
-    <head>	
-        <meta http-equiv = "refresh" content = "0; url = https://webchem.ncbr.muni.cz/api/secstr/static/overprot/web/view.html" />
-    </head>
-    <body>
-        Redirecting to <a href="https://webchem.ncbr.muni.cz/api/secstr/static/overprot/web/view.html">https://webchem.ncbr.muni.cz/api/secstr/static/overprot/web/view.html</a>
-    </body>
+
+<head>
+    <meta charset="UTF-8">
+    <base href="..">
+    <link rel="stylesheet" type="text/css" href="dist/overprot-viewer.css">
+    <script type="text/javascript" src="dist/d3.v5.min.js"></script>
+    <script type="text/javascript" src="dist/d3-selection-multi.v1.min.js"></script>
+    <script type="text/javascript" src="dist/overprot-viewer.js"></script>
+</head>
+
+<body>
+    <h2>OverProtViewer Demo Page</h2>
+
+    <p>Our tool <strong>OverProt</strong> produces a secondary structure consensus for a given protein structural family.
+        Such consensus consists of several <em>consensus SSEs</em> (secondary structure elements).
+        Each consensus SSE represents a group of SSEs from the proteins in the family (0 or 1 SSE from each protein).
+    </p>
+
+    <p><strong>OverProt Viewer</strong> allows interactive visualization of consensus produced by OverProt.
+        Each consensus SSE is shown as a rectangle &ndash; &beta;-strands from the same &beta;-sheet have the same color, while all helices are gray.
+        The height of the rectangle indicates the <em>occurrence</em> (what percentage of protein structures contain this SSE),
+        while the width indicates the <em>average length</em> (measured as the number of amino acid residues).
+        Only consensus SSEs with occurrence above the <em>occurrence threshold</em> are shown (default: 20%).
+        Alternative visualization modes include different coloring methods, showing length distribution instead of the average length,
+        and visualization of beta-connectivity.</p>
+
+    <p>To see how to embed OverProt Viewer in a web, look here:</p>
+    <p><a href="web/example-minimal.html">example-minimal.html</a>   (basic example)</p>
+    <p><a href="web/example-events.html">example-events.html</a>   (example with communication through events)</p>
+
+    <hr>
+
+    <h3>Different settings</h3>
+
+    <h4>Defaults (Rossman fold, CATH 3.40.50.2300)</h4>
+    <pre>&lt;overprot-viewer id="rossmann1" file="./sample_data/rossmann_3-40-50-2300/diagram.json"&gt;&lt;/overprot-viewer&gt;</pre>
+    <overprot-viewer id="rossmann1" file="./sample_data/rossmann_3-40-50-2300/diagram.json"></overprot-viewer>
+    
+    <h4>Customized (Rossman fold, CATH 3.40.50.2300)</h4>
+    <pre>&lt;overprot-viewer id="rossmann1" file="./sample_data/rossmann_3-40-50-2300/diagram.json" 
+        width="1800" height="300" color-method="variability" shape-method="symcdf" 
+        beta-connectivity="on" occurrence-threshold="25%"&gt;&lt;/overprot-viewer&gt;</pre>
+    <overprot-viewer id="rossmann2" file="./sample_data/rossmann_3-40-50-2300/diagram.json" width="1800" height="300" color-method="variability" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%"></overprot-viewer>
+    <hr>
+    
+
+    <h3>Different families</h3>
+
+    <h4>Aldolase class I (CATH 3.20.20.70)</h4>
+    <overprot-viewer id="aldolase" file="sample_data/aldolase_class1_3-20-20-70/diagram.json"></overprot-viewer>
+
+    <h4>Cytochrome P450 (CATH 1.10.630.10)</h4>
+    <overprot-viewer id="cyp" file="sample_data/cyp_1-10-630-10/diagram.json"></overprot-viewer>
+    
+    <h4>Phosphotransferase (CATH 1.10.510.10)</h4>
+    <overprot-viewer id="phosphotransferase" file="sample_data/phosphotransferase_1-10-510-10/diagram.json"></overprot-viewer>
+
+    <h4>Globin (CATH 1.10.490.10)</h4>
+    <overprot-viewer id="globin" file="sample_data/globin_1-10-490-10/diagram.json"></overprot-viewer>
+
+    <h4>Lipocalin (CATH 2.40.128.20)</h4>
+    <overprot-viewer id="lipocalin" file="sample_data/lipocalin_2-40-128-20/diagram.json"></overprot-viewer>
+    <hr>
+
+
+    <h3>Single-UniProt "families"</h3>
+
+    <h4>Cytochrome P450 BM3, <i>Bacillus megaterium</i> (UniProt P14779)</h4>
+    <overprot-viewer id="cyp-bm3" file="sample_data/per_uniprot/diagram_P14779.json"></overprot-viewer>
+
+    <h4>Cellular retinoic acid-binding protein 2, <i>Homo sapiens</i> (1cbs) (UniProt P29373)</h4>
+    <overprot-viewer id="1cbs" file="sample_data/per_uniprot/diagram_P29373.json"></overprot-viewer>
+    <hr>
+
+    <h3>Errors</h3>
+
+    <h4>Wrong filename - Error 404</h4>
+    <overprot-viewer id="testing-404" file="sample_data/not_here.json"></overprot-viewer>
+
+    <h4>CORS - HTTP - should work</h4>
+    <overprot-viewer id="testing-cors" file="http://overprot.ncbr.muni.cz/data/db/family/diagram/diagram-3.40.50.2300.json"></overprot-viewer>
+
+    <h4>CORS - HTTPS - should work</h4>
+    <overprot-viewer id="testing-cors-https" file="https://overprot.ncbr.muni.cz/data/db/family/diagram/diagram-3.40.50.2300.json"></overprot-viewer>
+    <hr>
+
+</body>
+
 </html>

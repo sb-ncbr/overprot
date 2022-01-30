@@ -1,9 +1,10 @@
 # OverProt
 
-The OverProt Suite consists of:
+The OverProt suite consists of:
 
-- OverProt
-- OverProt Viewer
-- OverProt Server
+- **OverProt Core** - constructs the secondary structure consensus
+- **OverProt Viewer** - visualizes the consensus
+- **OverProt Server** - presents the results on the web and allows user-defined
+computations
 
-See their individual README.md files for more information.
+See their individual `README.md` files for more information (`OverProtCore/README.md`, `OverProtViewer/README.md`, `OverProtServer/README.md`)

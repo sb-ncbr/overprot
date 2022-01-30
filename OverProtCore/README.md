@@ -1,55 +1,95 @@
-# OverProt
+# OverProt Core
 
-## TODO update
+OverProt Core is an algorithm that constructs the secondary
+structure consensus for a given protein family.
+The produced consensus can be used as a template for annotation of secondary structure
+elements in protein families, e.g. by SecStrAnnotator.
 
-The goal of OverProt is automatic generation of SSE (secondary structure elements) annotation templates.
+This file is focused on the information about how to run OverProt Core.
+Detailed description of how it works can be found in `doc/Description_of_methods.pdf`.
+
+OverProt Core is implemented mostly in Python3
+and designed to run in the Linux environment (tested on Python3.8 on Ubuntu 20.04).
+On the other operating systems, it can be run in Docker.
 
 ## Installation
 
+Before the first execution, the dependencies must be installed:
+
 ```sh
-sh install.sh --clean
+  sh install.sh --clean
 . venv/bin/activate
 ```
 
-## How to run
+## Execution
 
-The main script is `overprot.py`.
-
-Example:
+All steps of the algorithm are combined in `overprot.py`
+It is run in a Python virtual environment.
+Its arguments are the CATH family ID and the output directory:
 
 ```sh
-python overprot.py 1.10.630.10 ../data/cyp_50/ --sample_size 50
+  . venv/bin/activate
+  python  overprot.py  --help
+  python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50
 ```
 
-will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save the results into directory `../data/cyp_50/`.
+(This example will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save the results into directory `data/cyp_50/`.)
+
+## Configuration
+
+The default configuration is in `overprot-config.ini`. Each configuration item is also explained there.
+You can change the configuration by copying this file, modifying the copy, and then using `--config` option.
+
+```sh
+  python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50  --config overprot-config-customized.ini
+```
 
 ## Steps
 
-The following steps are performed. (Individual steps can be skipped by commenting out corresponding sections in `overprot.py`.) Detailed description of each step is provided in `doc/Description_of_methods.pdf`.
+OverProt Core algorithm performs the following steps.
+Detailed description of each step is provided in `doc/Description_of_methods.pdf`.
+Individual steps are submodules located in `overprot/` and can be run separately by:
 
-- **Download the list of domains** for the family (by `domains_from_pdbeapi.py`).
+```sh
+  python  -m overprot.{submodule}  --help
+```
+
+- **Download the list of domains** for the family (by `overprot.domains_from_pdbeapi`).
 Output:
   - `family.json`
 
-- **Select random sample of domains** (by `select_random_domains.py`). By default selects max. one domain per PDB entry (`--unique_pdb`).
+- **Select random sample of domains** (by `overprot.select_random_domains`). By default selects max. one domain per PDB entry (changed by `[sample_selection]unique_pdb` in the config file).
 Output:
   - `sample.json`
 
-- **Download selected structures**, cut the domains, save in CIF (by `StructureCutter`). Also saves the structures with renumbered residues in PDB (to be used by `MAPSCI`).
+- **Download selected structures**, cut the domains, save in CIF (by `dependencies/StructureCutter`). Also saves the structures with renumbered residues in PDB (to be used by `MAPSCI`).
 Output:
   - `cif/`
   - `pdb/`
 
-- **Multiple structure alignment** to produce consensus structure (by `MAPSCI`).
+- **Convert the lists of PDBs and domains into various formats** (by `overprot.format_domains`)
 Output:
-  - `pdb_mapsci/`
-  - `consensus.cif`
+  - `lists/`
 
-- **Align structures to consensus structure** (by `cealign_all.py`).
+- **Multiple structure alignment** to produce consensus structure by `MAPSCI` (by `overprot.run_mapsci` and `overprot.mapsci_consensus_to_cif`).
+Output:
+  - `mapsci/`
+  - `mapsci/consensus.cif`
+
+- **Align structures to consensus structure** (by `overprot.cealign_all`).
 Output:
   - `cif_cealign/`
 
-- **Cluster the SSEs** - the main part (by `acyclic_clustering_sides.py`).
+- **Secondary structure assignment** - detect the SSEs in all domains (by `overprot.libs.lib_sses.compute_ssa()`).
+Output:
+  - `cif_cealign/*.sses.json`
+
+- **Create the guide tree** (by `overprot.make_guide_tree`).
+Output:
+  - `cif_cealign/guide_tree.newick`
+  - `cif_cealign/guide_tree.children.tsv`
+
+- **Cluster the SSEs** - the main part (by `overprot.acyclic_clustering`).
 Output:
   - `cif_cealign/*-clust.sses.json`
   - `results/consensus.sses.json` - generated SSE consensus (1 cluster = 1 consensus SSEs)
@@ -58,17 +98,33 @@ Output:
   - `results/cluster_precedence_matrix.tsv`
   - `results/occurrence_correlation.tsv`
 
-- **Draw 1D diagram** (by `draw_diagram.py`).
+- **Draw 1D diagrams** (by `overprot.draw_diagram`).
 Output:
-  - `results/diagram_dag.svg` - order of SSEs shown by directed acyclic graph, (gray = helices, colors = sheets)
-  - `results/diagram.svg` - order of SSEs simplified to a sequence
+  - `results/diagram*.svg` - order of SSEs shown by directed acyclic graph, (gray = helices, colors = sheets)
+  - `results/diagram.json` - preprocessed data for interactive visualization by OverProt Viewer
 
-- **Visualize in PyMOL** (by `load_clustered_sses.py`).
+- **Annotate whole family** - this is only done if `[annotation]annotate_whole_family` is `True` in the config file. (Caution: this annotates ALL members of the family even if only a subset was used for consensus generation (`--sample_size`)) (by `overprot.libs.lib_sses.annotate_all_with_SecStrAnnotator()`).
 Output:
-  - `results/consensus.pse` - consensus structure with generated SSE consensus (flat ends = helices, round ends = strands, width = occurrence)
-  - `results/clustered.pse` - consensus + all structures and their clustered SSEs
+  - `annotated_sses/`
 
-TODO: OverProt Server manual - remove mention of Safari bug (fixed)
-TODO: create sample files (JSON...) in a directory and reference them here and in docstrings
-TODO: prune code and remove unnecessary settings
-TODO: document important library functions
+- **Visualize in PyMOL** (by `overprot.libs.lib_pymol.create_consensus_session()` and `overprot.libs.lib_pymol.create_multi_session()`).
+Output:
+  - `results/consensus.pse` - consensus structure with generated SSE consensus (cylinders = helices, arrows = strands, width = occurrence)
+  - `results/clustered.pse` - consensus + all structures and their clustered SSEs (time consuming, only done if `[visualization]create_multi_session` is `True`)
+
+## Multi-family execution
+
+Multiple families can be processed in parallel using `overprot_multifamily.py`.
+Its arguments are the family list and the output directory:
+
+```sh
+  . venv/bin/activate
+  python  overprot_multifamily.py  --help
+  python  overprot_multifamily.py  data/families.txt  data/multifamily/
+```
+
+It is also possible to download the list of all CATH families automatically and collect the result files by type:
+
+```sh
+  python  overprot_multifamily.py  -  data/multifamily/  --download_family_list  --collect
+```

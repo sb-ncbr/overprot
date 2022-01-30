@@ -46,7 +46,6 @@ $ docker push registry.gitlab.com/midlik/overprot
 
 Compose more containers to be run together in a common docker network:
 mongo-docker-compose.yaml
-https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana [1:32:52]
 $ docker-compose -f mongo-docker-compose.yaml up -d  # start containers
 $ docker-compose -f mongo-docker-compose.yaml down   # stop containers
 -d detached
@@ -59,14 +58,5 @@ $ docker push ...
 
 $ docker run -v HOST_PATH:CONTAINER_PATH IMAGE  # mount host volume
 $ docker run -v VOLUME_NAME:CONTAINER_PATH IMAGE  # mount named volume
-
-
-ENTRYPOINT vs CMD ???
-
-Private image repository: aws -> ECR, ...
-
-https://www.youtube.com/watch?v=3c-iBn73dDE&ab_channel=TechWorldwithNana
-
-
 
 $ nginx -t  # check configuration file

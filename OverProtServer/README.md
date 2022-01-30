@@ -1,6 +1,6 @@
 # OverProt Server
 
-**OverProt Server** allows using **OverProt** as a web application without need to install locally. It can also serve precomputed OverProt results.
+**OverProt Server** allows using **OverProt Core** as a web application without the eed to install locally. It can also serve precomputed OverProt results.
 
 ## Running OverProt Server
 
@@ -18,6 +18,7 @@
 
     ```bash
     docker pull registry.gitlab.com/midlik/overprot
+    docker images
     ```
 
 3. Copy `docker-compose.yaml` to your server machine and change the settings appropriately (set ports, volume mount-points...).
@@ -37,5 +38,30 @@ Running in development mode (without Docker, Nginx, Gunicorn):
 ```bash
 bash ../OverProtCore/install.sh
 bash install.sh
-bash startup-dev.sh  # Set path in this script properly
+bash startup-dev.sh  # Set the paths in this script properly
+```
+
+## File organization within the Docker container
+
+See `server_files.md`
+
+## Building the Docker image
+
+Build:
+
+```bash
+docker build .. -f DockerFile -t registry.gitlab.com/midlik/overprot
+docker images
+```
+
+Test (will run on the host's `http://localhost:8080`):
+
+```bash
+docker-compose up
+```
+
+Push to the repository:
+
+```bash
+docker push registry.gitlab.com/midlik/overprot
 ```

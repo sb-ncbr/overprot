@@ -1,10 +1,19 @@
 # OverProtViewer
 
-**OverProtViewer** is a tool for visualization of secondary structure consensus for protein families (produced by **OverProt**) in a web browser.
+**OverProtViewer** is a tool for visualization of secondary structure consensus for protein families (produced by **OverProt Core**) in a web browser. It is implemented in TypeScript using D3.js library.
 
 ## Build
 
-Install dependencies listed in `build.sh` and then run:
+Before building, you must install the development dependencies:
+
+```sh
+sudo apt update
+sudo apt install node-typescript
+sudo apt install npm
+npm install
+```
+
+Then build:
 
 ```sh
 sh build.sh
@@ -22,7 +31,7 @@ Then open <http://localhost:3000> in web browser.
 
 ## Include in a web
 
-Minimal example:
+Minimal example (`web/example-minimal.html`):
 
 ```html
 <html>

@@ -218,3 +218,9 @@ def _main():
 
 if __name__ == '__main__':
     _main()
+
+
+
+# TODO: create sample files (JSON...) in a directory and reference them in README.md and in docstrings
+# TODO: prune code and remove unnecessary settings
+# TODO: document important library functions
