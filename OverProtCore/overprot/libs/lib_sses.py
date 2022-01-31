@@ -8,8 +8,6 @@ import shutil
 import numpy as np
 import json
 import re
-import itertools
-from collections import defaultdict
 from typing import List, Dict, Tuple, Optional, Any
 from enum import IntEnum
 
@@ -17,16 +15,16 @@ from . import lib
 from . import lib_sh
 from . import lib_run
 from . import lib_domains
-from .lib_logging import Timing, ProgressBar
+from .lib_logging import Timing
 from .lib_io import RedirectIO
 from .lib_domains import Domain
-from .lib_dependencies import PYTHON, SECSTRANNOTATOR_DLL, SECSTRANNOTATOR_BATCH_PY
+from .lib_dependencies import SECSTRANNOTATOR_DLL
 
 # Field names in JSON annotation format
 LABEL = 'label'
 CHAIN = 'chain_id'
 START = 'start'
-END = 'end' # TODO move these into a separate module, which can then be imported as 'from sse_field_names import *'
+END = 'end'
 
 
 Sse = Dict[str, Any]
@@ -35,20 +33,13 @@ class SseType(IntEnum):
     HELIX = 0
     STRAND = 1
 
+
 class LadderType(IntEnum):
     PARALLEL = 1
     ANTIPARALLEL = -1
 
 
-def get_out_err_files(directory: Path, append: bool = True):
-    stdout_file = directory/'stdout.txt'
-    stderr_file = directory/'stderr.txt'
-    if not append:
-        stdout_file.write_text('')
-        stderr_file.write_text('')
-    return stdout_file, stderr_file
-
-def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=False, append_outputs=False, 
+def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=False, 
                 create_template_files=False, progress_bar=False):
     lib.log(f'Compute SSA: {directory}')
     if isinstance(domains, Path):
@@ -60,25 +51,14 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
     if skip_if_exists and all(f.is_file() for f in sse_files):
         lib.log(f'Skipping SSA computation (all files already exist)')
     else:
-        stdout_file, stderr_file = get_out_err_files(directory, append=append_outputs)
-
-        # # Version with dotnet per domain
-        # with ProgressBar(len(domains), title='Computing SSA', mute = not progress_bar) as bar:
-        #     for domain, detected_file, sse_file in zip(domains, detected_sse_files, sse_files):
-        #         append_to_file(stdout_file, f'>>> {domain.name},{domain.chain}\n')
-        #         append_to_file(stderr_file, f'>>> {domain.name},{domain.chain}\n')
-        #         lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', directory, f'{domain.name},{domain.chain}', 
-        #             stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
-        #         lib_sh.mv(detected_file, sse_file)
-        #         bar.step()
-        # Version with a single dotnet (multi-domain mode)
-        
+        stdout_file = directory/'stdout.txt'
+        stderr_file = directory/'stderr.txt'
         with Timing('Computing SSA', mute = not progress_bar):
             batch_file = directory/'domain_batch.txt'
             domains_string = '\n'.join(f'{domain.name},{domain.chain},{domain.ranges}' for domain in domains)
             batch_file.write_text(domains_string)
             lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--onlyssa', '--verbose', '--batch', directory, batch_file, 
-                stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
+                stdout=stdout_file, stderr=stderr_file)
             for detected_file, sse_file in zip(detected_sse_files, sse_files):
                 lib_sh.mv(detected_file, sse_file)
 
@@ -89,20 +69,6 @@ def compute_ssa(domains: List[Domain]|Path, directory: Path, skip_if_exists=Fals
     if create_template_files:
         for sse_file, template_sse_file in zip(sse_files, template_sse_files):
             shutil.copy(sse_file, template_sse_file)
-
-def compute_distance_matrices(samples, directory: Path, append_outputs: bool = True):
-    stdout_file, stderr_file = get_out_err_files(directory, append=append_outputs)
-    n = len(samples)
-    with ProgressBar(n*(n-1)//2, title='Computing distance matrices') as bar:
-        for i, j in itertools.combinations_with_replacement(range(len(samples)), 2):
-            pi, di, ci, ri = samples[i]
-            pj, dj, cj, rj = samples[j]
-            lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--matching', 'none', directory, f'{di},{ci},{ri}' , f'{dj},{cj},{rj}', stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
-            lib_sh.mv(directory/'metric_matrix.tsv', directory/f'matrix-{di}-{dj}.tsv')
-            lib_sh.rm(directory/f'alignment-{di}-{dj}.json', ignore_errors=True)
-            lib_sh.rm(directory/f'{dj}-detected.sses.json', ignore_errors=True)
-            bar.step()
-        lib_sh.rm(directory / 'template-smooth.pdb', ignore_errors=True)
 
 def filter_template_by_occurrence(template: Path, occurrence_threshold: float, output: Path) -> None:
     if occurrence_threshold == 0.0:
@@ -128,19 +94,6 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, ap
     if outdirectory is not None:
         outdirectory.mkdir(parents=True, exist_ok=True)
 
-    # # Version with dotnet per domain (via SecStrAnnotator_batch.py)
-    # samples_by_pdb = { domain.name: [(domain.name, domain.chain, domain.ranges)] for domain in domains }
-    # lib.dump_json(samples_by_pdb, directory/'samples_by_pdb.json', minify=True)
-    # lib_run.run_command(PYTHON, SECSTRANNOTATOR_BATCH_PY, 
-    #     '--dll', SECSTRANNOTATOR_DLL, 
-    #     '--threads', '8', 
-    #     '--options', f'{options} ', 
-    #     directory, 
-    #     'consensus',
-    #     directory/'samples_by_pdb.json',
-    #     timing=True)
-
-    # Version with a single dotnet (multi-domain mode)
     with Timing('Running SecStrAnnotator'), RedirectIO(stdout=outdirectory/'stdout.txt', stderr=outdirectory/'stderr.txt'):
         batch_file = outdirectory/'domain_batch.txt'
         domains_string = '\n'.join(f'{domain.name},{domain.chain},{domain.ranges}' for domain in domains)
@@ -153,7 +106,6 @@ def annotate_all_with_SecStrAnnotator(domains: List[Domain], directory: Path, ap
             lib_sh.mv(directory/filename, outdirectory/filename)
             lib_sh.rm(directory/f'{domain.name}-detected.sses.json')
             lib_sh.rm(directory/f'{domain.name}-aligned.cif')
-
 
 def map_manual_template_to_consensus(directory: Path):
     manuals = sorted(directory.parent.glob('manual*.sses.json'))
@@ -170,7 +122,8 @@ def map_manual_template_to_consensus(directory: Path):
         lib_sh.cp(directory.parent/f'{domain}.sses.json', directory/ f'{domain}.sses.json')
         lib_sh.cp(directory.parent/f'{domain}.cif', directory/f'{domain}.cif')
         lib_sh.cp(directory/'consensus.sses.json', directory/'consensus-template.sses.json')
-        stdout_file, stderr_file = get_out_err_files(directory, append=True)
+        stdout_file = directory/'stdout.txt'
+        stderr_file = directory/'stderr.txt'   
         lib_run.run_dotnet(SECSTRANNOTATOR_DLL, '--ssa', 'file', '--metrictype', '3', '--verbose', directory, 'consensus', f'{domain},{chain}',
             stdout=stdout_file, stderr=stderr_file, appendout=True, appenderr=True)
         label_mapping = {}
@@ -202,16 +155,6 @@ def get_chain_from_annotation(annotation_file: Path) -> str:
     except ValueError as e:
         raise Exception(f'Annotation file {annotation_file} does not contain exactly one chain ({", ".join(chains)}; {str(e)})')
 
-def sort_samples_by_pdb(samples):
-    result = defaultdict(lambda: [])
-    for pdb, domain, chain, ranges in samples:
-        result[pdb].append((domain, chain, ranges))
-    return result
-
-def length(sse):
-    '''Return the length (i.e. number of residues) of a SSE (represented as JSON object).'''
-    return sse['end'] - sse['start'] + 1 if sse is not None else 0
-
 def two_class_type(sse) -> str:
     '''Convert SSE type from multi-class to two-class (i.e. H or E).'''
     if sse['type'] in 'GHIh':
@@ -223,6 +166,10 @@ def two_class_type(sse) -> str:
 
 def two_class_type_int(sse) -> SseType:
     return SseType.STRAND if two_class_type(sse) == 'E' else SseType.HELIX
+
+def length(sse):
+    '''Return the length (i.e. number of residues) of a SSE (represented as JSON object).'''
+    return sse['end'] - sse['start'] + 1 if sse is not None else 0
 
 def long_enough(sse, thresholds):
     return thresholds is None or length(sse) >= thresholds[two_class_type(sse)]
@@ -268,21 +215,11 @@ def hex2(number: int):
     '''Get two-digit hexadecimal representation of integer from [0, 255], e.g. 10 -> '0A'.'''
     return hex(number)[2:].zfill(2).upper()
     
-
 def spectrum_color(x: float) -> str:
     '''Assign color to number x (0.0 <= x <= 1.0)'''
     FROM, TO = 100, 900
     num_color = int(FROM + (TO - FROM) * x)  # n elements span almost the whole rainbow (from 100-900, to distinguish start from end)
-    # num_color = (num_color + 500) % 1000  # Retarded inversion  # Debug
     return 's' + str(num_color).zfill(3)
-
-def spectrum_color_i(i: int, n: int) -> str:
-    return spectrum_color(i / (n-1))
-
-def spectrum_colors(names: List[str]) -> Dict[str, str]:
-    n = len(names)
-    color_dict = { name: spectrum_color_i(i, n) for i, name in enumerate(names) }
-    return color_dict
 
 def spectrum_colors_weighted(weights: List[float]) -> List[str]:
     total = sum(weights)
@@ -293,24 +230,3 @@ def spectrum_colors_weighted(weights: List[float]) -> List[str]:
         colors.append(spectrum_color(cum + 0.5*weight))
         cum += weight
     return colors
-
-def append_to_file(filename: Path, string):
-    with open(filename, 'a') as w:
-        w.write(string)
-
-def filter_annotation(input_file: Path, indices: List[int], output_file: Path, recolor: bool = True):
-    with open(input_file) as r:
-        annotations = json.load(r)
-    output = {}
-    for name, annotation in annotations.items():
-        sses = annotation['secondary_structure_elements']
-        connectivity = annotation['beta_connectivity']
-        sses = [ sses[i] for i in indices ]
-        labels = set( sse['label'] for sse in sses )
-        connectivity = [ conn for conn in connectivity if conn[0] in labels and conn[1] in labels ]
-        if recolor:
-            n = len(sses)
-            for i, sse in enumerate(sses):
-                sse['color'] = spectrum_color_i(i, n)
-        output[name] = { 'secondary_structure_elements': sses, 'beta_connectivity': connectivity }
-    lib.dump_json(output, output_file)

@@ -14,7 +14,7 @@ from .libs import lib_sh
 from .libs import lib_graphs
 from .libs import lib_domains
 from .libs import lib_sses
-from .libs import lib_acyclic_clustering_simple
+from .libs import lib_acyclic_clustering
 from .libs.lib_domains import Domain
 from .libs.lib_cli import cli_command, run_cli_command
 
@@ -228,7 +228,7 @@ def guided_clustering_score_function(coords1, weights1, coords2, weights2,
     for sse_type in lib_sses.SseType:
         mask1 = (types1 == sse_type)
         mask2 = (types2 == sse_type)
-        dist = lib_acyclic_clustering_simple.sse_distance_matrix(coords1[mask1, 1:7], coords2[mask2, 1:7])
+        dist = lib_acyclic_clustering.sse_distance_matrix(coords1[mask1, 1:7], coords2[mask2, 1:7])
         if shape == 'ramp':
             scor = np.maximum((d0 - dist) / d0, min_score)  # type: ignore
         elif shape == 'smoothramp':
@@ -261,10 +261,10 @@ def guided_clustering_sample_aggregation_function(coords1, weight1, coords2, wei
 
 def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotator_rematching: bool = False, fallback: Optional[float] = 0) -> None:
     domain_names = [domain.name for domain in domains]
-    offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering_simple.read_sses_simple(domains, directory)
+    offsets, sses, coordinates, type_vector, edges = lib_acyclic_clustering.read_sses_simple(domains, directory)
     n_structures = len(offsets) - 1
     n_sses = len(sses)
-    segment_lengths = lib_acyclic_clustering_simple.segment_lengths(coordinates)
+    segment_lengths = lib_acyclic_clustering.segment_lengths(coordinates)
     if 0 in segment_lengths:
         raise Exception('Some of the SSE segment lengths are zero. Use newer version of secondary structure assignment with non-zero lengths.')
 
@@ -275,13 +275,13 @@ def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotato
 
     guide_tree_children, _, _ = lib.read_matrix(directory/'guide_tree.children.tsv')
 
-    gac = lib_acyclic_clustering_simple.GuidedAcyclicClustering()
+    gac = lib_acyclic_clustering.GuidedAcyclicClustering()
     gac.fit(extended_coords, guided_clustering_score_function, guided_clustering_sample_aggregation_function, offsets, guide_tree_children,
         beta_connections=edges, ladder_correction=True)
     
     table = table_by_pdb_and_label(offsets, gac.n_clusters, gac.labels)
     hybrids = make_hybrid_sses_from_table(table, sses)
-    cluster_edges = lib_acyclic_clustering_simple.cluster_edges(edges, gac.labels)
+    cluster_edges = lib_acyclic_clustering.cluster_edges(edges, gac.labels)
     if any(u == v for u, v, *rest in cluster_edges):
         raise Exception(f'Resulting beta connectivity contains self-connections.')
     write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=gac.cluster_precedence_matrix, edges=cluster_edges) 
@@ -290,8 +290,8 @@ def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotato
     if secstrannotator_rematching:
         for i in range(3):
             lib_sh.cp(directory / 'consensus.sses.json', directory / f'consensus_{i}.sses.json')
-            labels = lib_acyclic_clustering_simple.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
-            n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering_simple.relabel_without_gaps(labels, gac.cluster_precedence_matrix)
+            labels = lib_acyclic_clustering.rematch_with_SecStrAnnotator(domains, directory, sses, offsets, f'--fallback {fallback}' if fallback is not None else '')
+            n_clusters, labels, cluster_precedence_matrix = lib_acyclic_clustering.relabel_without_gaps(labels, gac.cluster_precedence_matrix)
 
             with open(directory/'labels_SSAnnot.cached.tsv', 'w') as w:
                 w.write('\n'.join( str(l) for l in labels ))
@@ -299,22 +299,22 @@ def run_guided_clustering(domains: List[Domain], directory: Path, secstrannotato
             lib.log('Found', n_clusters, 'clusters')
             table = table_by_pdb_and_label(offsets, n_clusters, labels)
             hybrids = make_hybrid_sses_from_table(table, sses)
-            cluster_edges = lib_acyclic_clustering_simple.cluster_edges(edges, labels)
+            cluster_edges = lib_acyclic_clustering.cluster_edges(edges, labels)
             write_clustered_sses(directory, domain_names, hybrids, precedence_matrix=cluster_precedence_matrix, edges=cluster_edges)
             sizes, means, variances, covariances, minor_axes = sse_coords_stats(hybrids)
             print('Sorted DAG:', lib_graphs.sort_dag(range(n_clusters), lambda i,j: cluster_precedence_matrix[i,j]))
             print('Sizes:', sizes)
             
             # Calculation of self-classification probabilities
-            self_probs, class_self_probs, total_self_prob = lib_acyclic_clustering_simple.self_classification_probabilities(coordinates, type_vector, labels, sse_weights=segment_lengths)
+            self_probs, class_self_probs, total_self_prob = lib_acyclic_clustering.self_classification_probabilities(coordinates, type_vector, labels, sse_weights=segment_lengths)
             print('\nClass self probabilities:')
             print(*( f'{i}: {p:.3f}' for i, p in enumerate(class_self_probs) ), sep='\n')
             print('\nTotal self probability:')
             print(f'{total_self_prob:.3f}')
 
-            # agreement_strict = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels)
-            # agreement_best = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels, allow_matching=True)
-            # agreement_best_wo_unclass = lib_acyclic_clustering_simple.labelling_agreement(no_rematch_labels, labels, allow_matching=True, include_both_unclassified=False)
+            # agreement_strict = lib_acyclic_clustering.labelling_agreement(no_rematch_labels, labels)
+            # agreement_best = lib_acyclic_clustering.labelling_agreement(no_rematch_labels, labels, allow_matching=True)
+            # agreement_best_wo_unclass = lib_acyclic_clustering.labelling_agreement(no_rematch_labels, labels, allow_matching=True, include_both_unclassified=False)
             # print('Agreement (no rematch vs ssan-rematch):', agreement_strict, agreement_best, agreement_best_wo_unclass)
 
     return

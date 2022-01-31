@@ -7,7 +7,7 @@ from scipy import stats
 from matplotlib import pyplot as plt
 import argparse
 from libs import lib
-from libs import lib_acyclic_clustering_simple
+from libs import lib_acyclic_clustering
 
 ################################################################################
 
@@ -120,7 +120,7 @@ q_score, _, _ = lib.read_matrix(path.join(args.directory, 'q_scores.tsv'))
 # q_score_cur, _, _ = lib.read_matrix(path.join(args.directory, 'q_scores_cur.tsv'))
 # r_score, _, _ = lib.read_matrix(path.join(args.directory, 'R_scores.tsv'))
 
-offsets, sses, coordinates, distance, start_distance, end_distance, type_vector = lib_acyclic_clustering_simple.read_sses_simple(samples, path.join(directory, 'cif_cealign'))
+offsets, sses, coordinates, distance, start_distance, end_distance, type_vector = lib_acyclic_clustering.read_sses_simple(samples, path.join(directory, 'cif_cealign'))
 segment_lengths = line_segment_lengths(coordinates[:, 0:3], coordinates[:, 3:6])
 mean_min = average_min_dist(distance, offsets, symmetric=True)
 median_min = average_min_dist(distance, offsets, average_function=np.median, symmetric=True)
@@ -139,9 +139,9 @@ scores_weighted = scores * lib.each_to_each(np.minimum, segment_lengths)
 # scores_weighted_geom = scores * np.sqrt(lib.each_to_each(np.multiply, segment_lengths))
 # scores_weighted_sum = scores * lib.each_to_each(np.add, segment_lengths)
 
-dynprog_scores = lib_acyclic_clustering_simple.dynprog_total_scores_each_to_each(scores_weighted, offsets)
+dynprog_scores = lib_acyclic_clustering.dynprog_total_scores_each_to_each(scores_weighted, offsets)
 
-fup = lib_acyclic_clustering_simple.dynprog_fuckup_indices_each_to_each(scores_weighted, offsets)
+fup = lib_acyclic_clustering.dynprog_fuckup_indices_each_to_each(scores_weighted, offsets)
 lib.print_matrix(scores_weighted[offsets[0]:offsets[1], offsets[1]:offsets[2]], path.join(args.directory, 'score_matrix.tsv'))
 lib.print_matrix(fup[offsets[0]:offsets[1], offsets[1]:offsets[2]], path.join(args.directory, 'fuckup_matrix.tsv'))
 

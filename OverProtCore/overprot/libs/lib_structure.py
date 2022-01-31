@@ -6,7 +6,7 @@ from __future__ import annotations
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Any
+from typing import List, Any
 
 
 _SHORT2LONG = {'X': 'XXX', 'A': 'ALA', 'C': 'CYS', 'D': 'ASP', 'E': 'GLU', 'F': 'PHE', 'G': 'GLY', 
@@ -29,6 +29,7 @@ _CIF_FIELD_NAMES = {'group': 'group_PDB',
                     }
 
 class Structure(dict):
+    '''Represent a 3D structure of a protein'''
     @property
     def symbol(self): 
         '''Array of atom element symbols (numpy array)'''
@@ -84,7 +85,6 @@ class Structure(dict):
         self['coords'] = np.array(coords)
         if coords.shape[0] != 3:
             raise ValueError(f'coords must have shape (3, N), passed value has shape {coords.shape}')
-        # print(id)
         lengths = [values.shape[-1] for values in self.values()]
         if len(set(lengths)) != 1:
             raise ValueError(f'All arguments must have the same length (encountered lengths: {lengths})')
@@ -130,7 +130,6 @@ class Structure(dict):
             struct = self
         else:
             struct = self.get_alpha_trace()
-        # sequence = ' '.join(struct.resn)
         sequence = ''.join(_LONG2SHORT[l] for l in struct.resn)
         return sequence
 

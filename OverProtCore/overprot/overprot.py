@@ -81,7 +81,7 @@ def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: O
                     with RedirectIO(stdout=outdir/'family-orig.json'):
                         domains_from_pdbeapi.main(family, join_domains_in_chain=True)
             else:
-                lib_domains.save_domain_list(lib_domains.load_domain_list_by_pdb(domains), outdir/'family-orig.json')
+                lib_domains.save_domain_list(lib_domains.load_domain_list_by_pdb(domains), outdir/'family-orig.json', by_pdb=True)
             domains_by_pdb = lib_domains.load_domain_list_by_pdb(outdir/'family-orig.json')
             n_pdbs = len(domains_by_pdb)
             n_domains = sum(len(doms) for doms in domains_by_pdb.values())

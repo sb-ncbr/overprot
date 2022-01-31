@@ -13,6 +13,7 @@ from .lib_logging import ProgressBar
 
 
 class Job(NamedTuple):
+    '''Represents a job of executing func(*args, **kwargs), with optional redirection of stdout and stderr.'''
     name: str
     func: Callable
     args: Sequence = ()
@@ -27,10 +28,13 @@ class JobResult(NamedTuple):
 
 def run_jobs_with_multiprocessing(jobs: Sequence[Job], n_processes: Optional[int] = None, progress_bar: bool = False, 
         callback: Optional[Callable[[JobResult], Any]] = None, pool: Optional[multiprocessing.pool.Pool] = None) -> list[JobResult]:
-    '''Run jobs (i.e. call job.func(*job.args, **job.kwargs)) in n_processes processes. 
-    Standard output and standard error output are saved in files job.stdout and job.stderr.
-    Default n_processes: number of CPUs.
-    If n_processes==1, then run jobs sequentially without starting new processes (useful for debugging).'''
+    '''Run jobs (i.e. call `job.func(*job.args, **job.kwargs)`) in parallel processes. 
+    Standard output and standard error output are saved in files `job.stdout` and `job.stderr`.
+    Apply function `callback` to the result of each job.
+    If `n_processes` is 1, run jobs sequentially without starting new processes (useful for debugging).
+    @ param  `n_processes`  Number of parallel processes, default: number of CPUs.
+    @ param  `pool`         If given, this multiprocessing.pool.Pool is used (otherwise a new one is created). `n_processes` loses meaning.
+    '''
     if n_processes is None and pool is None:
         n_processes = multiprocessing.cpu_count()
     n_jobs = len(jobs)

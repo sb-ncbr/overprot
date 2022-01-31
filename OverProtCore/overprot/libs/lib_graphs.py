@@ -39,37 +39,6 @@ class Dag(object):
         slice_levels = self.levels[level_from:level_to]
         slice_edges = [(u, v) for lev in slice_levels[1:] for v in lev for u in self.in_neighbors[v]]
         return Dag(slice_levels, slice_edges)
-
-    def slices_backup(self) -> List['Dag']:
-        '''Find all n "slice-vertices" v[i] such that 
-            Vertex v is a slice-vertex <==> foreach vertex u. exists path u->v or exists path v-> or u==v
-        Find all n+1 "slices" S[i] such that
-            u in S[0] <==> exists path         u->v[0]
-            u in S[i] <==> exists path v[i-1]->u->v[i]
-            u in S[n] <==> exists path v[n-1]->u
-        Return list S[0], v[0], S[1], v[1], ... v[n-1], S[n]. (ommitting empty S[i])
-        '''
-        ancestors: Dict[int, Set[int]] = {}
-        seen_vertices = 0
-        slices = []
-        last_slice_vertex = -1
-        for i_level, level in enumerate(self.levels):
-            for vertex in level:
-                ancestors[vertex] = set(self.in_neighbors[vertex]).union(*(ancestors[u] for u in self.in_neighbors[vertex]))
-            if len(level) == 1 and len(ancestors[level[0]]) == seen_vertices:
-                # This is a slice-vertex
-                slice_vertex = level[0]
-                if i_level > last_slice_vertex + 1:
-                    slices.append(self._get_slice(last_slice_vertex+1, i_level))
-                slices.append(Dag([[slice_vertex]], []))
-                ancestors.clear()
-                ancestors[slice_vertex] = set()
-                last_slice_vertex = i_level
-            seen_vertices += len(level)
-        if len(self.levels) > last_slice_vertex+1:
-            slices.append(self._get_slice(last_slice_vertex+1, len(self.levels)))
-        assert {v for s in slices for v in s.vertices} == set(self.vertices)
-        return slices
    
     def slices(self) -> List['Dag']:
         '''Find all n "slice-vertices" v[i] such that 
@@ -85,14 +54,11 @@ class Dag(object):
         slices = []
         last_slice_vertex = -1
         for i_level, level in enumerate(self.levels):
-            # print('level', i_level, level)
             for vertex in level:
                 ancestors[vertex] = set(self.in_neighbors[vertex]).union(*(ancestors[u] for u in self.in_neighbors[vertex]))
-            # print('    ancestors', ancestors)
             if len(level) == 1 and len(ancestors[level[0]]) == seen_vertices:
                 # This is a slice-vertex
                 slice_vertex = level[0]
-                # print('    slice_vertex', slice_vertex)
                 if i_level > last_slice_vertex + 1:
                     slices.append(self._get_slice(last_slice_vertex+1, i_level))
                 slices.append(Dag([[slice_vertex]], []))
@@ -113,7 +79,6 @@ class Dag(object):
         levels: List[List[int]] = []
         edges = []
         n = precedence.shape[0]
-        # built_precedence = np.zeros(precedence.shape, dtype=bool)  # precedence which is given by transitivity of edges
 
         def are_transitively_connected(from_level, from_vertex, to_vertex, in_neighbours_of_to_vertex):
             for level in reversed(levels[from_level+1:]):
@@ -146,6 +111,7 @@ class Dag(object):
         edges = list(zip(vertices[:-1], vertices[1:]))
         return Dag(levels, edges)
 
+
 class XY(NamedTuple):
     x: float
     y: float
@@ -154,12 +120,12 @@ class XY(NamedTuple):
             return XY(self.x + other.x, self.y + other.y)
         else:
             raise TypeError('Adding XY and other tuple type is ambigous.')
-    def round(self, ndigits=None) -> 'XY':
-        return XY(round(self.x, ndigits), round(self.y, ndigits))
+
 
 class Size(NamedTuple):
     width: float
     height: float
+
 
 class Box(NamedTuple):
     '''Boundaries of a box with center in [0,0].
@@ -172,6 +138,50 @@ class Box(NamedTuple):
 
     def add_margins(self, left_margin: float, right_margin: float, top_margin: float, bottom_margin: float) -> 'Box':
         return Box(self.left + left_margin, self.right + right_margin, self.top + top_margin, self.bottom + bottom_margin, self.weight)
+
+
+class _ShallowTree(object):
+    '''Efficient representation of a set of disjoint sets. 
+    Each set is identified by its 'root', which is its smallest element.'''
+    parents: Dict[int, int]
+
+    def __init__(self, elements: Iterable[int]) -> None:
+        '''Initialize with some elements, so that each element forms its own set.'''
+        self.parents = {i: i for i in elements}
+    def root(self, element: int) -> int:
+        '''Get the root of the set containing element.'''
+        if self.parents[element] == element:
+            return element  # This element is the root
+        else:
+            the_root = self.root(self.parents[element])
+            self.parents[element] = the_root
+            return the_root
+    def join(self, i: int, j: int) -> int:
+        '''Join the set containing i and the set containing j, return the root of the new set. (Do nothing if i and j already are in the same set.)'''
+        root_i = self.root(i)
+        root_j = self.root(j)
+        new_root = min(root_i, root_j)
+        self.parents[root_i] = self.parents[root_j] = new_root
+        return new_root
+    def sets(self, sort=False) -> List[List[int]]:
+        '''Return the list of sets, each set itself is a list of elements. 
+        If sort==True, then each set is sorted (its root is first) and the sets are sorted by their root.'''
+        set_dict = defaultdict(list)  # map roots to their sets
+        for elem in self.parents:
+            set_dict[self.root(elem)].append(elem)
+        set_list = list(set_dict.values())
+        if sort:
+            for s in set_list:
+                s.sort()
+            set_list.sort()
+        return set_list
+
+
+class LabeledEdge(NamedTuple):
+    invertex: int
+    outvertex: int
+    label: int
+
 
 def implicit_vertices(edges: List[Tuple[int,int]]) -> Set[int]:
     vertices = set()
@@ -209,42 +219,6 @@ def dag_connected_components(dag: Dag) -> List[Dag]:
         assert i_comp == vertex2component[edge[1]]
         dags[i_comp].edges.append(edge)
     return dags
-
-class _ShallowTree(object):
-    '''Efficient representation of a set of disjoint sets. 
-    Each set is identified by its 'root', which is its smallest element.'''
-    parents: Dict[int, int]
-
-    def __init__(self, elements: Iterable[int]) -> None:
-        '''Initialize with some elements, so that each element forms its own set.'''
-        self.parents = {i: i for i in elements}
-    def root(self, element: int) -> int:
-        '''Get the root of the set containing element.'''
-        if self.parents[element] == element:
-            return element  # This element is the root
-        else:
-            the_root = self.root(self.parents[element])
-            self.parents[element] = the_root
-            return the_root
-    def join(self, i: int, j: int) -> int:
-        '''Join the set containing i and the set containing j, return the root of the new set. (Do nothing if i and j already are in the same set.)'''
-        root_i = self.root(i)
-        root_j = self.root(j)
-        new_root = min(root_i, root_j)
-        self.parents[root_i] = self.parents[root_j] = new_root
-        return new_root
-    def sets(self, sort=False) -> List[List[int]]:
-        '''Return the list of sets, each set itself is a list of elements. 
-        If sort==True, then each set is sorted (its root is first) and the sets are sorted by their root.'''
-        set_dict = defaultdict(list)  # map roots to their sets
-        for elem in self.parents:
-            set_dict[self.root(elem)].append(elem)
-        set_list = list(set_dict.values())
-        if sort:
-            for s in set_list:
-                s.sort()
-            set_list.sort()
-        return set_list
 
 def _align_top_left(embedding: Tuple[Box, Dict[int, XY]]) -> Tuple[Box, Dict[int, XY]]:
     '''Shift embedding so that the top left corner of the bounding box is at [0, 0].'''
@@ -408,13 +382,6 @@ def _rearrange_boxes_from_middle(boxes: Sequence[Box]) -> List[Tuple[int, Box]]:
     total = odd + even
     return total
     
-
-
-class LabeledEdge(NamedTuple):
-    invertex: int
-    outvertex: int
-    label: int
-
 def sort_dag(vertices, does_precede):
     todo = list(vertices)
     done = []
@@ -424,8 +391,6 @@ def sort_dag(vertices, does_precede):
             raise Exception('Cyclic graph.')
         done.extend(mins)
         todo = [i for i in todo if i not in mins]
-        # if len(mins) > 1:
-        # 	log('Sort DAG: uncomparable vertices:', *mins)
     return done
 
 def left_subdag_tipsets(n_vertices: int, edges: List[Tuple[int,int]], precedence_matrix: Optional[np.ndarray]=None) -> Tuple[List[Tuple[int,...]], List[LabeledEdge]]:
@@ -492,8 +457,6 @@ def are_edge_labels_unique_within_each_oriented_path(edges: List[LabeledEdge]):
             return True
 
 def precedence_matrix_from_edges_dumb(n_vertices, edges):
-    # n_vertices = len(vertices)
-    # assert all(vertices[i] < vertices[i+1] for i in range(n_vertices-1))
     vertices = range(n_vertices)
     precedence = np.eye(n_vertices, dtype=bool)
     while True:
@@ -510,9 +473,6 @@ def precedence_matrix_from_edges_dumb(n_vertices, edges):
     return precedence
 
 def test_left_subdag_tipsets():
-    # n_vertices = 10
-    # edges = [(i, i+1) for i in range(n_vertices-1)]
-    # edges = [(0,1), (1,2), (2,3), (3,4), (1,5), (1,6), (4,7), (5,7), (7,8), (6,8), (8,9)]
     n_vertices = 13
     edges = [(0,1), (1,2), (2,3), (3,4), (4,10), (10,11), (11,12), (1,5), (5,6), (6,4), (6,7), (7,8), (8,9), (9,11)]
     tipsets, tipset_edges = left_subdag_tipsets(n_vertices, edges)

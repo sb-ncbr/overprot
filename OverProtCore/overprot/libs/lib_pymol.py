@@ -6,9 +6,9 @@ from __future__ import annotations
 import sys
 import json
 from pathlib import Path
-from collections import namedtuple  # change namedtuple to typing.NamedTuple
+from collections import namedtuple
 import numpy as np
-from typing import Optional, Sequence, Any, Literal, Iterable
+from typing import Optional, Sequence, Any, Literal
 
 try:
     from pymol import cmd, querying, util, cgo, CmdException  # type: ignore
@@ -18,7 +18,6 @@ try:
 except ImportError:
     print('', file=sys.stderr)
 
-from . import lib
 from . import lib_sses
 from . import lib_domains
 from .lib_logging import ProgressBar
@@ -51,29 +50,11 @@ def extract_alpha_trace(input_structfile: Path, output_structfile: Path) -> None
     cmd.save(output_structfile, obj)
     cmd.delete(obj)
 
-def cealign_old(target_file: Path, mobile_file: Path, result_file: Optional[Path] = None) -> CealignResult:
-    '''Perform structure superimposition with cealign command and return details.
-    If result_file is not None, save transformed mobile structure.'''
-    obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
-    cmd.load(target_file, obj_target)
-    cmd.load(mobile_file, obj_mobile)
-    try:
-        if result_file is not None:
-            result = cmd.cealign(obj_target, obj_mobile, transform=1)
-            cmd.save(result_file, obj_mobile)
-        else:
-            result = cmd.cealign(obj_target, obj_mobile, transform=0)
-    finally:
-        cmd.delete(obj_target)
-        cmd.delete(obj_mobile)
-    result['rotation'], result['translation'] = ttt_matrix_to_rotation_translation(result['rotation_matrix'])
-    return CealignResult(**result)
-    # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
-    # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
-
 def cealign(target_file: Path, mobile_file: Path, result_file: Optional[Path] = None, fallback_to_dumb_align: bool = False) -> CealignResult:
     '''Perform structure superimposition with cealign command and return details.
-    If result_file is not None, save transformed mobile structure.'''
+    If `result_file` is not None, save transformed mobile structure.'''
+    # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
+    # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
     cmd.load(target_file, obj_target)
     cmd.load(mobile_file, obj_mobile)
@@ -98,15 +79,13 @@ def cealign(target_file: Path, mobile_file: Path, result_file: Optional[Path] = 
     finally:
         cmd.delete(obj_target)
         cmd.delete(obj_mobile)
-    # TODO optimize by: pre-extracting minimal atom set (cealign uses only alphas by default), only state 1, and center the coordinates
-    # TODO optimize by: keeping structures in memory -- probably not needed when working with alpha-traces stored on SSD (2nnj-1tqn: 109ms (with loading) vs 104ms (without loading))
-
+    
 def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: Sequence[Path], ttt_files: Optional[Sequence[Path]] = None,
                  fallback_to_dumb_align: bool = False, show_progress_bar: bool = False) -> None:
     '''Perform structure superimposition of each mobile to the target with cealign command.
-    Save i-th transformed mobile structure into result_files[i].
-    Save i-th transformation matrix (PyMOL-style TTT matrix) into ttt_files[i].
-    If fallback_to_super, try to use super command if cealign fails.'''
+    Save i-th transformed mobile structure into `result_files[i]`.
+    Save i-th transformation matrix (PyMOL-style TTT matrix) into `ttt_files[i]`.
+    If `fallback_to_super`, try to use super command if cealign fails.'''
     n = len(mobile_files)
     ttt_files_: Sequence[Path|None]
     if ttt_files is not None:
@@ -142,6 +121,10 @@ def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: 
         cmd.delete(obj_target)
 
 def dumb_align(target_file: Path, mobile_file: Path, result_file: Optional[Path]) -> CealignResult:
+    '''A very naive structure alignment algorithm, which can be used as a fallback if cealign crashes on very short domains.
+    Inefficient and not allowing gaps, but sufficient for very short domains (cca < 30 residues).
+    Not appropriate for larger domains! 
+    '''
     target = read_cif(target_file, only_polymer=True)
     mobile = read_cif(mobile_file, only_polymer=True)
     T = target.coords[:, target.name=='CA']
@@ -182,7 +165,6 @@ def read_cif(structfile: Path, only_polymer=False):
     auth_chain = np.array(querying.cif_get_array(obj, '_atom_site.auth_asym_id'))
     entity = np.array(querying.cif_get_array(obj, '_atom_site.label_entity_id'))
     alt = np.array(querying.cif_get_array(obj, '_atom_site.label_alt_id'))
-    # group = np.array(querying.cif_get_array(obj, '_atom_site.group_PDB'))  # TODO is this causing problems in PyMOL 2.4???
     coords = querying.get_coordset(obj).transpose()
     n_models = querying.count_states(obj)
     if n_models > 1:
@@ -202,7 +184,6 @@ def read_cif(structfile: Path, only_polymer=False):
     if only_polymer:
         result = result.filter(result.resi != None)
     return result
-    # TODO test on more entries (possible with multiple states), maybe the atom order will be wrong
 
 def create_alignment_session(structfileA: Path, structfileB: Path, alignment_file: Path, output_session_file: Path):
     objA = structfileA.stem
@@ -226,10 +207,7 @@ def create_alignment_session(structfileA: Path, structfileB: Path, alignment_fil
     cmd.color('yellow', objA)
     cmd.color('magenta', objB)
     cmd.color('white', obj_aln)
-    
-    # assert output_session_file.endswith('.pse')
     cmd.save(output_session_file, format='pse')
-
 
 def create_consensus_session(consensus_structure_file: Path, consensus_sse_file: Path, 
                              out_session_file: Optional[Path], coloring: Coloring = 'rainbow', 
@@ -326,25 +304,11 @@ def _create_line_segment(sse: dict[str, Any], group_name: str, coloring: Colorin
     occurrence = sse.get('occurrence')
     if sse['type'] in 'GHIh':  # helix
         _create_line_segment_cylinder(name, start_vector, end_vector, color, occurrence)
-        # _create_line_segment_dash(name, start_vector, end_vector, color, occurrence, round_ends=False)
     else:  # strand
         minor_axis = sse.get('minor_axis')
         _create_line_segment_arrow(name, start_vector, end_vector, minor_axis, color, occurrence)
-        # _create_line_segment_cylinder(name, start_vector, end_vector, color, occurrence, round_ends=True)
     if occurrence is not None and occurrence < enable_occurrence_threshold:
         cmd.disable(name)
-
-def _create_line_segment_dash(name: str, start_vector: list[float], end_vector: list[float], color: str, occurrence: float|None, round_ends: bool = False) -> None:
-    radius = occurrence * (_MAX_CYLINDER_RADIUS-_MIN_CYLINDER_RADIUS) + _MIN_CYLINDER_RADIUS if occurrence is not None else _DEFAULT_CYLINDER_RADIUS
-    cmd.pseudoatom('start', pos=start_vector)
-    cmd.pseudoatom('end', pos=end_vector)
-    cmd.distance(name, 'start', 'end')
-    cmd.color(color, name)
-    cmd.set('dash_radius', radius, name)
-    if not round_ends:
-        cmd.set('dash_round_ends', 0, name)
-    cmd.delete('start')
-    cmd.delete('end')
 
 def _create_line_segment_cylinder(name: str, start_vector: list[float], end_vector: list[float], color: str, occurrence: float|None) -> None:
     radius = occurrence * (_MAX_CYLINDER_RADIUS-_MIN_CYLINDER_RADIUS) + _MIN_CYLINDER_RADIUS if occurrence is not None else _DEFAULT_CYLINDER_RADIUS
@@ -357,10 +321,6 @@ def _create_line_segment_arrow(name: str, start_vector: list[float], end_vector:
     color_rgb = lib_sses.pymol_spectrum_to_rgb(color)
     cgo_arrow = _cgo_arrow_from_points(np.array(start_vector), np.array(end_vector), minor_axis, width=width, color=color_rgb)
     cmd.load_cgo(cgo_arrow, name)
-
-def _create_void_session(out_session_file: str) -> None:
-    cmd.save(out_session_file)
-
 
 def _darker_rgb(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
     r, g, b = rgb

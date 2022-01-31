@@ -11,7 +11,7 @@ np.seterr(all='raise')
 from overprot.libs import lib
 from overprot.libs import lib_alignment
 from overprot.libs import lib_pymol
-from overprot.libs import lib_acyclic_clustering_simple
+from overprot.libs import lib_acyclic_clustering
 from overprot.libs.lib_structure import Structure
 from overprot.libs.lib import Timing, ProgressBar
 from overprot.libs import superimpose3d
@@ -373,9 +373,9 @@ def op_score_iterated(domainA: StructInfo, domainB: StructInfo, rot_trans: Optio
         if i_iter == n_iter:
             break
         if i_iter == 0:
-            matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+            matching, total_score = lib_acyclic_clustering.dynprog_align(score)
         else:
-            _, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+            _, total_score = lib_acyclic_clustering.dynprog_align(score)
         print(f'    {i_iter}: {total_score}')
         n_matched = len(matching)
         coordsA_matched = domainA.coords[[u for u, v in matching]]
@@ -444,7 +444,7 @@ def sop_dist(type: Literal['s', 'op', 's+op', 's*op', 's_Opt', 's_Pes'], domainA
     # plt.imshow(score)
     # plt.savefig(RESULTS / f'score_{domainA}_{domainB}.png')
     # np.savetxt(RESULTS / f'score_{domainA}_{domainB}.csv', score)
-    matching, total_score = lib_acyclic_clustering_simple.dynprog_align(score)
+    matching, total_score = lib_acyclic_clustering.dynprog_align(score)
     print(f'    Score:{total_score}')
     input()
     distance = 0.5 * (domainA.n + domainB.n) - total_score

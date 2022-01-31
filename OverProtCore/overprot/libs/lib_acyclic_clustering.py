@@ -1,5 +1,4 @@
-'''AcyclicClusteringSimple and related functions'''
-
+'''GuidedAcyclicClustering and related functions'''
 
 from __future__ import annotations
 import sys
@@ -7,15 +6,14 @@ from pathlib import Path
 import json
 import itertools
 import numpy as np
-from collections import defaultdict, Counter
-from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Any, Collection, overload
+from collections import defaultdict
+from typing import Tuple, List, Dict, Optional, Sequence, Mapping, Collection, overload
 from datetime import datetime
 from numba import jit  # type: ignore
 
 from . import lib
 from . import lib_sses
-from .lib_sses import Sse, SseType, LadderType
-from . import lib_clustering
+from .lib_sses import Sse
 from . import lib_graphs
 from .lib_logging import ProgressBar
 
@@ -23,16 +21,12 @@ from . import superimpose3d
 from .lib_domains import Domain
 
 
-# USE_NUMPY_HEAP = True  # ad-hoc implementation of min-heap, saves memory, but is slower than heapq
-SSE_COUNT_THRESHOLD_FOR_NUMPY_HEAP = 8000  # ad-hoc implementation of min-heap, saves memory, but is slower than heapq (0 = always use, inf = never use)
-
 UNLABELLED = -1  # label for samples that are not classified to any class
 
 NONMATCHED = -1
 FROM_DIAG, FROM_LEFT, FROM_TOP = 1, 2, 3  # FROM_DIAG will appear the worst when maximum is a tie
 
-Edge = Tuple  #[int, int, Any, ...]
-# EdgeIIL = Tuple[int, int, LadderType]
+Edge = Tuple  # Tuple[int, int, Any, ...]
 WeightedBetaEdge = Tuple[int, int, lib_sses.LadderType, float]
 
 Match = Tuple[int, int]
@@ -44,7 +38,6 @@ def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: 
     offsets = [0]  # counting a beta-ladder side as one SSE (for preference matrix)
     sses = []
     edges: list[Edge] = []
-    # lib_sses.compute_ssa(domains, directory, skip_if_exists=True)
     for domain in domains:
         with open(directory / f'{domain.name}.sses.json') as f:
             annot = json.load(f)[domain.name]
@@ -78,15 +71,6 @@ def read_sses_simple(domains: List[Domain], directory: Path, length_thresholds: 
 
     return offsets, sses, coordinates, type_vector, edges
 
-
-def edges_from_neighbours_lists(neighbours_lists: List[List[int]]) -> List[Edge]:
-    edges: List[Edge] = []
-    for i, neighs in enumerate(neighbours_lists):
-        for j in neighs:
-            if i < j:
-                edges.append((i, j))
-    return edges
-
 def neighbours_lists_from_edges(n_vertices: int, edges: List[Edge]) -> List[List[int]]:
     neighbours_lists: List[List[int]] = [ [] for i in range(n_vertices) ]
     for u, v, *_ in edges:
@@ -114,12 +98,9 @@ def cluster_edges(edges: List[Edge], labels: Sequence[int]|np.ndarray, threshold
     superedges = []
     for superedge, edge_count in sorted(edge_counter.items()):
         supervertex1, supervertex2, *rest = superedge
-        # edginess = 2 * edge_count / (vertex_counter[supervertex1] + vertex_counter[supervertex2])
         edginess = edge_count / min(vertex_counter[supervertex1], vertex_counter[supervertex2])
-        # lib.log(f'{str(superedge):^12}: {vertex_counter[supervertex1]:3d} {vertex_counter[supervertex2]:3d} {edge_count:3d} | {edginess:5.3f} {edginess>=threshold}')
         if edginess >= threshold:
             superedges.append(superedge)
-    # return sorted(superedges)
     return sorted(strong_subgraph(vertex_counter, { edge: count/threshold for edge, count in edge_counter.items() }))
 
 def strong_subgraph(vertex_weights: Mapping[int, float], edge_weights: Dict[Edge, float]) -> List[Edge]:
@@ -127,9 +108,6 @@ def strong_subgraph(vertex_weights: Mapping[int, float], edge_weights: Dict[Edge
     w(uv) >= min{max{w(a)|vertex a in A}, max{w(b)|vertex b in B}}, where A, B are connected components u, v.
     (A == B iff uv lies on a cycle. There can be more inclusion-maximal graphs H, this algorithm adds edges from highest-weight edge...).
     Returns the list of edges of H.''' 
-    # component_vertices = [ {vertex} for vertex in vertex_weights.keys() ]
-    # component_max_vertex_weight = list(vertex_weights.values())
-    # component_min_edge_weight = [np.inf] * len(vertex_weights)
     components = { vertex: (v_weight, np.inf, {vertex}) for vertex, v_weight in vertex_weights.items() }
     # components are stored in a dict, where key is one representant vertex and values is triple (max. vertex weight, min. cycle-edge weight, vertex set)
     edges_by_weight = sorted(edge_weights.items(), key=lambda kv: kv[1], reverse=True)
@@ -206,11 +184,9 @@ def iterative_superimposition(sse_coords1, sse_coords2, type_vector1, type_vecto
         if weights1 is not None:
             score *= weights1.reshape((-1, 1))
         matching, total = dynprog_align(score)
-        # lib.log_debug('Total:', total, 'Matching:', matching)
         if not total > old_total or iterations == max_iterations:
             break
         indices1, indices2 = zip(*matching) if len(matching) > 0 else ((), ())
-        # lib.log_debug('Indices1:', indices1, 'Indices2:', indices2)
         A = np.vstack((sse_coords1[indices1, 0:3], sse_coords1[indices1, 3:6])).transpose()
         B = np.vstack((sse_coords2[indices2, 0:3], sse_coords2[indices2, 3:6])).transpose()
         weights = np.array([ min_segment_lengths[i, j] for (i, j) in matching ] * 2)
@@ -220,63 +196,18 @@ def iterative_superimposition(sse_coords1, sse_coords2, type_vector1, type_vecto
                 return  np.eye(3), np.zeros((3, 1)), matching, distance0
             else:
                 raise Exception(f'iterative_superimposition(): Empty matching in iteration {iterations}.')
-        # lib.log_debug(A.shape, B.shape)
-        # lib.log_debug('weights', weights)
         R, t = superimpose3d.optimal_rotation_translation(A, B, weights=weights)
         sse_coords1_rotated[:, 0:3] = superimpose3d.rotate_and_translate(sse_coords1[:, 0:3].transpose(), R, t).transpose()
         sse_coords1_rotated[:, 3:6] = superimpose3d.rotate_and_translate(sse_coords1[:, 3:6].transpose(), R, t).transpose()
         old_total = total
         iterations += 1
-    # lib.log_debug('Iterations:', iterations)
     return  R, t, matching, distance
-
-def distance_matrix_with_iterative_superimposition_many(sse_coords, type_vector, offsets, edges=None, max_iterations=np.inf):
-    n_domains = len(offsets) - 1
-    n_sses = offsets[-1]
-    distance = np.empty((n_sses, n_sses), dtype=float)
-    for i, j in itertools.combinations_with_replacement(range(n_domains), 2):
-        ifrom, ito = offsets[i:i+2]
-        jfrom, jto = offsets[j:j+2]
-        if edges is not None:
-            local_edges1 = [ (u-ifrom, v-ifrom, etc) for (u, v, etc) in edges if ifrom <= u < ito ]
-            local_edges2 = [ (u-jfrom, v-jfrom, etc) for (u, v, etc) in edges if jfrom <= u < jto ]
-        else:
-            local_edges1 = local_edges2 = None
-        # lib.log_debug(f'\nIter. distance {i} - {j}')
-        R, t, matching, d = iterative_superimposition(
-            sse_coords[ifrom:ito, :], 
-            sse_coords[jfrom:jto, :],
-            type_vector[ifrom:ito],
-            type_vector[jfrom:jto],
-            edges1=local_edges1,
-            edges2=local_edges2,
-            max_iterations=max_iterations,
-            warning_on_empty_matching=f'distance_matrix_with_iterative_superimposition_many(): {i} <-> {j}')
-        distance[ifrom:ito, jfrom:jto] = d
-        distance[jfrom:jto, ifrom:ito] = d.transpose()
-    return distance
-
-def segment_length_difference_matrix(start_end_coords):
-    '''start_end_coords - matrix n*6'''
-    lengths = segment_lengths(start_end_coords)
-    diff = np.abs(lib.each_to_each(np.subtract, lengths))
-    return diff
 
 def segment_lengths(start_end_coords):
     '''start_end_coords - matrix n*6'''
     vector_diff = start_end_coords[:, 3:6] - start_end_coords[:, 0:3]
     lengths = np.sqrt(np.sum(vector_diff**2, axis=1))
     return lengths
-
-def include_min_ladder_in_distance_matrix(distance, edges: List[Edge]):
-    n = distance.shape[0]
-    neighbours_lists = neighbours_lists_from_edges(n, edges)
-    new_distance = distance.copy()
-    strands = [ i for i, neighs in enumerate(neighbours_lists) if len(neighs) > 0 ]  # here some strands can act like helices, if their partners have been filtered out by length filter
-    for i, j in itertools.combinations(strands, 2):
-        min_neigh_distance = min( distance[neigh_i, neigh_j] for neigh_i, neigh_j in itertools.product(neighbours_lists[i], neighbours_lists[j]) )
-        new_distance[i, j] = new_distance[j, i] = (distance[i, j] + min_neigh_distance) / 2
-    return new_distance
 
 def include_min_ladder_in_distance_matrix_from_local_edges(distance, edges1: List[Edge], edges2: List[Edge]):
     n1, n2 = distance.shape
@@ -288,20 +219,12 @@ def include_min_ladder_in_distance_matrix_from_local_edges(distance, edges1: Lis
     for i, j in itertools.product(strands1, strands2):
         min_neigh_distance = min( distance[neigh_i, neigh_j] for neigh_i, neigh_j in itertools.product(neighbours_lists1[i], neighbours_lists2[j]) )
         new_distance[i, j] = (distance[i, j] + min_neigh_distance) / 2
-    return distance
     # TODO return new_distance and test!
-
-def include_protein_distance(sse_distance, protein_distance, offsets, overwrite=False):
-    if not overwrite:
-        sse_distance = sse_distance.copy()
-    n_proteins = len(offsets) - 1
-    for i in range(n_proteins):
-        for j in range(n_proteins):
-            sse_distance[offsets[i]:offsets[i+1], offsets[j]:offsets[j+1]] += protein_distance[i, j]
-    return sse_distance
+    return distance
 
 def dynprog_matrices(scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.'''
+    '''Return cumulative scores matrix (shape (m+1, n+1)) and direction matrix (shape(m, n)) for tracing the best matching.
+    This is just reference implementation; use dynprog_matrices_diagonal_method() instead'''
     m, n = scores.shape
     score_type = scores.dtype.type
     cumulative = np.zeros((m+1, n+1), dtype=score_type)
@@ -405,36 +328,6 @@ def dynprog_align(scores: np.ndarray, include_nonmatched=False) -> Tuple[Matchin
     return matching, total_score
 
 
-def dynprog_matrices_diagonal_method2(scores: np.ndarray) -> Tuple[float, np.ndarray]:
-    ''' Do the same as dynprog_matrices(), but faster using numpy broadcasting (cca 4x faster on matrices 64*64)'''
-    m, n = scores.shape
-    score_type = scores.dtype.type
-    M, N = m+1, n+1  # size for cumulative matrices
-    if m == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N), dtype=score_type)
-        direction = np.full((M, N), FROM_LEFT, dtype=np.int32)
-        return 0, direction
-    if n == 0:  # Special case, matching is empty, cumulative is zeros.
-        cumulative = np.zeros((M, N), dtype=score_type)
-        direction = np.full((M, N), FROM_TOP, dtype=np.int32)
-        return 0, direction
-    anti_cum = Antidiagonals((M, N))
-    anti_cum.fill_first_row(0)
-    anti_cum.fill_first_column(0)
-    anti_dir = Antidiagonals((M, N), dtype=np.int32)
-    anti_scores = Antidiagonals.from_matrix(scores)
-    for D in range(2, anti_cum.n_diags):
-        on_left = anti_cum.get_left_from_inner(D)
-        on_top = anti_cum.get_up_from_inner(D)
-        on_diag = anti_cum.get_leftup_from_inner(D) + anti_scores.get(D-2)
-        direc = anti_dir.get_inner(D)
-        maximum = anti_cum.get_inner(D)
-        direc[:] = np.where(on_top > on_left, FROM_TOP, FROM_LEFT)
-        np.maximum(on_top, on_left, out=maximum)  # type: ignore
-        direc[:] = np.where(on_diag > maximum, FROM_DIAG, direc)
-        np.maximum(on_diag, maximum, out=maximum)  # type: ignore
-    return anti_cum.get(anti_cum.n_diags-1)[0], anti_dir.retrieve_matrix()
-
 class Antidiagonals(object):
     def __init__(self, shape, dtype=float):
         m, n = shape
@@ -527,15 +420,6 @@ def dynprog_total_scores_each_to_each(scores, offsets):
             total_scores[j, i] = total_score
             bar.step()
     return total_scores
-
-def fuckup_indices(scores):
-    m, n = scores.shape
-    cumulative,	direction = dynprog_matrices(scores)
-    cumulative_rev, direction_rev = [ np.flip(M) for M in dynprog_matrices(np.flip(scores)) ]
-    best_score = cumulative[m, n]
-    alternative_scores = cumulative[:-1, :-1] + cumulative_rev[1:, 1:] + scores
-    fuckup_indices = best_score - alternative_scores
-    return fuckup_indices
 
 def iterative_rematching(sse_coords: np.ndarray, type_vector: np.ndarray, init_labels: np.ndarray, edges, offsets, adhesion=0, max_iterations=np.inf) -> np.ndarray:
     if len(init_labels) == 0:
@@ -633,9 +517,6 @@ def relabel_without_gaps(labels, class_precedence_matrix):
     n_classes = len(valid_labels)
     old2new = { label: i for i, label in enumerate(sorted(valid_labels)) }
     old2new[UNLABELLED] = UNLABELLED
-    # new_labels = np.full_like(labels, UNLABELLED)
-    # for i, old in enumerate(labels):
-    # 	new_labels[i] = old2new[old]
     new_labels = np.array([old2new[old] for old in labels])
     if class_precedence_matrix is not None:
         new_precedence = np.empty((n_classes, n_classes), dtype=class_precedence_matrix.dtype)  # type: ignore
@@ -674,9 +555,6 @@ def anova_f(coords, labels) -> float:
     ss_within = sum(sumsqs_within)
     ss_between = sum(sumsqs_between)
     ss_total = np.sum((coords - the_mean)**2)
-    # lib.log_debug(ss_total, ss_between, ss_within)
-    # lib.log_debug(n_total - 1, df_between, df_within)
-    # lib.log_debug(ss_total/(n_total - 1), ss_between/df_between, ss_within/df_within)
     if df_within != 0 and df_between != 0:
         f = (ss_between * df_within) / (ss_within * df_between)
     else:
@@ -689,10 +567,9 @@ def self_classification_probabilities(sse_coords, type_vector, labels, sse_weigh
     Samples with label == UNLABELLED are treated as unclassified, thus their self_prob == 0.
     Additionally calculate weighted self_probs for each class and the total self_prob.
     Params shapes: sse_coords (n, ...), type_vector: (n,), labels: (n,), sse_weights: (n,)
-    Return shapes: self_probs: (n,), class_self_probs: (n_classes,), total_self_prob: () '''
-    
+    Return shapes: self_probs: (n,), class_self_probs: (n_classes,), total_self_prob: () 
+    '''
     n_sses = len(labels)
-
     if n_sses == 0:
         self_probs = np.zeros((0,))
         class_self_probs = np.zeros((0,))
@@ -724,12 +601,6 @@ def self_classification_probabilities(sse_coords, type_vector, labels, sse_weigh
     for i in range(n_sses):
         if labels[i] != UNLABELLED:  # else: self_probs[i] = 0
             x = sse_coords[i]
-            # class_dependent_probs = np.zeros(n_classes, dtype=float)
-            # for j in range(n_classes):
-            # 	if class_type_vector[j] == type_vector[i] and member_counts[j] > 0:
-            # 		class_dependent_probs[j] = 1/sigma[j] * np.exp(-((x - mu[j, :])**2).sum() / (2 * sigma[j]**2))
-            # 	else:
-            # 		class_dependent_probs[j] = 0
             class_valid = np.logical_and(class_type_vector == type_vector[i], member_counts > 0)
             class_dependent_probs = np.zeros(n_classes, dtype=float)
             class_dependent_probs[class_valid] = 1/sigma[class_valid] * np.exp(-np.sum((x - mu[class_valid])**2, axis=coords_dims[1:]) / (2 * sigma[class_valid]**2))
@@ -862,13 +733,6 @@ def merge_dags(n_vertices1: int, n_vertices2: int, edges1, edges2, matching: Mat
         vertices1_to_new[i] = len(new_vertices)
         vertices2_to_new[j] = len(new_vertices)
         new_vertices.append((i, j))
-    # lib.log_debug('unmatched2', sorted(j for j in range(n_vertices2) if j not in matched2))
-    # lib.log_debug('matching', len(matching), matching)
-    # lib.log_debug('matched1 matched2', len(matched1), len(matched2))
-    # lib.log_debug('matched2', Counter(j for i, j in matching))
-    # lib.log_debug('v1_to_new', n_vertices1, vertices1_to_new)
-    # lib.log_debug('v2_to_new', n_vertices2, vertices2_to_new)
-    # lib.log_debug('new_vertices', len(new_vertices), new_vertices)
     assert len(new_vertices) == n_vertices_new, f'{len(new_vertices)} != {n_vertices_new}'
     new_edge_set = set()
     for u1, v1 in edges1:
@@ -882,9 +746,6 @@ def merge_dags(n_vertices1: int, n_vertices2: int, edges1, edges2, matching: Mat
     new_edges = list(new_edge_set)
     precedence = lib_graphs.precedence_matrix_from_edges_dumb(n_vertices_new, new_edges)
     new_edges_nonredundant = lib_graphs.Dag.from_precedence_matrix(precedence).edges  # TODO try to do this more efficiently without creating precedence matrix?
-    # lib.log_debug('edges', len(edges_new), sorted(edges_new))
-    # lib.log_debug('nonred_edges', len(edges_new_nonredundant), edges_new_nonredundant)
-    # lib.log_debug('precedence', precedence)
     if draw_result:
         import networkx as nx  # type: ignore
         from matplotlib import pyplot as plt
@@ -947,11 +808,8 @@ def include_min_ladder_in_score_matrix_weighted(score: np.ndarray, weights1: np.
 def test_dynprog_match_dags():
     n_vertices1 = 10
     edges1 = [(i, i+1) for i in range(n_vertices1 - 1)]
-    # edges = [(0,1), (1,2), (2,3), (3,4), (1,5), (1,6), (4,7), (5,7), (7,8), (6,8), (8,9)]
     n_vertices2 = 13
     edges2 = [(0,1), (1,2), (2,3), (3,4), (4,10), (10,11), (11,12), (1,5), (5,6), (6,4), (6,7), (7,8), (8,9), (9,11)]
-    # n_vertices = 6
-    # edges = [(0,1), (1,2), (2,3), (0,4), (4,5), (5,3)]
     matching, score = dynprog_match_dags(np.ones((n_vertices1, n_vertices2)), edges1, edges2)
     lib.log(matching, score)
 
@@ -1003,10 +861,8 @@ class GuidedAcyclicClustering:
                 n1 = coords1.shape[0]
                 n2 = coords2.shape[0]
                 scores = score_function(coords1, weights1, coords2, weights2)
-                # lib.print_matrix(scores, 'tmp/scores.tsv')
                 if ladder_correction:
                     scores = include_min_ladder_in_score_matrix_weighted(scores, weights1, weights2, beta_edges1, beta_edges2)
-                    # lib.print_matrix(scores, 'tmp/scores_with_ladder_correction.tsv')
                 if weight_scores:
                     scores = scores * weights1.reshape((-1, 1)) * weights2.reshape((1, -1))
                 matching, matching_score = dynprog_match_dags(scores, prec_edges1, prec_edges2)

@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 from collections import defaultdict, Counter
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple
 
 from . import lib
 
@@ -51,21 +50,21 @@ class Domain(dict):
         return self[RANGES]
         
     @property
-    def auth_chain(self) -> Optional[str]: 
+    def auth_chain(self) -> str|None: 
         '''Chain identifier in auth_* numbering'''
         return self[AUTH_CHAIN]
         
     @property
-    def auth_ranges(self) -> Optional[str]: 
+    def auth_ranges(self) -> str|None: 
         '''Residue ranges in auth_* numbering, e.g. "1:50,120:150" '''
         return self[AUTH_RANGES]
         
     @property
-    def uniprot(self) -> Optional[str]: 
+    def uniprot(self) -> str|None: 
         '''UniProt accession identifier, e.g. "P14779" '''
         return self.get(UNIPROT_ID, None)  # type: ignore
     
-    def __init__(self, *, name: str, pdb: str, chain: str, ranges: str, auth_chain: Optional[str], auth_ranges: Optional[str], uniprot: Optional[str] = None):
+    def __init__(self, *, name: str, pdb: str, chain: str, ranges: str, auth_chain: str|None, auth_ranges: str|None, uniprot: str|None = None):
         super().__init__()
         self[DOMAIN_NAME] = name
         self[PDB] = pdb
@@ -77,7 +76,7 @@ class Domain(dict):
             self[UNIPROT_ID] = uniprot
     
     @classmethod
-    def from_dict(cls, d: Dict[str, str]) -> 'Domain':
+    def from_dict(cls, d: dict[str, str]) -> 'Domain':
         new_domain = cls(name=d[DOMAIN_NAME], pdb=d[PDB], chain=d[CHAIN], ranges=d[RANGES], auth_chain=d[AUTH_CHAIN], auth_ranges=d[AUTH_RANGES], uniprot=d.get(UNIPROT_ID))
         return new_domain
 
@@ -90,7 +89,7 @@ def load_domain_list(filename: Path) -> list[Domain]:
     assert isinstance(result, list)
     return result
 
-def load_domain_list_by_pdb(filename: Path) -> Dict[str, List[Domain]]:
+def load_domain_list_by_pdb(filename: Path) -> dict[str, list[Domain]]:
     try: 
         result = _load_domain_list_JSON(filename, by_pdb=True)
     except json.JSONDecodeError:
@@ -98,7 +97,7 @@ def load_domain_list_by_pdb(filename: Path) -> Dict[str, List[Domain]]:
     assert isinstance(result, dict)
     return result
 
-def save_domain_list(domains: list[Domain] | dict[str, list[Domain]], filename: Path, by_pdb: Optional[bool] = None) -> None:
+def save_domain_list(domains: list[Domain] | dict[str, list[Domain]], filename: Path, by_pdb: bool = False) -> None:
     assert isinstance(domains, (list, dict))
     if isinstance(domains, list) and by_pdb == True:
         domains = _group_domains_by_pdb(domains)
@@ -106,7 +105,7 @@ def save_domain_list(domains: list[Domain] | dict[str, list[Domain]], filename: 
         domains = _ungroup_domains_by_pdb(domains)
     lib.dump_json(domains, filename)
 
-def _load_domain_list_JSON(filename: Path, by_pdb: bool) -> List[Domain] | Dict[str, List[Domain]]:
+def _load_domain_list_JSON(filename: Path, by_pdb: bool) -> list[Domain] | dict[str, list[Domain]]:
     with open(filename) as f:
         obj = json.load(f)
     if isinstance(obj, list):
@@ -122,11 +121,11 @@ def _load_domain_list_JSON(filename: Path, by_pdb: bool) -> List[Domain] | Dict[
         else:
             return _ungroup_domains_by_pdb(domains_by_pdb)
     else:
-        raise TypeError('JSON file must contain List[Domain] or Dict[str, List[Domain]]')
+        raise TypeError('JSON file must contain list[Domain] or dict[str, list[Domain]]')
 
-def _load_domain_list_TXT(filename: Path, by_pdb: bool) -> List[Domain] | Dict[str, List[Domain]]:
+def _load_domain_list_TXT(filename: Path, by_pdb: bool) -> list[Domain] | dict[str, list[Domain]]:
     domains = []
-    domain_counter: Dict[Tuple[str, str], int] = Counter()
+    domain_counter: dict[tuple[str, str], int] = Counter()
     with open(filename) as f:
         for line in f:
             line = line.strip()
@@ -138,7 +137,6 @@ def _load_domain_list_TXT(filename: Path, by_pdb: bool) -> List[Domain] | Dict[s
                 domain_counter[(pdb, chain)] += 1
                 c = domain_counter[(pdb, chain)]
                 name = f'{pdb}_{chain}_{c:02d}'
-                # name = DOMAIN_FIELD_SEPARATOR.join((pdb, chain, ranges)).replace(':', '_')  # : is not allowed in filenames in some file systems
                 domain = Domain(name=name, pdb=pdb, chain=chain, ranges=ranges, auth_chain=None, auth_ranges=None)
                 domains.append(domain)
     if by_pdb:
@@ -146,11 +144,11 @@ def _load_domain_list_TXT(filename: Path, by_pdb: bool) -> List[Domain] | Dict[s
     else:
         return domains
 
-def _group_domains_by_pdb(domains: List[Domain]) -> Dict[str, List[Domain]]:
+def _group_domains_by_pdb(domains: list[Domain]) -> dict[str, list[Domain]]:
     result = defaultdict(list)
     for dom in domains:
         result[dom.pdb].append(dom)
     return dict(result)
 
-def _ungroup_domains_by_pdb(domains_by_pdb: Dict[str, List[Domain]]) -> List[Domain]:
+def _ungroup_domains_by_pdb(domains_by_pdb: dict[str, list[Domain]]) -> list[Domain]:
     return [dom for doms in domains_by_pdb.values() for dom in doms]

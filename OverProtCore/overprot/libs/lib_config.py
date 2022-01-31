@@ -10,8 +10,10 @@ from typing import List,  Dict, Optional, Literal, Final, Type, Union, get_origi
 
 _ConfigOptionValue = Union[str, int, float, bool, Path, List[str], List[int], List[float], List[bool], List[Path]]
 
+
 class ConfigException(Exception):
     pass
+
 
 class ConfigSection(object):
     '''Represents one section of configuration like in .ini file.
@@ -19,7 +21,6 @@ class ConfigSection(object):
     these should be of one of the types given by _ConfigOptionValue.
     Instance variables with prefix _ are ignored.
     '''
-
     __ALLOWED_TYPES: Final = get_args(_ConfigOptionValue)
     __DEFAULT_TYPE: Final = str
     __option_types: Dict[str, type]
@@ -142,12 +143,12 @@ class ConfigSection(object):
     def _is_string_literal(typ: Type) -> bool:
         return get_origin(typ) == Literal and all(isinstance(v, str) for v in get_args(typ))
 
+
 class Config(object):
     '''Represents configuration like in .ini file.
     Subclasses of Config can declare instance variables corresponding to individual configuration sections, these should be subclasses of ConfigSection.
     Instance variables with prefix _ are ignored.
     '''
-
     __SECTION_TYPE: Final = ConfigSection
     __section_types: Dict[str, Type[ConfigSection]]
 

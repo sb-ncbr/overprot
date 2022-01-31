@@ -1,11 +1,8 @@
-'''Library of functions related to clustering'''
-
+'''Representation of a phylogenetic tree'''
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Optional, List, Sequence
-
-from . import lib
+from typing import Any, Iterable, Iterator, Optional, List
 
 
 NO_CHILD = -1  # child number meaning that there is no child (in binary trees)
@@ -147,92 +144,3 @@ class PhyloTree(object):
             if children[i] == (NO_CHILD, NO_CHILD):
                 plt.annotate(names[i], (x[i], y[i]))
         plt.show()
-
-
-
-def children_to_newick_aux(children, node_index, distances=defaultdict(lambda: 1), node_names=None):
-    if children[node_index, 0] < 0:  # it is a leaf
-        return (str(node_index) if node_names is None else node_names[node_index])
-    else:
-        dist = distances[node_index]
-        subtree1 = children_to_newick_aux(children, children[node_index, 0], distances=distances, node_names=node_names)
-        subtree2 = children_to_newick_aux(children, children[node_index, 1], distances=distances, node_names=node_names)
-        return f'({subtree1}:{dist},{subtree2}:{dist})'
-
-def children_to_newick(children, node_indices=[-1], distances=None, node_names=None):
-    if distances is None:
-        distances = defaultdict(lambda: 1)
-    subtrees = [children_to_newick_aux(children, idx, distances=distances, node_names=node_names) for idx in node_indices]
-    if len(subtrees) == 1:
-        return subtrees[0]+ ';'
-    else:
-        return '(' + ','.join(subtrees) + ');'
-
-def children_to_list(children, root=None, node_names=None):
-    if root is None:
-        root = children.shape[0] - 1
-    left, right = children[root,:]
-    if left == -1:  # root is leaf
-        return [node_names[root]] if node_names is not None else [root]
-    else:  # root is inner leaf
-        return children_to_list(children, root=left, node_names=node_names) + children_to_list(children, root=right, node_names=node_names)
-
-def children_to_newick_limited(children, data, max_leaves=-1):
-    power = 1
-    n = children.shape[0]
-    max_splits = min(max_leaves-1, n) if max_leaves>=1 else n
-    # nodes = [data.snapshots[i]+'_'+data.tunnels[i] for i in range(n+1)]
-    nodes = [str(i) for i in range(n+1)]
-    counts = [1 for i in range(n+1)]
-    class_counts = [{ data.class_names[data.y[i]]: 1} for i in range(n+1)]
-    indices = [[i] for i in range(n+1)]
-    residual_ss = [0 for i in range(n+1)]
-    for i in range(n):
-        child0 = children[i,0]
-        child1 = children[i,1]
-        nodes.append('(' + nodes[child0] + ',' + nodes[child1] + ')')
-        counts.append(counts[child0] + counts[child1])
-        class_counts.append(sum_dict(class_counts[child0], class_counts[child1]))
-        indices.append(indices[child0] + indices[child1])
-        residual_ss.append(residual_ss[-1] + sum_sq_deficit(data.X, indices[child0], indices[child1], power))
-    cut_nodes = []
-    start = len(nodes)-max_splits
-    print('n:', n)
-    print('len(nodes):', len(nodes))
-    print('start:', start)
-    for i in range(start, len(nodes)):
-        names = []
-        childs = children[i-n-1]
-        for j in [0, 1]:
-            child = childs[j]
-            if child < start:
-                #names.append(str(counts[child]))
-                clc = class_counts[child]
-                clc = [(clc[c], c) for c in clc]
-                name = '[' + '  '.join(str(t[0])+'.'+t[1] for t in sorted(clc, reverse=True)) + ']' #str(class_counts[child])
-                #name = '[' + '  '.join(str(clc[c])+'.'+c for c in sorted(clc, lambda )) + ']' #str(class_counts[child])
-                #name = str(counts[child])
-                names.append(name)
-            else:
-                names.append(cut_nodes[child - start])
-        ss_def = sum_sq_deficit(data.X, indices[childs[0]], indices[childs[1]], power)
-        depth0 = (residual_ss[i] - residual_ss[childs[0]])
-        depth1 = (residual_ss[i] - residual_ss[childs[1]])
-        cut_nodes.append('(' + names[0] + ':' + str(depth0) +  ',' + names[1] + ':' + str(depth1) + ')')
-        #cut_nodes.append('(' + names[0] + ':' + str(ss_def) +  ',' + names[1] + ':' + str(ss_def) + ')')
-    print('cut nodes:', len(cut_nodes))
-    plt.figure(figsize=(10,10))
-    #plt.plot(residual_ss[-1:-50:-1])
-    plt.plot([residual_ss[-1-i]-residual_ss[-2-i] for i in range(20)], '.-')
-    plt.show()
-    return cut_nodes[-1] + ';'
-
-def complete_linkage_aggregate_function(value1, size1, value2, size2):
-    return max(value1, value2)
-
-def average_linkage_aggregate_function(value1, size1, value2, size2):
-    return (value1*size1 + value2*size2) / (size1+size2)
-
-def average_linkage_aggregate_function_with_size_adhesion(value1, size1, value2, size2, adhesion_strength=1):
-    return (value1 * size1**(1+adhesion_strength) + value2 * size2**(1+adhesion_strength)) / (size1 + size2)**(1+adhesion_strength)
-

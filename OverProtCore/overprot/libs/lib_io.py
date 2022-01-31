@@ -9,6 +9,11 @@ from typing import TextIO, Optional
 
 
 class RedirectIO:
+    '''A context manager which can redirect stdin, stdout, and stderr.
+    Parameters which are set to None, are not redirected.
+    `tee_stdout` (`tee_stderr`) writes the output both to a file and to stdout (stderr).
+    If `append_stdout` (`append_stderr`), appends to the file instead of overwriting.
+    '''
     def __init__(self, stdin: Optional[Path] = None, stdout: Optional[Path] = None, stderr: Optional[Path] = None, 
                  tee_stdout: Optional[Path] = None, tee_stderr: Optional[Path] = None, 
                  append_stdout: bool = False, append_stderr: bool = False):
@@ -69,6 +74,7 @@ class RedirectIO:
 
 
 class Tee:
+    '''Writer which writes to multiple other writers (`outputs`).'''
     def __init__(self, *outputs: TextIO):
         self.outputs  = outputs
     def write(self, *args, **kwargs):
@@ -80,15 +86,21 @@ class Tee:
     def isatty(self) -> bool:
         return False
 
+
 @contextmanager
 def maybe_open(filename: Optional[str], *args, default=None, **kwargs):
+    '''Context manager.
+    If `filename` is not None, opens it and returns the file handle.
+    Otherwise returns `default`.
+    '''
+    if default is None:
+        raise TypeError('`default` must be specified and must not be None')
     if filename is not None:
         f = open(filename, *args, **kwargs)
         has_opened = True
     else:
         f = default
-        if f is not None:
-            f.flush()
+        f.flush()
         has_opened = False
     try:
         yield f
@@ -98,10 +110,10 @@ def maybe_open(filename: Optional[str], *args, default=None, **kwargs):
         if has_opened:
             f.close()
 
-
 def consolidate_file(infile: Path, outfile: Path) -> None:
     '''Remove "erased lines" from a text file, 
-    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
+    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" 
+    '''
     CR = ord(b'\r')
     LF = ord(b'\n')
     with open(infile, 'rb') as r:
@@ -120,8 +132,10 @@ def consolidate_file(infile: Path, outfile: Path) -> None:
         w.write(bytes(current_line))
 
 def consolidate_string(original: str) -> str:
-    '''Remove "erased lines" from a text file, 
-    e.g. "Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n" -> "Example:\nHi,\nthis is an example.\n" '''
+    '''Remove "erased lines" from a strin. 
+    >>> consolidate_string("Example:\nTo whom it may concern,\rHello,\rHi,\nthis is an example.\n")
+    "Example:\nHi,\nthis is an example.\n"
+    '''
     CR = '\r'
     LF = '\n'
     result = []
