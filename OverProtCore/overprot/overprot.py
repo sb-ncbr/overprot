@@ -52,7 +52,7 @@ def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: O
     if config is None:
         config = DEFAULT_CONFIG_FILE
     try:
-        conf = OverProtConfig(config, allow_extra=False, allow_missing=False)
+        conf = OverProtConfig(config)
     except OSError:
         print(f'ERROR: Cannot open configuration file: {config}', file=sys.stderr)
         return 1

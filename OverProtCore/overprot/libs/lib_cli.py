@@ -37,7 +37,13 @@ class _CliParam(Generic[_T]):
         if param.annotation == _EMPTY:
             raise LibCliException(f'Missing type annotation for parameter `{param.name}` of function `{function_name}` in {file}')
         self.inspect_type = param.annotation
-        self.type = _decode_type(self.inspect_type)
+        try:
+            self.type = _decode_type(self.inspect_type)
+        except NotImplementedError:
+            if self.name in parsers:
+                self.type = None  # OK
+            else:
+                raise
         self.default = param.default
         self.is_option = self.default != _EMPTY
         self.is_switch = self.type == bool

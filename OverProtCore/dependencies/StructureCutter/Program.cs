@@ -16,6 +16,7 @@ namespace StructureCutter
         static readonly string[] DEFAULT_URL_SOURCES = { "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif" };
         const string OUTPUT_EXTENSION = ".cif";
         const string PDB_OUTPUT_EXTENSION = ".pdb";
+        const string SUMMARY_OUTPUT_EXTENSION = ".json";
         const char DEFAULT_CHAIN_ID = '.';  // Assigned to chains with multi-character IDs, when converting to PDB.
         const int FIRST_RESIDUE_ID = 1;  // Assigned to the first residue, when converting to PDB.
         const int SKIPPED_RESIDUES_AT_GAP = 1;  // Number of residue numbers to be skipped when some residues are missing in a chain, when converting to PDB.
@@ -24,6 +25,7 @@ namespace StructureCutter
         {
             string cifOutDirectory = "";
             string pdbOutDirectory = "";
+            string summaryOutDirectory = "";
             string[] sources = DEFAULT_URL_SOURCES;
             string failuresFile = null;
 
@@ -44,6 +46,10 @@ namespace StructureCutter
                 .AddParameter("DIRECTORY")
                 .AddHelp("Directory for output files in PDB format (or empty string to suppress PDB output).")
                 .AddHelp("The PDB files will contain renumbered chain ID, residue number, and atom ID!")
+            );
+            options.AddOption(Option.StringOption(new string[]{"--summary_outdir"}, v => { summaryOutDirectory = v; })
+                .AddParameter("DIRECTORY")
+                .AddHelp("Directory for output files with chain summary (list of chains with their type, average XYZ, etc.)")
             );
             options.AddOption(Option.StringOption(new string[]{"--sources"}, v => { sources = v.Split(' ', StringSplitOptions.RemoveEmptyEntries); })
                 .AddParameter("SOURCES")
@@ -80,8 +86,8 @@ namespace StructureCutter
                 }
             }
 
-            if (cifOutDirectory == "" && pdbOutDirectory == ""){
-                Console.WriteLine("WARNING: You did not specify either of --cif_outdir, --pdb_outdir. No output will be produced.");
+            if (cifOutDirectory == "" && pdbOutDirectory == "" && summaryOutDirectory == ""){
+                Console.WriteLine("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
             }
             
 
@@ -97,6 +103,9 @@ namespace StructureCutter
             Domain[] domains;
             try {
                 domains = Domain.ReadDomainsFromJson(domainListFile);
+            } catch (IOException){
+                Console.Error.WriteLine($"ERROR: Cannot find or read the domain list file '{domainListFile}'");
+                return 2;
             } catch (FormatException ex){
                 Console.Error.WriteLine($"ERROR: Domain list file has invalid format:");
                 Console.Error.WriteLine($"       {ex.Message}");
@@ -109,6 +118,9 @@ namespace StructureCutter
             }
             if (pdbOutDirectory != ""){
                 Directory.CreateDirectory(pdbOutDirectory);
+            }
+            if (summaryOutDirectory != ""){
+                Directory.CreateDirectory(summaryOutDirectory);
             }
             if (failuresFile != null && failuresFile != "-"){
                 using(var r = new StreamWriter(failuresFile, false)){
@@ -155,58 +167,65 @@ namespace StructureCutter
                 }
                 CifBlock block = package.Blocks[0];
                 CifCategory atomSiteCategory = block.GetCategory("_atom_site");
+                
+                if (cifOutDirectory != "" || pdbOutDirectory != ""){
+                    foreach (Domain domain in domainsByPdb[pdb]){
+                        Filter filter = Filter.StringEquals("label_asym_id", domain.Chain) & Filter.IntegerInRange("label_seq_id", domain.Ranges);
+                        int[] rows = filter.GetFilteredRows(atomSiteCategory).ToArray();
 
-                foreach (Domain domain in domainsByPdb[pdb]){
-                    Filter filter = Filter.StringEquals("label_asym_id", domain.Chain) & Filter.IntegerInRange("label_seq_id", domain.Ranges);
-                    int[] rows = filter.GetFilteredRows(atomSiteCategory).ToArray();
-
-                    // Select only the first model, if there are more than one
-                    if (atomSiteCategory.ContainsItem("pdbx_PDB_model_num")){
-                        int[] modelNumbers = atomSiteCategory.GetItem("pdbx_PDB_model_num").GetIntegers(rows).Distinct().ToArray();
-                        if (modelNumbers.Length == 0) {
-                            Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-                            break;
-                        }
-                        if (modelNumbers.Length > 1) {
-                            int firstModelNumber = modelNumbers[0];
-                            Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using only model {firstModelNumber})");
-                            Filter modelFilter= Filter.IntegerInRange("pdbx_PDB_model_num", (firstModelNumber, firstModelNumber));
-                            rows = (Filter.TheseRows(rows) & modelFilter).GetFilteredRows(atomSiteCategory).ToArray();
-                        }
-                    }
-
-                    if (cifOutDirectory != ""){
-                        string outputFile = Path.Combine(cifOutDirectory, domain.Name + OUTPUT_EXTENSION);
-                        using (StreamWriter w = new StreamWriter(outputFile)){
-                            w.WriteLine("#");
-                            w.WriteLine("data_" + block.Name);
-                            w.WriteLine();
-                            if (block.ContainsCategory("_entry")){
-                                w.Write(block.GetCategory("_entry").MakeCifString());
+                        // Select only the first model, if there are more than one
+                        if (atomSiteCategory.ContainsItem("pdbx_PDB_model_num")){
+                            int[] modelNumbers = atomSiteCategory.GetItem("pdbx_PDB_model_num").GetIntegers(rows).Distinct().ToArray();
+                            if (modelNumbers.Length == 0) {
+                                Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
+                                break;
                             }
-                            w.Write(atomSiteCategory.MakeCifString(rows));
+                            if (modelNumbers.Length > 1) {
+                                int firstModelNumber = modelNumbers[0];
+                                Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using only model {firstModelNumber})");
+                                Filter modelFilter= Filter.IntegerInRange("pdbx_PDB_model_num", (firstModelNumber, firstModelNumber));
+                                rows = (Filter.TheseRows(rows) & modelFilter).GetFilteredRows(atomSiteCategory).ToArray();
+                            }
                         }
-                    }
 
-                    if (pdbOutDirectory != ""){
-                        string pdbOutputFile = Path.Combine(pdbOutDirectory, domain.Name + PDB_OUTPUT_EXTENSION);
-                        ModelCollection models = ModelCollection.FromCifBlock(block, rows);
-                        if (models.Count == 0) {
-                            Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-                            break;
+                        if (cifOutDirectory != ""){
+                            string outputFile = Path.Combine(cifOutDirectory, domain.Name + OUTPUT_EXTENSION);
+                            using (StreamWriter w = new StreamWriter(outputFile)){
+                                w.WriteLine("#");
+                                w.WriteLine("data_" + block.Name);
+                                w.WriteLine();
+                                if (block.ContainsCategory("_entry")){
+                                    w.Write(block.GetCategory("_entry").MakeCifString());
+                                }
+                                w.Write(atomSiteCategory.MakeCifString(rows));
+                            }
                         }
-                        Model model = models.GetModel(0);
-                        if (models.Count > 1) {
-                            Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using onlymodel {model.ModelNumber})");
-                        }
-                        RenumberModel(model);
-                        try {
-                            PrintModelToPdb(model, pdbOutputFile);
-                        } catch (PDBFormatSucksException ex) {
-                            Console.Error.WriteLine($"ERROR: Cannot fit model for {domain.Name} into PDB format: {ex.Message}");
-                            return 4;
+
+                        if (pdbOutDirectory != ""){
+                            string pdbOutputFile = Path.Combine(pdbOutDirectory, domain.Name + PDB_OUTPUT_EXTENSION);
+                            ModelCollection models = ModelCollection.FromCifBlock(block, rows);
+                            if (models.Count == 0) {
+                                Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
+                                break;
+                            }
+                            Model model = models.GetModel(0);
+                            if (models.Count > 1) {
+                                Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using onlymodel {model.ModelNumber})");
+                            }
+                            RenumberModel(model);
+                            try {
+                                PrintModelToPdb(model, pdbOutputFile);
+                            } catch (PDBFormatSucksException ex) {
+                                Console.Error.WriteLine($"ERROR: Cannot fit model for {domain.Name} into PDB format: {ex.Message}");
+                                return 4;
+                            }
                         }
                     }
+                }
+                
+                if (summaryOutDirectory != ""){
+                    StructureSummary summary = new StructureSummary(pdb, block);
+                    summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                 }
                 progressBar.Step();
             }

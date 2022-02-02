@@ -20,10 +20,13 @@ from .libs import lib_sh
 from .libs import lib_multiprocessing
 from .libs.lib_io import RedirectIO
 from .libs.lib_logging import Timing
+from .libs.lib_dependencies import DEFAULT_CONFIG_FILE
+from .libs.lib_overprot_config import OverProtConfig, ConfigException
 from . import get_cath_family_list
 from . import get_cath_example_domains
 from . import get_cath_family_names
 from . import get_pdb_entry_list
+from . import make_chain_summaries
 from . import domains_from_pdbeapi
 from . import overprot
 from .libs.lib_cli import cli_command, run_cli_command
@@ -70,7 +73,7 @@ def failed_diagram_content(family: str, is_empty: bool) -> str:
 
 def collect_results(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: Path, out_subpath: str, 
         alternative_content: Callable[[str], str]|None = None, print_missing: bool = False, 
-        breakout_function: Callable[[Path], Path|str]|None = None) -> List[str]:
+        breakdown_function: Callable[[Path], Path|str]|None = None) -> List[str]:
     '''Collect results of the same type. Return the list of families with missing results.'''
     missing = []
     for x in xs:
@@ -82,12 +85,12 @@ def collect_results(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: P
             files = sorted(in_file.parent.glob(in_file.name))
             tmp_out = out_file.with_suffix('.tmp') if zip else out_file
             tmp_out.mkdir(parents=True, exist_ok = not zip)
-            if breakout_function is None:
+            if breakdown_function is None:
                 for file in files:
                     lib_sh.cp(file, tmp_out/file.name)
             else:
                 for file in files:
-                    lib_sh.cp(file, tmp_out/breakout_function(file)/file.name)
+                    lib_sh.cp(file, tmp_out/breakdown_function(file)/file.name)
             if zip:
                 lib_sh.archive(tmp_out, out_file, rm_source=True)
         else:
@@ -140,7 +143,7 @@ def get_domain_lists(families: List[str], outdir: Path, collected_output_json: O
 @cli_command(parsers={'sample_size': lib.int_or_all}, short_options={'download_family_list': '-d', 'download_family_list_by_size': '-D'})
 def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = None, 
          download_family_list: bool = False, download_family_list_by_size: bool = False, collect: bool = False, config: Optional[Path] = None,
-         only_get_lists: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> None:
+         only_get_lists: bool = False, extras: bool = False, processes: Optional[int] = None, out: Optional[Path] = None, err: Optional[Path] = None) -> None:
     '''Run OverProt algorithm for multiple families in parallel processes.
     @param  `family_list_file`  File with list of family codes (whitespace-separated).
     @param  `directory`         Directory for results.
@@ -150,11 +153,22 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
     @param  `config`            Configuration file for OverProt.
     @param  `collect`           Collect result files of specific types (diagram.json, consensus.png, results.zip) in directory/collected_resuts/.
     @param  `only_get_lists`    Get domain lists for families and exit.
+    @param  `extras`            Get some extra information (CATH example domains, family name, PDB entry list, PDB chain summaries).
     @param  `processes`         Number of processes to run. [default: number of CPUs]
     @param  `out`               File for stdout.
     @param  `err`               File for stderr.
     '''
     with RedirectIO(stdout=out, stderr=err), Timing('Total'):
+        if config is None:
+            config = DEFAULT_CONFIG_FILE
+        try:
+            conf = OverProtConfig(config)
+        except OSError:
+            print(f'ERROR: Cannot open configuration file: {config}', file=sys.stderr)
+            return 1
+        except ConfigException as ex:
+            print('ERROR:', ex, file=sys.stderr)
+            return 2
         start_time = datetime.now().astimezone()
         print('Output directory:', directory)
         directory.mkdir(parents=True, exist_ok=True)
@@ -169,9 +183,11 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
         families = text.split()
         print('Number of families:', len(families))
         get_domain_lists(families, directory/'domain_lists', collected_output_json=directory/'domain_list.json', collected_output_csv=directory/'domain_list.csv', processes=processes)
-        get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
-        get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
-        get_pdb_entry_list.main(out=directory/'pdbs.txt')
+        if extras:
+            get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
+            get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
+            get_pdb_entry_list.main(out=directory/'pdbs.txt')
+            make_chain_summaries.main(directory/'pdbs.txt', directory/'chain_summaries', conf.download.structure_sources, breakdown=True, processes=processes)
         if only_get_lists:
             return
         out_err_dir = directory/'stdout_stderr'
@@ -211,10 +227,12 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
                 collect_results(families, f, '{x}/results/consensus.sses.json',          c, 'family/consensus_sses/consensus-{x}.sses.json')
                 collect_results(families, f, '{x}/results/consensus.png',                c, 'family/consensus_3d/consensus-{x}.png')
                 collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
-                collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakout_function = lambda file: file.name[1:3])
-                collect_results(families, f, '{x}/domain_info/*.json', c, 'domain/info/', breakout_function = lambda file: file.name[1:3])
+                collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakdown_function = lambda file: file.name[1:3])
+                collect_results(families, f, '{x}/domain_info/*.json',                   c, 'domain/info/', breakdown_function = lambda file: file.name[1:3])
+                lib_sh.cp(directory/'chain_summaries', c/'pdb'/'chain_summary')
                 lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
                 lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
+                lib_sh.archive(c/'pdb'/'chain_summary', c/'bulk'/'pdb'/'chain_summary.zip')
                 
                 lib_sh.cp(directory/'families.txt', c)
                 lib_sh.cp(directory/'pdbs.txt', c)
