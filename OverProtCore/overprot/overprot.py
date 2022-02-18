@@ -107,7 +107,7 @@ def main(family: str, outdir: Path, sample_size: Optional[int] = None, config: O
                     select_random_domains.main(outdir/'family.json', size=sample_size, or_all=conf.sample_selection.or_all, unique_pdb=conf.sample_selection.unique_pdb)
             if conf.annotation.annotate_whole_family:
                 with RedirectIO(stdout=outdir/'sample-whole_family.json'):
-                    select_random_domains.main(outdir/'family.json', size='all', unique_pdb=False)
+                    select_random_domains.main(outdir/'family.json', size=None, unique_pdb=False)
                 
             sample_domains = lib_domains.load_domain_list(outdir/'sample.json')
             n_sample = len(sample_domains)

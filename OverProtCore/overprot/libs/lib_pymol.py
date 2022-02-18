@@ -18,6 +18,7 @@ try:
 except ImportError:
     print('', file=sys.stderr)
 
+from . import lib
 from . import lib_sses
 from . import lib_domains
 from .lib_logging import ProgressBar
@@ -80,7 +81,8 @@ def cealign(target_file: Path, mobile_file: Path, result_file: Optional[Path] = 
         cmd.delete(obj_target)
         cmd.delete(obj_mobile)
     
-def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: Sequence[Path], ttt_files: Optional[Sequence[Path]] = None,
+def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: Sequence[Path], 
+                 ttt_files: Optional[Sequence[Path]] = None, rot_trans_json_files: Optional[Sequence[Path]] = None,
                  fallback_to_dumb_align: bool = False, show_progress_bar: bool = False) -> None:
     '''Perform structure superimposition of each mobile to the target with cealign command.
     Save i-th transformed mobile structure into `result_files[i]`.
@@ -92,12 +94,17 @@ def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: 
         ttt_files_ = ttt_files
     else:
         ttt_files_ = [None] * n
+    rottrans_files_: Sequence[Path|None]
+    if rot_trans_json_files is not None:
+        rottrans_files_ = rot_trans_json_files
+    else:
+        rottrans_files_ = [None] * n
     assert len(result_files) == n
     assert len(ttt_files_) == n
     obj_target, obj_mobile = 'obj_cealign_target', 'obj_cealign_mobile'
     with ProgressBar(n, title=f'Cealigning {n} structures', mute = not show_progress_bar) as bar:
         cmd.load(target_file, obj_target)
-        for mobile_file, result_file, ttt_file in zip(mobile_files, result_files, ttt_files_):
+        for mobile_file, result_file, ttt_file, rottrans_file in zip(mobile_files, result_files, ttt_files_, rottrans_files_):
             cmd.load(mobile_file, obj_mobile)
             try:
                 raw_result = cmd.cealign(obj_target, obj_mobile)
@@ -116,6 +123,12 @@ def cealign_many(target_file: Path, mobile_files: Sequence[Path], result_files: 
             if ttt_file is not None:
                 with open(ttt_file, 'w') as w:
                     print(*ttt, sep='\n', file=w)
+            if rottrans_file is not None:
+                rot_trans = ttt_matrix_to_rotation_translation(ttt)
+                rot_trans_json = {'rotation': rot_trans.rotation.tolist(), 'translation': rot_trans.translation.tolist()}
+                lib.dump_json(rot_trans_json, rottrans_file, minify=True)
+                # with open(rottrans_file, 'w') as w:
+                #     json.dump(rot_trans_json, w)
             cmd.delete(obj_mobile)
             bar.step()
         cmd.delete(obj_target)

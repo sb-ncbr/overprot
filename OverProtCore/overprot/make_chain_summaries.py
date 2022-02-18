@@ -61,6 +61,9 @@ def main(pdb_list: Path, outdir: Path, structure_sources: list[str], breakdown: 
     '''
     text = pdb_list.read_text()
     pdbs = text.split()
+    for pdb in pdbs:
+        if not pdb.isalnum():
+            raise ValueError(f"PDB ID must be alphanumeric, not '{pdb}'")
     outdir.mkdir(parents=True, exist_ok=True)
     if breakdown:
         subsets = defaultdict(list)

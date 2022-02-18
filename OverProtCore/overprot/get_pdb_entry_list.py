@@ -41,7 +41,7 @@ def main(url: str = PDB_ENTRY_LIST_URL, out: Optional[Path] = None) -> Optional[
         pdb, *_  = line.split(maxsplit=1)
         pdb = pdb.lower()
         pdbs.append(pdb)
-    pdbs.sort()
+    pdbs = sorted(set(pdbs))  # Remove duplicities from PDB_ENTRY_LIST_URL
     with RedirectIO(stdout=out):
         print(*pdbs, sep='\n')
     return 0

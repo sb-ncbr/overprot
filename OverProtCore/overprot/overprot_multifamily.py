@@ -229,17 +229,23 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
                 collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'family/annotation/annotation-{x}.zip')
                 collect_results(families, f, '{x}/annotated_sses/*-annotated.sses.json', c, 'domain/annotation/', breakdown_function = lambda file: file.name[1:3])
                 collect_results(families, f, '{x}/domain_info/*.json',                   c, 'domain/info/', breakdown_function = lambda file: file.name[1:3])
-                lib_sh.cp(directory/'chain_summaries', c/'pdb'/'chain_summary')
-                lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
-                lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
-                lib_sh.archive(c/'pdb'/'chain_summary', c/'bulk'/'pdb'/'chain_summary.zip')
+                collect_results(families, f, '{x}/cif_cealign/*-rotation.json',          c, 'domain/rotation/', breakdown_function = lambda file: file.name[1:3])
                 
                 lib_sh.cp(directory/'families.txt', c)
-                lib_sh.cp(directory/'pdbs.txt', c)
                 lib_sh.cp(directory/'domain_list.json', c)
                 lib_sh.cp(directory/'domain_list.csv', c)
-                lib_sh.cp(directory/'cath_example_domains.csv', c)
-                lib_sh.cp(directory/'cath_b_names_options.json', c)
+
+                lib_sh.archive(c/'family'/'consensus_cif',  c/'bulk'/'family'/'consensus_cif.zip')
+                lib_sh.archive(c/'family'/'consensus_sses', c/'bulk'/'family'/'consensus_sses.zip')
+                lib_sh.archive(c/'domain'/'rotation',       c/'bulk'/'domain'/'rotation.zip')
+                
+                if extras:
+                    lib_sh.cp(directory/'pdbs.txt', c)
+                    lib_sh.cp(directory/'cath_example_domains.csv', c)
+                    lib_sh.cp(directory/'cath_b_names_options.json', c)
+                    lib_sh.cp(directory/'chain_summaries', c/'pdb'/'chain_summary')
+                    lib_sh.archive(c/'pdb'/'chain_summary', c/'bulk'/'pdb'/'chain_summary.zip')
+
                 (c/'last_update.txt').write_text(start_time.strftime('%d %B %Y').lstrip('0'))
                 (c/'last_update_iso.txt').write_text(start_time.isoformat(timespec='seconds'))
 

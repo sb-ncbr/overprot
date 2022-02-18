@@ -27,8 +27,9 @@ def main(target_file: Path, sample_file: Path, in_directory: Path, out_directory
     out_directory.mkdir(parents=True, exist_ok=True)
     mobile_files = [in_directory/f'{mobile}.cif' for mobile in mobiles]
     result_files = [out_directory/f'{mobile}.cif' for mobile in mobiles]
-    result_ttt_files = [out_directory/f'{mobile}-ttt.csv' for mobile in mobiles]
-    lib_pymol.cealign_many(target_file, mobile_files, result_files, ttt_files=result_ttt_files, fallback_to_dumb_align=True, show_progress_bar=progress_bar)
+    # result_ttt_files = [out_directory/f'{mobile}-ttt.csv' for mobile in mobiles]
+    result_rottrans_files = [out_directory/f'{mobile}-rotation.json' for mobile in mobiles]
+    lib_pymol.cealign_many(target_file, mobile_files, result_files, rot_trans_json_files=result_rottrans_files, fallback_to_dumb_align=True, show_progress_bar=progress_bar)
 
 
 if __name__ == '__main__':
