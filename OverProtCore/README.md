@@ -33,13 +33,13 @@ python  overprot.py  --help
 python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50
 ```
 
-(This example will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save the results into directory `data/cyp_50/`.)
+(This example will process 50 random proteins from Cytochrome P450 (CYP) family (CATH code 1.10.630.10) and save the results into directory `data/cyp_50/`.)
 
 ## Execution via Docker
 
-In case you want to run OverProt Core in a Docker container, you can skip the **Installation** step above. Instead, make sure you have Docker installed and you have permission to run it.
+In case you want to run OverProt Core in a Docker container, you can skip the **Installation** step above. Instead, make sure you have Docker correctly installed and you have permissions to run it (in Linux, you must be in `docker` group). In Windows, start the Docker Desktop application and open a command line (`powershell`) to run the following steps.
 
-Pull the Docker image from repository:
+Pull the Docker image from the repository:
 
 ```sh
 docker  pull  registry.gitlab.com/midlik/overprot/overprot-core
@@ -81,6 +81,54 @@ If you run OverProt Core in a Docker container, remember that all changes you do
 
 ```sh
 docker  run  -it  -v /data/directory/on/host:/data  -v overprot-config-customized.ini:/OverProtCore/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core
+```
+
+## Running on custom datasets
+
+Normally, OverProt Core takes a CATH ID of a family and downloads the list of its domains. Another option is to provide a custom list of domains.
+
+Prepare the list:
+
+`data/my_domains.txt`:
+
+```text
+1og2,A 
+1og2,B 
+1bu7,A,100:450 
+1bu7,B,100:178,185:370,390:
+```
+
+Run OverProt Core:
+
+```sh
+python  overprot.py  -  data/custom_family/  --domains data/my_domains.txt
+```
+
+The structures don't need to be in the PDB. In such case, you must provide them in mmCIF format and configure the `structure_sources` setting accordingly.
+
+`data/my_domains2.txt`:
+
+```text
+struct1,A
+struct2,A
+struct3,B,100:200
+```
+
+`overprot-config-customized.ini`:
+
+```ini
+...
+[download]
+structure_sources = file:///path/to/my/structures/{pdb}.cif
+...
+```
+
+(OverProt will replace `{pdb}` by the individual structure names (`struct1`, `struct2`, `struct3`) to get the names of the input structure files (`/path/to/my/structures/struct1.cif` etc.))
+
+Run OverProt Core:
+
+```sh
+python  overprot.py  -  data/custom_family2/ --domains data/my_domains2.txt --config overprot-config-customized.ini
 ```
 
 ## Steps
