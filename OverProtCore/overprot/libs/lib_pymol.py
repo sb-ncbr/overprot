@@ -198,6 +198,12 @@ def read_cif(structfile: Path, only_polymer=False):
         result = result.filter(result.resi != None)
     return result
 
+def convert_file(input_file: Path, output_file: Path) -> None:
+    obj = 'obj_convert_file'
+    cmd.load(input_file, obj)
+    cmd.save(output_file, obj)
+    cmd.delete(obj)
+
 def create_alignment_session(structfileA: Path, structfileB: Path, alignment_file: Path, output_session_file: Path):
     objA = structfileA.stem
     objB = structfileB.stem

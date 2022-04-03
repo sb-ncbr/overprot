@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 SW_DIR=$(realpath $(dirname $0))
 cd $SW_DIR
@@ -10,14 +11,14 @@ for ARG in $@; do
 done;
 
 sudo apt-get update -y
+sudo apt-get install -y curl
+sudo apt-get install -y libicu-dev
 
 # Install .NET (for StructureCutter and SecStrAnnotator)
 if dotnet --info; then
     echo "OverProtCore/install.sh: Dotnet already installed"
 else
     echo "OverProtCore/install.sh: Trying to install Dotnet..."
-    sudo apt-get install -y curl
-    sudo apt-get install -y libicu-dev
     ./dotnet-install.sh -c 3.1
     PATH="$PATH:$HOME/.dotnet"
     echo -e '\n# Add Dotnet to PATH:\nPATH="$PATH:$HOME/.dotnet"' >> $HOME/.bashrc
@@ -34,7 +35,7 @@ fi
 sudo apt-get install -y python3-venv
 python3 -m venv venv/
 . venv/bin/activate
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # Hack (PyMOL cannot be installed through pip)
 sudo apt-get install -y pymol

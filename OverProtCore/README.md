@@ -10,14 +10,14 @@ Detailed description of how it works can be found in `doc/Description_of_methods
 
 OverProt Core is implemented mostly in Python3
 and designed to run in the Linux environment (tested on Python3.8 on Ubuntu 20.04).
-On the other operating systems, it can be run in Docker.
+On the other operating systems, it can be run in Docker (see **Execution via Docker** below).
 
 ## Installation
 
 Before the first execution, the dependencies must be installed:
 
 ```sh
-  sh install.sh --clean
+sh install.sh --clean
 . venv/bin/activate
 ```
 
@@ -28,12 +28,45 @@ It is run in a Python virtual environment.
 Its arguments are the CATH family ID and the output directory:
 
 ```sh
-  . venv/bin/activate
-  python  overprot.py  --help
-  python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50
+. venv/bin/activate
+python  overprot.py  --help
+python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50
 ```
 
 (This example will process 50 random proteins from CYP family (CATH code 1.10.630.10) and save the results into directory `data/cyp_50/`.)
+
+## Execution via Docker
+
+In case you want to run OverProt Core in a Docker container, you can skip the **Installation** step above. Instead, make sure you have Docker installed and you have permission to run it.
+
+Pull the Docker image from repository:
+
+```sh
+docker  pull  registry.gitlab.com/midlik/overprot/overprot-core
+```
+
+Start a container based on the image:
+
+```sh
+docker  run  -it  -v /data/directory/on/host:/data  registry.gitlab.com/midlik/overprot/overprot-core
+```
+
+Within the container, run OverProtCore:
+
+```sh
+python  overprot.py  --help
+python  overprot.py  1.10.630.10  /data/cyp/  --sample_size 50
+```
+
+(The host's directory `/data/directory/on/host` is mounted to the container's directory `/data`,
+so on the host machine you will see the results in `/data/directory/on/host/cyp`.)
+
+Once you're done, you can exit the container and discard it:
+
+```sh
+exit
+docker container prune
+```
 
 ## Configuration
 
@@ -41,7 +74,13 @@ The default configuration is in `overprot-config.ini`. Each configuration item i
 You can change the configuration by copying this file, modifying the copy, and then using `--config` option.
 
 ```sh
-  python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50  --config overprot-config-customized.ini
+python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50  --config overprot-config-customized.ini
+```
+
+If you run OverProt Core in a Docker container, remember that all changes you do within the container will be discarded with the container itself (except for the mounted files). However, you can mount a customized configuration file into the container:
+
+```sh
+docker  run  -it  -v /data/directory/on/host:/data  -v overprot-config-customized.ini:/OverProtCore/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core
 ```
 
 ## Steps
@@ -51,7 +90,7 @@ Detailed description of each step is provided in `doc/Description_of_methods.pdf
 Individual steps are submodules located in `overprot/` and can be run separately by:
 
 ```sh
-  python  -m overprot.{submodule}  --help
+python  -m overprot.{submodule}  --help
 ```
 
 - **Download the list of domains** for the family (by `overprot.domains_from_pdbeapi`).
@@ -118,13 +157,13 @@ Multiple families can be processed in parallel using `overprot_multifamily.py`.
 Its arguments are the family list and the output directory:
 
 ```sh
-  . venv/bin/activate
-  python  overprot_multifamily.py  --help
-  python  overprot_multifamily.py  data/families.txt  data/multifamily/
+. venv/bin/activate
+python  overprot_multifamily.py  --help
+python  overprot_multifamily.py  data/families.txt  data/multifamily/
 ```
 
 It is also possible to download the list of all CATH families automatically and collect the result files by type:
 
 ```sh
-  python  overprot_multifamily.py  -  data/multifamily/  --download_family_list  --collect
+python  overprot_multifamily.py  -  data/multifamily/  --download_family_list  --collect
 ```
