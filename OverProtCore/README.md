@@ -80,7 +80,7 @@ python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50  --config overprot
 If you run OverProt Core in a Docker container, remember that all changes you do within the container will be discarded with the container itself (except for the mounted files). However, you can mount a customized configuration file into the container:
 
 ```sh
-docker  run  -it  -v /data/directory/on/host:/data  -v overprot-config-customized.ini:/OverProtCore/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core
+docker  run  -it  -v /data/directory/on/host:/data  -v /some/directory/on/host/overprot-config-customized.ini:/OverProtCore/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core
 ```
 
 ## Running on custom datasets

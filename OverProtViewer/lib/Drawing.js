@@ -253,7 +253,7 @@ export var Drawing;
         //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
         // }
         betaArcs.style('stroke', ladder => arcColor(viewer, ladder));
-        show3DVariabilityLegend(viewer, viewer.settings.colorMethod == Enums.ColorMethod.Stdev, transition);
+        showLegend(viewer, transition);
     }
     Drawing.recolor = recolor;
     function arcColor(viewer, ladder) {
@@ -339,11 +339,16 @@ export var Drawing;
             .attrs(i => { return Object.assign(Object.assign({ class: 'border' }, rect), { fill: 'none' }); });
         return bar;
     }
-    function gradientBarExp(canvas, rect, maxValue, middle, ticksDistance, legend = '') {
-        let bar = canvas.append('g').attr('class', 'heatmap-bar')
+    function gradientBarExp(parentNode, rect, maxValue, middle, ticksDistance, legend, ticksAbove, labelLeft) {
+        let bar = parentNode.append('g').attr('class', 'heatmap-bar')
             .attr('transform', `translate(${rect.x},${rect.y})`);
+        let tickTextY = ticksAbove ? -Constants.HANGING_TEXT_OFFSET : (rect.height + Constants.HANGING_TEXT_OFFSET);
+        let tickTextDomBaseline = ticksAbove ? 'alphabetic' : 'hanging';
+        let labelX = labelLeft ? -5 : (rect.width + 5);
+        let labelAnchor = labelLeft ? 'end' : 'start';
         let barLabel = bar.append('text').attr('class', 'heatmap-bar-label')
-            .attrs({ x: -5, y: 0.5 * rect.height })
+            .attrs({ x: labelX, y: 0.5 * rect.height })
+            .style('text-anchor', labelAnchor)
             .text(legend);
         let n = Math.floor(rect.width);
         let step = (rect.width - 1) / n;
@@ -362,7 +367,8 @@ export var Drawing;
             .enter()
             .append('text')
             .attr('x', i => i * ticksDistance / maxValue * rect.width)
-            .attr('y', rect.height + Constants.HANGING_TEXT_OFFSET)
+            .attr('y', tickTextY)
+            .style('dominant-baseline', tickTextDomBaseline)
             .text(i => i * ticksDistance);
         return bar;
     }
@@ -379,24 +385,117 @@ export var Drawing;
             barTickTexts.style('dominant-baseline', 'hanging');
         }
     }
-    function show3DVariabilityLegend(viewer, on, transition = true) {
-        var _a, _b, _c, _d;
-        fadeOutRemove(viewer.canvas.selectAll('g.heatmap-bar'));
-        let BAR_WIDTH = 200;
-        let BAR_HEIGHT = 20;
-        let BAR_HMARGIN = 15;
-        let BAR_VMARGIN = 5;
-        if (on) {
-            let bar = gradientBarExp(viewer.canvas, { x: viewer.screen.width - BAR_WIDTH - BAR_HMARGIN, y: BAR_VMARGIN, width: BAR_WIDTH, height: BAR_HEIGHT }, 15, 5, 5, '3D variability [\u212B]');
-            let controlsRight = (_b = (_a = viewer.mainDiv.select('div.control-panel#main-panel').node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect()) === null || _b === void 0 ? void 0 : _b.right;
-            let barLeft = (_d = (_c = bar.node()) === null || _c === void 0 ? void 0 : _c.getBoundingClientRect()) === null || _d === void 0 ? void 0 : _d.left;
-            if (controlsRight !== undefined && barLeft !== undefined && controlsRight > barLeft) {
-                moveGradientBarExp(bar, viewer.screen.width - BAR_WIDTH - BAR_HMARGIN, viewer.screen.height - BAR_VMARGIN - BAR_HEIGHT, true);
-            }
-            if (transition) {
-                fadeIn(bar);
-            }
+    const LEGEND_BAR_WIDTH = 200;
+    const LEGEND_BAR_HEIGHT = 18;
+    const LEGEND_HMARGIN = 15;
+    const LEGEND_VMARGIN = 5;
+    const LEGEND_SPACING = 10; // between items
+    const LEGEND_SPACING_INNER = 5; // between item shape and label
+    function showLegend(viewer, transition = true) {
+        fadeOutRemove(viewer.canvas.selectAll('g.legend'));
+        let legendGroup = viewer.canvas.append('g').attr('class', 'legend');
+        if (viewer.settings.betaConnectivityVisibility) {
+            showBetaConnectivityLegend(viewer, legendGroup, transition);
         }
+        switch (viewer.settings.colorMethod) {
+            case Enums.ColorMethod.Stdev:
+                show3DVariabilityLegend(viewer, legendGroup, transition);
+                break;
+            case Enums.ColorMethod.Type:
+                showTypeLegend(viewer, legendGroup, transition);
+                break;
+            case Enums.ColorMethod.Sheet:
+                showSheetLegend(viewer, legendGroup, transition);
+                break;
+        }
+        let w = legendGroup.node().getBBox().width;
+        let x = viewer.screen.width - LEGEND_HMARGIN - w;
+        let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
+        legendGroup.attr('transform', `translate(${x},${y})`);
+        if (transition) {
+            fadeIn(legendGroup);
+        }
+    }
+    function show3DVariabilityLegend_Old(viewer, legendGroup, transition = true) {
+        var _a, _b, _c, _d;
+        let bar = gradientBarExp(legendGroup, { x: viewer.screen.width - LEGEND_BAR_WIDTH - LEGEND_HMARGIN, y: LEGEND_VMARGIN, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT }, 15, 5, 5, '3D variability [\u212B]', false, true);
+        let controlsRight = (_b = (_a = viewer.mainDiv.select('div.control-panel#main-panel').node()) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect()) === null || _b === void 0 ? void 0 : _b.right;
+        let barLeft = (_d = (_c = bar.node()) === null || _c === void 0 ? void 0 : _c.getBoundingClientRect()) === null || _d === void 0 ? void 0 : _d.left;
+        if (controlsRight !== undefined && barLeft !== undefined && controlsRight > barLeft) {
+            moveGradientBarExp(bar, viewer.screen.width - LEGEND_BAR_WIDTH - LEGEND_HMARGIN, viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT, true);
+        }
+        if (transition) {
+            fadeIn(bar);
+        }
+    }
+    function show3DVariabilityLegend(viewer, legendGroup, transition = true) {
+        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
+        let bar = gradientBarExp(legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT }, 15, 5, 5, '3D variability [\u212B]', true, false);
+    }
+    function addLegendItem(viewer, legendGroup, rect, color, text, shape = 'rectangle') {
+        let itemGroup = legendGroup.append('g').attr('class', 'legend-item');
+        let x0, x1, y, r;
+        switch (shape) {
+            case 'rectangle':
+                itemGroup.append('rect').attrs(Object.assign(Object.assign({}, rect), { stroke: color.darker().hex(), fill: color.hex() }));
+                break;
+            case 'upper_arc':
+                x0 = rect.x;
+                x1 = rect.x + rect.width;
+                y = rect.y + 0.6 * rect.height;
+                r = 0.5 * rect.width;
+                itemGroup.append('path')
+                    .attr('d', `M${x0},${y} A${r},${r} 0 0,1 ${x1},${y}`)
+                    .attr('fill', 'none')
+                    .attr('stroke', color.darker().hex());
+                break;
+            case 'lower_arc':
+                x0 = rect.x;
+                x1 = rect.x + rect.width;
+                y = rect.y + 0.4 * rect.height;
+                r = 0.5 * rect.width;
+                itemGroup.append('path')
+                    .attr('d', `M${x0},${y} A${r},${r} 0 0,0 ${x1},${y}`)
+                    .attr('fill', 'none')
+                    .attr('stroke', color.darker().hex());
+                break;
+        }
+        let textX = rect.x + rect.width + LEGEND_SPACING_INNER;
+        let textElem = itemGroup.append('text').attrs({ x: textX, y: rect.y + 0.5 * rect.height }).text(text);
+        let w = textElem.node().getBBox().width;
+        return textX + w + LEGEND_SPACING;
+    }
+    function showTypeLegend(viewer, legendGroup, transition = true) {
+        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
+        xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+        xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('E'), 'Strand');
+    }
+    function showSheetLegend(viewer, legendGroup, transition = true) {
+        let sheetIdSet = new Set();
+        for (let i of viewer.data.activeNodes) {
+            let id = viewer.data.nodes[i].sheet_id;
+            sheetIdSet.add(id);
+        }
+        sheetIdSet.delete(0);
+        let sheetIds = [...sheetIdSet];
+        sheetIds.sort((a, b) => a - b);
+        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
+        xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+        for (let id of sheetIds) {
+            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.byIndex1(id), `\u03b2${id}`);
+        }
+    }
+    function showBetaConnectivityLegend(viewer, legendGroup, transition = true) {
+        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
+        xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
+        xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
+    }
+    function boxWidth(selection, spacing = 0) {
+        let result = selection.node().getBBox().width;
+        if (result > 0) {
+            result += spacing;
+        }
+        return result;
     }
     function showBetaConnectivity(viewer, on, transition = true) {
         viewer.settings.betaConnectivityVisibility = on;
@@ -423,7 +522,6 @@ export var Drawing;
                 const dir = d[2] > 0 ? 'parallel' : 'antiparallel';
                 viewer.ladderMap.set([strand1, strand2, dir], elems[i]);
             });
-            // console.log('ladderMap', viewer.ladderMap.entries());
             let betaPaths = betaConnectivityLadders
                 .append('path').attr('class', 'vis')
                 .style('stroke', ladder => arcColor(viewer, ladder));
@@ -436,6 +534,7 @@ export var Drawing;
                 fadeIn(betaConnectivityVis);
             }
         }
+        showLegend(viewer, transition);
     }
     Drawing.showBetaConnectivity = showBetaConnectivity;
     function selectLadderFromGhostPath(viewer, path, includeStrands) {
@@ -537,14 +636,12 @@ export var Drawing;
     Drawing.dispatchMixedEvent = dispatchMixedEvent;
     function handleEvent(viewer, event) {
         var _a, _b, _c, _d;
-        // console.log('Inbound event', event.type, event);
         const detail = event.detail;
         if (detail == null || detail == undefined) {
             console.error(`Event ${event.type}: event.detail must be an object.`);
             return;
         }
         if (detail.sourceType == ((_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName.toLowerCase()) && detail.sourceInternalId == viewer.internalId) {
-            // console.log('Ignoring self', viewer.uniqueId);
             return;
         }
         const sses = (_b = detail.sses) !== null && _b !== void 0 ? _b : [];

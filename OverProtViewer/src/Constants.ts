@@ -50,9 +50,9 @@ export namespace Constants {
     export const LENGTH_SCALE = 4;  // width of 1 residue in the world
     export const OCCURRENCE_SCALE = 100;  // height of occurrence 1.0 (100%) in the world
 
-    export const FLOOR_HEIGHT = 1.25 * OCCURRENCE_SCALE; // 1.5 * OCCURRENCE_SCALE;
-    export const TOP_MARGIN = 0.25 * OCCURRENCE_SCALE;
-    export const BOTTOM_MARGIN = 0.25 * OCCURRENCE_SCALE;
+    export const FLOOR_HEIGHT = 1.25 * OCCURRENCE_SCALE;
+    export const TOP_MARGIN = 0.35 * OCCURRENCE_SCALE;  // 0.25 * OCCURRENCE_SCALE;
+    export const BOTTOM_MARGIN = 0.35 * OCCURRENCE_SCALE;  // 0.25 * OCCURRENCE_SCALE;
     export const LEFT_MARGIN = 4 * LENGTH_SCALE;
     export const RIGHT_MARGIN = 4 * LENGTH_SCALE;
 

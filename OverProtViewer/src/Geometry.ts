@@ -35,7 +35,6 @@ export namespace Geometry {
         initialZoomout: number,
     }
 
-
     export function newZoomInfo(minXZoomout: number, maxXZoomout: number, minYZoomout: number, maxYZoomout: number, initialZoomout: number): ZoomInfo {
         if (minXZoomout > maxXZoomout) console.warn('newZoomInfo(): minXZoomout > maxXZoomout');
         if (minYZoomout > maxYZoomout) console.warn('newZoomInfo(): minYZoomout > maxYZoomout');
