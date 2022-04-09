@@ -110,7 +110,7 @@
         Constants.RIGHT_MARGIN = 4 * Constants.LENGTH_SCALE;
         Constants.GAP_LENGTH = 3 * Constants.LENGTH_SCALE;
         Constants.KNOB_LENGTH = 1 * Constants.LENGTH_SCALE;
-        Constants.ARC_MAX_DEVIATION = 0.5 * Constants.OCCURRENCE_SCALE + Math.min(Constants.TOP_MARGIN, Constants.BOTTOM_MARGIN);
+        Constants.ARC_MAX_DEVIATION = 0.5 * Constants.OCCURRENCE_SCALE + Math.min(Constants.TOP_MARGIN, Constants.BOTTOM_MARGIN) - 0.1 * Constants.OCCURRENCE_SCALE;
         Constants.ARC_EXTRA_MAJOR_WRT_WORLD_WIDTH = 0.001; // slightly increasing ellipse major semiaxis provides smaller angle of arc ends
         Constants.ARC_MAX_MINOR = Constants.ARC_MAX_DEVIATION / (1 - Math.sqrt(1 - Math.pow((1 / (1 + 2 * Constants.ARC_EXTRA_MAJOR_WRT_WORLD_WIDTH)), 2))); // for elliptical arcs with extra major
         Constants.ARC_SMART_DEVIATION_PARAM_WRT_WORLD_WIDTH = 0.2; // ARC_SMART_DEVIATION_PARAM = distance for which the arc deviation is 1/2*ARC_MAX_DEVIATION (for circular arcs)
@@ -1205,17 +1205,11 @@
             viewer.canvas.attr('rendering', null);
             const img = new Image(w, h);
             img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
-            // const canvas = viewer.mainDiv.append('canvas').attr('width', w).attr('height', h).styles({position: 'absolute', left: '0', top: '0', 'z-index': '999'});
             const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
             d3.select(img).on('load', () => {
                 canvas.node().getContext('2d').drawImage(img, 0, 0, w, h);
                 const imgData = canvas.node().toDataURL("image/png").replace("image/png", "image/octet-stream");
                 saveFile(imgData, 'overprot.png');
-                // d3.select(window).on('focus.removecanvas', () => {
-                //     console.log('picovina'); 
-                //     canvas.remove();
-                //     d3.select(window).on('focus.removecanvas', null);
-                // });
             });
         }
         Drawing.save = save;
@@ -1362,11 +1356,6 @@
                 .select('g.beta-connectivity')
                 .selectAll('g.ladder')
                 .selectAll('path.vis');
-            // if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
-            //     betaArcs.style('stroke', Colors.NEUTRAL_DARK.hex());
-            // } else {
-            //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
-            // }
             betaArcs.style('stroke', ladder => arcColor(viewer, ladder));
             showLegend(viewer, transition);
         }
@@ -1473,14 +1462,12 @@
         const LEGEND_BAR_HEIGHT = 18;
         const LEGEND_HMARGIN = 15;
         const LEGEND_VMARGIN = 5;
-        const LEGEND_SPACING = 10; // between items
+        const LEGEND_SPACING = 15; // between items
         const LEGEND_SPACING_INNER = 5; // between item shape and label
         function showLegend(viewer, transition = true) {
             fadeOutRemove(viewer.canvas.selectAll('g.legend'));
-            let legendGroup = viewer.canvas.append('g').attr('class', 'legend');
-            if (viewer.settings.betaConnectivityVisibility) {
-                showBetaConnectivityLegend(viewer, legendGroup, transition);
-            }
+            let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend');
+            let ellipsisIndex = null;
             switch (viewer.settings.colorMethod) {
                 case Enums.ColorMethod.Stdev:
                     show3DVariabilityLegend(viewer, legendGroup, transition);
@@ -1489,11 +1476,14 @@
                     showTypeLegend(viewer, legendGroup, transition);
                     break;
                 case Enums.ColorMethod.Sheet:
-                    showSheetLegend(viewer, legendGroup, transition);
+                    ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
                     break;
             }
-            let w = legendGroup.node().getBBox().width;
-            let x = viewer.screen.width - LEGEND_HMARGIN - w;
+            if (viewer.settings.betaConnectivityVisibility) {
+                showBetaConnectivityLegend(viewer, legendGroup, transition);
+            }
+            distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2 * LEGEND_HMARGIN, () => addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, '...', 'none'));
+            let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
             let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
             legendGroup.attr('transform', `translate(${x},${y})`);
             if (transition) {
@@ -1501,8 +1491,7 @@
             }
         }
         function show3DVariabilityLegend(viewer, legendGroup, transition = true) {
-            let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-            let bar = gradientBarExp(legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT }, 15, 5, 5, '3D variability [\u212B]', true, false);
+            addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, '3D variability [\u212B]', 'heatmap');
         }
         function addLegendItem(viewer, legendGroup, rect, color, text, shape = 'rectangle') {
             let itemGroup = legendGroup.append('g').attr('class', 'legend-item');
@@ -1531,16 +1520,51 @@
                         .attr('fill', 'none')
                         .attr('stroke', color.darker().hex());
                     break;
+                case 'heatmap':
+                    let bar = gradientBarExp(itemGroup, rect, 15, 5, 5, '', true, false);
+                    break;
             }
-            let textX = rect.x + rect.width + LEGEND_SPACING_INNER;
-            let textElem = itemGroup.append('text').attrs({ x: textX, y: rect.y + 0.5 * rect.height }).text(text);
-            let w = textElem.node().getBBox().width;
-            return textX + w + LEGEND_SPACING;
+            let textX = shape != 'none' ? rect.x + rect.width + LEGEND_SPACING_INNER : rect.x;
+            itemGroup.append('text').attrs({ x: textX, y: rect.y + 0.5 * rect.height }).text(text);
+            return itemGroup;
+        }
+        function distributeItemsHorizontally(selection, spacing, ellipsisIndex = null, maxWidth = 0, ellipsisFactory = null) {
+            let items = selection.nodes();
+            let widths = items.map(item => item.getBBox().width);
+            let totalWidth = widths.reduce((a, b) => a + b, 0) + (items.length - 1) * spacing;
+            if (ellipsisIndex != null && totalWidth > maxWidth) {
+                if (ellipsisFactory != null) {
+                    let ellipsisItem = ellipsisFactory().node();
+                    let w = ellipsisItem.getBBox().width;
+                    widths.splice(ellipsisIndex, 0, w);
+                    items.splice(ellipsisIndex, 0, ellipsisItem);
+                    totalWidth += w + spacing;
+                }
+                let nInclude = ellipsisIndex;
+                let hidden = new Set();
+                while (totalWidth > maxWidth) {
+                    nInclude -= 1;
+                    totalWidth -= (widths[nInclude] + spacing);
+                    hidden.add(nInclude);
+                }
+                for (let i of hidden) {
+                    d3.select(items[i]).remove();
+                }
+                items = items.slice(0, nInclude).concat(items.slice(ellipsisIndex, undefined));
+                widths = widths.slice(0, nInclude).concat(widths.slice(ellipsisIndex, undefined));
+            }
+            let offset = 0;
+            for (let i = 0; i < items.length; i++) {
+                let translation = offset - items[i].getBBox().x;
+                d3.select(items[i]).attr('transform', `translate(${translation},0)`);
+                offset += widths[i] + spacing;
+            }
         }
         function showTypeLegend(viewer, legendGroup, transition = true) {
-            let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
-            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('E'), 'Strand');
+            let itemHelix = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+            let itemStrand = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('E'), 'Strand');
+            Drawing.addPointBehavior(viewer, itemHelix, () => selectNodesBySSEType(viewer, Constants.HELIX_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            Drawing.addPointBehavior(viewer, itemStrand, () => selectNodesBySSEType(viewer, Constants.STRAND_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
         }
         function showSheetLegend(viewer, legendGroup, transition = true) {
             let sheetIdSet = new Set();
@@ -1551,16 +1575,19 @@
             sheetIdSet.delete(0);
             let sheetIds = [...sheetIdSet];
             sheetIds.sort((a, b) => a - b);
-            let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+            let item = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+            Drawing.addPointBehavior(viewer, item, () => selectNodesBySSEType(viewer, Constants.HELIX_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             for (let id of sheetIds) {
-                xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.byIndex1(id), `\u03b2${id}`);
+                item = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.byIndex1(id), `\u03b2${id}`);
+                Drawing.addPointBehavior(viewer, item, () => selectNodesBySheetId(viewer, id, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             }
+            return sheetIds.length + 1;
         }
         function showBetaConnectivityLegend(viewer, legendGroup, transition = true) {
-            let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
-            xOffset = addLegendItem(viewer, legendGroup, { x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
+            let itemPara = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
+            let itemAnti = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
+            Drawing.addPointBehavior(viewer, itemPara, () => selectArcsByOrientation(viewer, 1));
+            Drawing.addPointBehavior(viewer, itemAnti, () => selectArcsByOrientation(viewer, -1));
         }
         function boxWidth(selection, spacing = 0) {
             let result = selection.node().getBBox().width;
@@ -1599,7 +1626,6 @@
                     .style('stroke', ladder => arcColor(viewer, ladder));
                 let betaGhostPaths = betaConnectivityLadders
                     .append('path').attr('class', 'ghost');
-                // addPointBehavior(viewer, betaConnectivityPaths as any);
                 addPointBehavior(viewer, betaGhostPaths, path => selectLadderFromGhostPath(viewer, path, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
                 redraw(viewer, false);
                 if (transition) {
@@ -1634,6 +1660,32 @@
             return d3.selectAll(result);
         }
         Drawing.selectNodeFromShape = selectNodeFromShape;
+        function selectNodesBySSEType(viewer, type, includeLadders = false) {
+            let nodes = viewer.canvas.selectAll('g.node').filter(d => d.type == type);
+            if (includeLadders) {
+                let arcs = viewer.canvas.selectAll('g.ladder');
+                nodes = concatSelections(nodes, arcs);
+            }
+            return nodes;
+        }
+        function selectNodesBySheetId(viewer, sheetId, includeLadders = false) {
+            let nodes = viewer.canvas.selectAll('g.node').filter(d => d.sheet_id == sheetId);
+            if (includeLadders) {
+                let arcs = viewer.canvas.selectAll('g.ladder').filter(d => viewer.data.nodes[d[0]].sheet_id == sheetId);
+                nodes = concatSelections(nodes, arcs);
+            }
+            return nodes;
+        }
+        function selectArcsByOrientation(viewer, orientation) {
+            let arcs = viewer.canvas.selectAll('g.ladder').filter(d => d[2] == orientation);
+            return arcs;
+        }
+        function concatSelections(...selections) {
+            let nodes = [];
+            for (const selection of selections)
+                nodes.push(...selection.nodes());
+            return d3.selectAll(nodes);
+        }
         function fadeOutRemove(selection, delay = 0) {
             return selection.transition().delay(delay).duration(Constants.TRANSITION_DURATION).style('opacity', 0).remove();
         }
@@ -1697,6 +1749,7 @@
                 sses: sses,
                 ladders: edges,
             };
+            console.log('event:', eventType, eventDetail);
             viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
         }
         Drawing.dispatchMixedEvent = dispatchMixedEvent;
@@ -2281,6 +2334,7 @@
                 dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
                 dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
             }
+            viewer.canvas.append('g').attr('class', 'legends');
             let d3nodes = viewer.canvas
                 .append('g').attr('class', 'nodes')
                 .selectAll('g.node')

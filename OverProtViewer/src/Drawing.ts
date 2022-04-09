@@ -6,7 +6,7 @@ import { Dag } from './Dag';
 import { Colors } from './Colors';
 import { Geometry } from './Geometry';
 import { Enums } from './Enums';
-import { html, D3BrushEvent } from 'd3';
+import { html, D3BrushEvent, arc } from 'd3';
 
 
 export namespace Drawing {
@@ -90,17 +90,11 @@ export namespace Drawing {
         const img = new Image(w, h);
         img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
 
-        // const canvas = viewer.mainDiv.append('canvas').attr('width', w).attr('height', h).styles({position: 'absolute', left: '0', top: '0', 'z-index': '999'});
         const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
         d3.select(img).on('load', () => {
             canvas.node()!.getContext('2d')!.drawImage(img, 0, 0, w, h);
             const imgData = canvas.node()!.toDataURL("image/png").replace("image/png", "image/octet-stream");
             saveFile(imgData, 'overprot.png');
-            // d3.select(window).on('focus.removecanvas', () => {
-            //     console.log('picovina'); 
-            //     canvas.remove();
-            //     d3.select(window).on('focus.removecanvas', null);
-            // });
         });
     }
 
@@ -249,13 +243,7 @@ export namespace Drawing {
             .select('g.beta-connectivity')
             .selectAll('g.ladder')
             .selectAll('path.vis');
-        // if (viewer.settings.colorMethod == Enums.ColorMethod.Stdev || viewer.settings.colorMethod == Enums.ColorMethod.Rainbow) {
-        //     betaArcs.style('stroke', Colors.NEUTRAL_DARK.hex());
-        // } else {
-        //     betaArcs.style('stroke', ladder => viewer.data.nodes[(ladder as Dag.Edge)[0]].visual.stroke);
-        // }
         betaArcs.style('stroke', ladder => arcColor(viewer, ladder as Dag.Edge));
-
         showLegend(viewer, transition);
     }
 
@@ -397,15 +385,13 @@ export namespace Drawing {
     const LEGEND_BAR_HEIGHT = 18;
     const LEGEND_HMARGIN = 15;
     const LEGEND_VMARGIN = 5;
-    const LEGEND_SPACING = 10;  // between items
+    const LEGEND_SPACING = 15;  // between items
     const LEGEND_SPACING_INNER = 5;  // between item shape and label
     
     function showLegend(viewer: Types.Viewer, transition: boolean = true): void {
         fadeOutRemove(viewer.canvas.selectAll('g.legend'));
-        let legendGroup = viewer.canvas.append('g').attr('class', 'legend') as any as Types.D3Selection;
-        if (viewer.settings.betaConnectivityVisibility){
-            showBetaConnectivityLegend(viewer, legendGroup, transition);
-        }
+        let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend') as any as Types.D3Selection;
+        let ellipsisIndex = null;
         switch(viewer.settings.colorMethod){
             case Enums.ColorMethod.Stdev: 
                 show3DVariabilityLegend(viewer, legendGroup, transition); 
@@ -414,11 +400,15 @@ export namespace Drawing {
                 showTypeLegend(viewer, legendGroup, transition);
                 break;
             case Enums.ColorMethod.Sheet: 
-                showSheetLegend(viewer, legendGroup, transition);
+                ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
                 break;
         }
-        let w = (legendGroup.node() as any).getBBox().width;
-        let x = viewer.screen.width - LEGEND_HMARGIN - w;
+        if (viewer.settings.betaConnectivityVisibility){
+            showBetaConnectivityLegend(viewer, legendGroup, transition);
+        }
+        distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2*LEGEND_HMARGIN, 
+            () => addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, '...', 'none'));
+        let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
         let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
         legendGroup.attr('transform', `translate(${x},${y})`);
         if (transition) {
@@ -440,13 +430,10 @@ export namespace Drawing {
     }
 
     function show3DVariabilityLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): void {
-        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-        let bar = gradientBarExp(legendGroup, 
-            { x: xOffset, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT },
-            15, 5, 5, '3D variability [\u212B]', true, false);
+        addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, '3D variability [\u212B]', 'heatmap');
     }
 
-    function addLegendItem(viewer: Types.Viewer, legendGroup: Types.D3Selection, rect: Geometry.Rectangle, color: d3.RGBColor, text: string, shape: string = 'rectangle'): number {
+    function addLegendItem(viewer: Types.Viewer, legendGroup: Types.D3Selection, rect: Geometry.Rectangle, color: d3.RGBColor, text: string, shape: string = 'rectangle'): Types.D3Selection {
         let itemGroup = legendGroup.append('g').attr('class', 'legend-item');
         let x0, x1, y, r;
         switch (shape) {
@@ -473,20 +460,66 @@ export namespace Drawing {
                     .attr('fill', 'none')
                     .attr('stroke', color.darker().hex());
                 break;
+            case 'heatmap':
+                let bar = gradientBarExp(itemGroup as any, rect, 15, 5, 5, '', true, false);
+                break;
+            case 'none':
+                // do nothing
+                break;
         }
-        let textX = rect.x + rect.width + LEGEND_SPACING_INNER;
-        let textElem = itemGroup.append('text').attrs({x: textX, y: rect.y + 0.5 * rect.height}).text(text);
-        let w = textElem.node()!.getBBox().width;
-        return textX + w + LEGEND_SPACING;
+        let textX = shape!='none' ? rect.x + rect.width + LEGEND_SPACING_INNER : rect.x;
+        itemGroup.append('text').attrs({x: textX, y: rect.y + 0.5 * rect.height}).text(text);
+        return itemGroup as any;
+    }
+
+    function distributeItemsHorizontally(selection: Types.D3Selection, spacing: number, ellipsisIndex: number|null = null, maxWidth: number = 0, ellipsisFactory: (()=>Types.D3Selection)|null = null): void {
+        let items = selection.nodes() as SVGGraphicsElement[];
+        let widths = items.map(item => item.getBBox().width);
+        let totalWidth = widths.reduce((a, b) => a + b, 0) + (items.length-1) * spacing;
+        if (ellipsisIndex != null && totalWidth > maxWidth){
+            if (ellipsisFactory != null) {
+                let ellipsisItem = ellipsisFactory().node() as SVGGraphicsElement;
+                let w = ellipsisItem.getBBox().width
+                widths.splice(ellipsisIndex, 0, w);
+                items.splice(ellipsisIndex, 0, ellipsisItem);
+                totalWidth += w + spacing;
+            }
+            let nInclude = ellipsisIndex;
+            let hidden = new Set<number>();
+            while (totalWidth > maxWidth){
+                nInclude -= 1;
+                totalWidth -= (widths[nInclude] + spacing);
+                hidden.add(nInclude);
+            }
+            
+            for (let i of hidden){
+                d3.select(items[i]).remove();
+            }
+            items = items.slice(0, nInclude).concat(items.slice(ellipsisIndex, undefined));
+            widths = widths.slice(0, nInclude).concat(widths.slice(ellipsisIndex, undefined));
+        }
+        let offset = 0;
+        for (let i = 0; i < items.length; i++){
+            let translation = offset - items[i].getBBox().x;
+            d3.select(items[i]).attr('transform', `translate(${translation},0)`);
+            offset += widths[i] + spacing;
+        }
     }
 
     function showTypeLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): void {
-        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-        xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
-        xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('E'), 'Strand');
+        let itemHelix = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
+        let itemStrand = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('E'), 'Strand');
+        Drawing.addPointBehavior(viewer, itemHelix, 
+            () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
+            nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
+        );
+        Drawing.addPointBehavior(viewer, itemStrand, 
+            () =>  selectNodesBySSEType(viewer, Constants.STRAND_TYPE),
+            nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
+        );
     }
 
-    function showSheetLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): void {
+    function showSheetLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): number {
         let sheetIdSet = new Set<number>();
         for (let i of viewer.data.activeNodes){
             let id = viewer.data.nodes[i].sheet_id;
@@ -496,17 +529,26 @@ export namespace Drawing {
         let sheetIds = [...sheetIdSet];
         sheetIds.sort((a, b) => a-b);
         
-        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-        xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
+        let item = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
+        Drawing.addPointBehavior(viewer, item, 
+            () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
+            nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
+        );
         for (let id of sheetIds){
-            xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.byIndex1(id), `\u03b2${id}`);
+            item = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.byIndex1(id), `\u03b2${id}`);
+            Drawing.addPointBehavior(viewer, item, 
+                () =>  selectNodesBySheetId(viewer, id, true),
+                nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
+            );
         }
+        return sheetIds.length + 1;
     }
 
     function showBetaConnectivityLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): void {
-        let xOffset = boxWidth(legendGroup, LEGEND_SPACING);
-        xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
-        xOffset = addLegendItem(viewer, legendGroup, {x: xOffset, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
+        let itemPara = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
+        let itemAnti = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
+        Drawing.addPointBehavior(viewer, itemPara, () => selectArcsByOrientation(viewer, 1));
+        Drawing.addPointBehavior(viewer, itemAnti, () => selectArcsByOrientation(viewer, -1));
     }
 
     function boxWidth(selection: Types.D3Selection, spacing: number = 0): number {
@@ -544,7 +586,6 @@ export namespace Drawing {
                 .style('stroke', ladder => arcColor(viewer, ladder as Dag.Edge));
             let betaGhostPaths = betaConnectivityLadders
                 .append('path').attr('class', 'ghost');
-            // addPointBehavior(viewer, betaConnectivityPaths as any);
             addPointBehavior(viewer, betaGhostPaths as any, path => selectLadderFromGhostPath(viewer, path as any, true),
                 nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             redraw(viewer, false);
@@ -578,6 +619,27 @@ export namespace Drawing {
             for (const i of node.ladders) result.push(gladders[i]);
         }
         return d3.selectAll(result);
+    }
+
+    function selectNodesBySSEType(viewer: Types.Viewer, type: string, includeLadders: boolean = false): Types.D3Selection {
+        let nodes = viewer.canvas.selectAll('g.node').filter(d => (d as Dag.Node).type == type) as Types.D3Selection;
+        if (includeLadders){
+            let arcs = viewer.canvas.selectAll('g.ladder');
+            nodes = concatSelections(nodes, arcs);
+        }
+        return nodes;
+    }
+    function selectNodesBySheetId(viewer: Types.Viewer, sheetId: number, includeLadders: boolean = false): Types.D3Selection {
+        let nodes = viewer.canvas.selectAll('g.node').filter(d => (d as Dag.Node).sheet_id == sheetId) as Types.D3Selection;
+        if (includeLadders){
+            let arcs = viewer.canvas.selectAll('g.ladder').filter(d => viewer.data.nodes[(d as Dag.Edge)[0]].sheet_id == sheetId);
+            nodes = concatSelections(nodes, arcs);
+        }
+        return nodes;
+    }
+    function selectArcsByOrientation(viewer: Types.Viewer, orientation: number): Types.D3Selection {
+        let arcs = viewer.canvas.selectAll('g.ladder').filter(d => (d as Dag.Edge)[2] == orientation) as Types.D3Selection;
+        return arcs;
     }
 
     function concatSelections(...selections: Types.D3Selection[]): Types.D3Selection {
@@ -651,6 +713,7 @@ export namespace Drawing {
             sses: sses,
             ladders: edges,
         };
+        // console.log('event:', eventType, eventDetail);
         viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true } as any);
     }
 

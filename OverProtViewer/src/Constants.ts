@@ -59,7 +59,7 @@ export namespace Constants {
     export const GAP_LENGTH = 3 * LENGTH_SCALE;
     export const KNOB_LENGTH = 1 * LENGTH_SCALE;
 
-    export const ARC_MAX_DEVIATION = 0.5*OCCURRENCE_SCALE + Math.min(TOP_MARGIN, BOTTOM_MARGIN);
+    export const ARC_MAX_DEVIATION = 0.5*OCCURRENCE_SCALE + Math.min(TOP_MARGIN, BOTTOM_MARGIN) - 0.1 * OCCURRENCE_SCALE;
     export const ARC_EXTRA_MAJOR_WRT_WORLD_WIDTH = 0.001;  // slightly increasing ellipse major semiaxis provides smaller angle of arc ends
     export const ARC_MAX_MINOR = ARC_MAX_DEVIATION / (1 - Math.sqrt(1 - (1 / (1 + 2*ARC_EXTRA_MAJOR_WRT_WORLD_WIDTH))**2));  // for elliptical arcs with extra major
     export const ARC_SMART_DEVIATION_PARAM_WRT_WORLD_WIDTH = 0.2;  // ARC_SMART_DEVIATION_PARAM = distance for which the arc deviation is 1/2*ARC_MAX_DEVIATION (for circular arcs)

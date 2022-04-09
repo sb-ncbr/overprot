@@ -361,6 +361,7 @@ export var OverProtViewerCore;
             dag.precedenceLines.push({ x1: xu + Constants.KNOB_LENGTH, y1: yu, x2: xv - Constants.KNOB_LENGTH, y2: yv });
             dag.precedenceLines.push({ x1: xv - Constants.KNOB_LENGTH, y1: yv, x2: xv, y2: yv });
         }
+        viewer.canvas.append('g').attr('class', 'legends');
         let d3nodes = viewer.canvas
             .append('g').attr('class', 'nodes')
             .selectAll('g.node')
