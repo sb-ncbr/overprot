@@ -17,7 +17,7 @@
 2. Pull the Docker image:
 
     ```bash
-    docker pull registry.gitlab.com/midlik/overprot
+    docker pull registry.gitlab.com/midlik/overprot/overprot-server
     docker images
     ```
 
@@ -50,7 +50,7 @@ See `server_files.md`
 Build:
 
 ```bash
-docker build .. -f DockerFile -t registry.gitlab.com/midlik/overprot
+docker build .. -f DockerFile -t registry.gitlab.com/midlik/overprot/overprot-server
 docker images
 ```
 
@@ -63,5 +63,5 @@ docker-compose up
 Push to the repository:
 
 ```bash
-docker push registry.gitlab.com/midlik/overprot
+docker push registry.gitlab.com/midlik/overprot/overprot-server
 ```

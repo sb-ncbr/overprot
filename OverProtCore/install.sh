@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# This installation script is designed to work on Ubuntu (version 20.04).
+# If it is not compatible with your operating system, 
+# try using OverProt via Docker instead (see README.md for details).
+
 set -e
 
 SW_DIR=$(realpath $(dirname $0))
@@ -10,6 +15,7 @@ for ARG in $@; do
     fi;
 done;
 
+# Install essential basic packages
 sudo apt-get update -y
 sudo apt-get install -y curl
 sudo apt-get install -y libicu-dev
@@ -31,13 +37,13 @@ else
     exit 1
 fi
 
-# Python virtual environment
+# Create Python virtual environment and install Python packages in it
 sudo apt-get install -y python3-venv
 python3 -m venv venv/
 . venv/bin/activate
 pip3 install -r requirements.txt
 
-# Hack (PyMOL cannot be installed through pip)
+# Install PyMOL and make it available in virtual environment - hack (PyMOL cannot be installed through pip)
 sudo apt-get install -y pymol
 DIR=$(echo $VIRTUAL_ENV/lib/python3.*/site-packages)
 ln -s "/usr/lib/python3/dist-packages/pymol" "$DIR/pymol"

@@ -104,7 +104,7 @@ Run OverProt Core:
 python  overprot.py  -  data/custom_family/  --domains data/my_domains.txt
 ```
 
-The structures don't need to be in the PDB. In such case, you must provide them in mmCIF format and configure the `structure_sources` setting accordingly.
+The structures don't need to be in the PDB. In such case, you must provide them in mmCIF format and configure the `structure_sources` setting accordingly:
 
 `data/my_domains2.txt`:
 

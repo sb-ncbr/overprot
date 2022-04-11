@@ -41,8 +41,8 @@ $ docker run --net NETWORK IMAGE
 
 Push to registry:
 $ docker login registry.gitlab.com
-$ docker tag overprot-server:0.9 registry.gitlab.com/midlik/overprot
-$ docker push registry.gitlab.com/midlik/overprot
+$ docker tag overprot-server:0.9 registry.gitlab.com/midlik/overprot/overprot-server
+$ docker push registry.gitlab.com/midlik/overprot/overprot-server
 
 Compose more containers to be run together in a common docker network:
 mongo-docker-compose.yaml

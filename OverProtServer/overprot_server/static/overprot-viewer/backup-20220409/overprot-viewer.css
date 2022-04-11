@@ -66,22 +66,17 @@ div.overprot-viewer g.ladder[picked] path.vis {
     stroke-width: 3px;
 }
 
-div.overprot-viewer g.legend text {
-    dominant-baseline: middle;
-}
-
-div.overprot-viewer g.legend text.heatmap-bar-label {
+div.overprot-viewer text.heatmap-bar-label {
     dominant-baseline: middle;
     text-anchor: end;
 }
 
-div.overprot-viewer g.legend g.heatmap-bar-ticks text {
+div.overprot-viewer g.heatmap-bar-ticks {
     dominant-baseline: hanging;
     text-anchor: middle;
-    font-size: 85%;
 }
 
-div.overprot-viewer g.legend g.heatmap-bar-stroke rect {
+div.overprot-viewer g.heatmap-bar-stroke rect {
     stroke: lightgray;
 }
 

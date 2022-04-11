@@ -4,7 +4,7 @@ version: '3'
 
 services:
   overprot_server:
-    image: registry.gitlab.com/midlik/overprot
+    image: registry.gitlab.com/midlik/overprot/overprot-server
     ports: 
       - 8080:80
       # - 4443:443
