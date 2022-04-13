@@ -14,6 +14,7 @@ RUN bash /OverProtCore/install.sh
 ENV PATH="/OverProtCore/venv/bin:$PATH"
 
 COPY OverProtCore/ /OverProtCore/
+COPY LICENSE /OverProtCore/LICENSE
 WORKDIR /OverProtCore/
 
 ENTRYPOINT ["bash"]

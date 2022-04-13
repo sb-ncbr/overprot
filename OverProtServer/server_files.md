@@ -10,7 +10,7 @@
                 startup-docker.sh  **Docker entrypoint**
                 nginx/
                     nginx-docker.template.conf  **$NGINX_CONF_TEMPLATE**
-    var/  **$VAR_DIR - to be mounted** 
+    var/  **$VAR_DIR (to save non-static data) - to be mounted** 
         nginx.conf
         logs/
             run_$START_TIME/  **$LOG_DIR**

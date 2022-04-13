@@ -1,10 +1,13 @@
 # OverProt Server
 
-**OverProt Server** allows using **OverProt Core** as a web application without the eed to install locally. It can also serve precomputed OverProt results.
+**OverProt Server** allows using **OverProt Core** as a web application without the need to install it locally. It can also serve precomputed OverProt results.
+A running instance of OverProt Server is deployed at <https://overprot.ncbr.muni.cz>.
 
 ## Running OverProt Server
 
-1. Install Docker on your server machine:
+1. Install Docker on your server machine.
+
+   E.g. on Ubuntu:
 
     ```bash
     sudo apt-get update -y
@@ -12,7 +15,7 @@
     sudo usermod -aG docker $USER
     ```
 
-    Log out and log in again
+    Log out and log in again.
 
 2. Pull the Docker image:
 
@@ -27,7 +30,8 @@
 
     ```bash
     docker-compose -f PATH_TO_DOCKER_COMPOSE_YAML up -d
-    docker logs overprot_overprot_server_1 
+    docker ps -a  # Show the newly started container.
+    docker logs CONTAINER_NAME  # Print logs to check if successful. 
     # docker-compose -f PATH_TO_DOCKER_COMPOSE_YAML down  # stop the container
     ```
 
@@ -35,15 +39,19 @@
 
 Running in development mode (without Docker, Nginx, Gunicorn):
 
-```bash
-bash ../OverProtCore/install.sh
-bash install.sh
-bash startup-dev.sh  # Set the paths in this script properly
-```
+1. Set the paths in `startup-dev.sh` according to your system.
+
+2. Run:
+
+   ```bash
+   bash ../OverProtCore/install.sh
+   bash install.sh
+   bash startup-dev.sh
+   ```
 
 ## File organization within the Docker container
 
-See `server_files.md`
+See `server_files.md`.
 
 ## Building the Docker image
 

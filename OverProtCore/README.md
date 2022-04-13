@@ -1,16 +1,15 @@
 # OverProt Core
 
-OverProt Core is an algorithm that constructs the secondary
+**OverProt Core** is an algorithm that constructs the secondary
 structure consensus for a given protein family.
-The produced consensus can be used as a template for annotation of secondary structure
-elements in protein families, e.g. by SecStrAnnotator.
+The produced consensus can be used as a template for annotation of secondary structure elements in protein families, e.g. by SecStrAnnotator.
 
 This file is focused on the information about how to run OverProt Core.
 Detailed description of how it works can be found in `doc/Description_of_methods.pdf`.
 
 OverProt Core is implemented mostly in Python3
 and designed to run in the Linux environment (tested on Python3.8 on Ubuntu 20.04).
-On the other operating systems, it can be run in Docker (see **Execution via Docker** below).
+On other operating systems, it can be run in Docker (see **Execution via Docker** below).
 
 ## Installation
 
@@ -21,66 +20,91 @@ sh install.sh --clean
 . venv/bin/activate
 ```
 
+This installs the necessary Ubuntu packages, Python packages, .NET Core Runtime, and a free version of PyMOL. The remaining dependencies don't require installation and are simply stored in `dependencies/`: SecStrAnnotator (Midlik,A. et al. (2019) Automated family-wide annotation of secondary structure elements. Methods Mol Biol, 1958, 47–71. <https://sestra.ncbr.muni.cz/>), MAPSCI (Ilinkin,I. et al. (2010) Multiple structure alignment and consensus identification for proteins. BMC Bioinformatics, 11, 71. <http://www.geom-comp.umn.edu/mapsci>), StructureCutter (small utility created for OverProt).
+
+In case you don't have the necessary permissions for installation (or it fails for a different reason), try running OverProt Core via Docker.
+
 ## Execution
 
-All steps of the algorithm are combined in `overprot.py`
+All steps of the algorithm are combined in `overprot.py`.
 It is run in a Python virtual environment.
-Its arguments are the CATH family ID and the output directory:
+Its arguments are the **CATH family ID** and the **output directory**:
 
 ```sh
 . venv/bin/activate
 python  overprot.py  --help
-python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50
+python  overprot.py  1.10.10.1020  data/1.10.10.1020/
 ```
 
-(This example will process 50 random proteins from Cytochrome P450 (CYP) family (CATH code 1.10.630.10) and save the results into directory `data/cyp_50/`.)
+This example will process all protein domains from the 1.10.10.1020 family and save the results into directory `data/1.10.10.1020/`.
+
+```sh
+python  overprot.py  1.10.630.10  data/cyp/  --sample_size 20
+```
+
+This example will process 20 random proteins from Cytochrome P450 (CYP) family (CATH code 1.10.630.10) and save the results into directory `data/cyp/`.
 
 ## Execution via Docker
 
-In case you want to run OverProt Core in a Docker container, you can skip the **Installation** step above. Instead, make sure you have Docker correctly installed and you have permissions to run it (in Linux, you must be in `docker` group). In Windows, start the Docker Desktop application and open a command line (`powershell`) to run the following steps.
+In case you want to run OverProt Core in a Docker container, you can skip the **Installation** step above. Instead, make sure you have Docker correctly installed and you have permissions to run it.
 
-Pull the Docker image from the repository:
+In most Linux distributions, Docker is installed by the standard package management tools (e.g. on Ubuntu: `sudo apt-get install docker docker.io docker-compose`). You must also be a member of the `docker` group (`sudo usermod -aG docker $USER` and re-login).
+
+In Windows and MacOS, you can install the Docker Desktop application (<https://www.docker.com/products/docker-desktop/)>.
+You must start the Docker Desktop application and open a command line (`powershell`) to run the following steps.
+
+Large scale compute environments, where the ordinary users don't have root permissions, typically provide some compatible Docker alternatives which allow running Docker containers without root permissions (e.g. Podman, Singularity).
+
+1. Pull the Docker image from the repository:
+
+   ```sh
+   docker  pull  registry.gitlab.com/midlik/overprot/overprot-core
+   docker  images  # Check that the image is downloaded
+   ```
+
+2. Start a container based on the image:
+
+   ```sh
+   docker  run  -it  -v /home/peppa/data:/data  registry.gitlab.com/midlik/overprot/overprot-core
+   ```
+
+   To make the OverProt results available outside of the container, the option `-v` mounts a directory on the host machine (here `/home/peppa/data`) to a directory in the container (here `/data`).
+
+3. Within the container, run OverProtCore:
+
+   ```sh
+   python  overprot.py  --help
+   python  overprot.py  1.10.630.10  /data/cyp/  --sample_size 20
+   ```
+
+   Thanks to the mounting, you will see the results in `/home/peppa/data/cyp/` on the host machine.
+
+4. Once you're done, you can exit the container and discard it:
+
+   ```sh
+   exit
+   docker  container  prune
+   ```
+
+Steps 2–4 can be combined to call OverProt without entering the container:
 
 ```sh
-docker  pull  registry.gitlab.com/midlik/overprot/overprot-core
-```
-
-Start a container based on the image:
-
-```sh
-docker  run  -it  -v /data/directory/on/host:/data  registry.gitlab.com/midlik/overprot/overprot-core
-```
-
-Within the container, run OverProtCore:
-
-```sh
-python  overprot.py  --help
-python  overprot.py  1.10.630.10  /data/cyp/  --sample_size 50
-```
-
-(The host's directory `/data/directory/on/host` is mounted to the container's directory `/data`,
-so on the host machine you will see the results in `/data/directory/on/host/cyp`.)
-
-Once you're done, you can exit the container and discard it:
-
-```sh
-exit
-docker container prune
+docker  run  -v /home/peppa/data:/data  registry.gitlab.com/midlik/overprot/overprot-core  -c "python overprot.py 1.10.630.10 /data/cyp/ --sample_size 20"
 ```
 
 ## Configuration
 
 The default configuration is in `overprot-config.ini`. Each configuration item is also explained there.
-You can change the configuration by copying this file, modifying the copy, and then using `--config` option.
+You can change the configuration by copying this file, modifying the copy, and then running OverProt with `--config` option.
 
 ```sh
-python  overprot.py  1.10.630.10  data/cyp/  --sample_size 50  --config overprot-config-customized.ini
+python  overprot.py  1.10.630.10  data/cyp/  --sample_size 20  --config overprot-config-customized.ini
 ```
 
 If you run OverProt Core in a Docker container, remember that all changes you do within the container will be discarded with the container itself (except for the mounted files). However, you can mount a customized configuration file into the container:
 
 ```sh
-docker  run  -it  -v /data/directory/on/host:/data  -v /some/directory/on/host/overprot-config-customized.ini:/OverProtCore/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core
+docker  run  -v /home/peppa/data:/data  -v /home/peppa/overprot-config-customized.ini:/overprot-config-customized.ini  registry.gitlab.com/midlik/overprot/overprot-core  -c "python overprot.py 1.10.630.10 /data/cyp/ --sample_size 20  --config /overprot-config-customized.ini"
 ```
 
 ## Running on custom datasets
@@ -104,7 +128,7 @@ Run OverProt Core:
 python  overprot.py  -  data/custom_family/  --domains data/my_domains.txt
 ```
 
-The structures don't need to be in the PDB. In such case, you must provide them in mmCIF format and configure the `structure_sources` setting accordingly:
+The structures don't need to be in the PDB database. In such case, you must provide them in mmCIF format and configure the `structure_sources` setting accordingly:
 
 `data/my_domains2.txt`:
 
@@ -123,13 +147,14 @@ structure_sources = file:///path/to/my/structures/{pdb}.cif
 ...
 ```
 
-(OverProt will replace `{pdb}` by the individual structure names (`struct1`, `struct2`, `struct3`) to get the names of the input structure files (`/path/to/my/structures/struct1.cif` etc.))
-
 Run OverProt Core:
 
 ```sh
 python  overprot.py  -  data/custom_family2/ --domains data/my_domains2.txt --config overprot-config-customized.ini
 ```
+
+(OverProt will replace `{pdb}` by the individual structure names (`struct1`, `struct2`, `struct3`) to get the names of the input structure files (`/path/to/my/structures/struct1.cif` etc.).
+An alternative to modifying the config file is to use the `--structure_source` option.)
 
 ## Steps
 
@@ -149,12 +174,12 @@ Output:
 Output:
   - `sample.json`
 
-- **Download selected structures**, cut the domains, save in CIF (by `dependencies/StructureCutter`). Also saves the structures with renumbered residues in PDB (to be used by `MAPSCI`).
+- **Download selected structures**, cut the domains, save in mmCIF (by `dependencies/StructureCutter`). Also saves the structures with renumbered residues in PDB format (to be used by `MAPSCI`).
 Output:
   - `cif/`
   - `pdb/`
 
-- **Convert the lists of PDBs and domains into various formats** (by `overprot.format_domains`)
+- **Convert the lists of PDB entries and domains into various formats** (by `overprot.format_domains`)
 Output:
   - `lists/`
 
@@ -202,10 +227,9 @@ Output:
 ## Multi-family execution
 
 Multiple families can be processed in parallel using `overprot_multifamily.py`.
-Its arguments are the family list and the output directory:
+Its arguments are the **family list** and the **output directory**:
 
 ```sh
-. venv/bin/activate
 python  overprot_multifamily.py  --help
 python  overprot_multifamily.py  data/families.txt  data/multifamily/
 ```

@@ -5,6 +5,7 @@ set -e
 SW_DIR=$(realpath $(dirname $0))
 cd $SW_DIR
 
+# Set the following paths according to your system:
 export OVERPROT_PYTHON='/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/venv/bin/python'
 export OVERPROT_PY='/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/overprot.py'
 export VAR_DIR='/home/adam/Workspace/Python/OverProt/docker_mount/var'

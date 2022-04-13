@@ -1,3 +1,6 @@
+# Build: docker build .. -f Dockerfile -t overprot-server
+# Run:   docker-compose up [-d]
+
 FROM ubuntu:20.04
 
 RUN apt-get update -y
@@ -22,6 +25,7 @@ COPY OverProtServer/install.sh bin/overprot/OverProtServer/install.sh
 COPY OverProtServer/requirements.txt bin/overprot/OverProtServer/requirements.txt
 RUN bash bin/overprot/OverProtServer/install.sh --clean
 COPY OverProtServer/ bin/overprot/OverProtServer/
+COPY LICENSE bin/overprot/LICENSE
 
 COPY OverProtServer/init_var/ init_var/
 
