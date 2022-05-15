@@ -12,7 +12,7 @@ export var Dag;
         let error = null;
         try {
             let dag = JSON.parse(json);
-            error = dag.error = (_a = dag.error) !== null && _a !== void 0 ? _a : null;
+            error = dag.error = (_a = dag.error, (_a !== null && _a !== void 0 ? _a : null));
             dag.nodes.forEach(node => node.active = true);
             dag.levels = [];
             dag.precedenceLines = [];
@@ -23,7 +23,7 @@ export var Dag;
             return dag;
         }
         catch (ex) {
-            error = error !== null && error !== void 0 ? error : `Failed to parse input file.`;
+            error = (error !== null && error !== void 0 ? error : `Failed to parse input file.`);
             console.warn(error, '\n', ex, '\n', json);
             return newDagWithError(error);
         }

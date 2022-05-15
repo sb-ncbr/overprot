@@ -18,7 +18,7 @@ export var Types;
             visWorld: Geometry.newRectangle(),
             screen: Geometry.rectangleFromCanvas(d3canvas),
             zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
-            settings: settings !== null && settings !== void 0 ? settings : newSettings(),
+            settings: (settings !== null && settings !== void 0 ? settings : newSettings()),
             nodeMap: new Map(),
             ladderMap: new TupleMap(),
         };
@@ -83,7 +83,7 @@ export var Types;
             '0': false,
         };
         return {
-            file: (_a = d3element.attr('file')) !== null && _a !== void 0 ? _a : '',
+            file: (_a = d3element.attr('file'), (_a !== null && _a !== void 0 ? _a : '')),
             height: parseIntAttribute('height', d3element.attr('height'), Constants.CANVAS_HEIGHT),
             width: parseIntAttribute('width', d3element.attr('width'), Constants.CANVAS_WIDTH),
             colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),

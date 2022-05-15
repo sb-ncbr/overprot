@@ -21,6 +21,8 @@ sudo apt-get install -y curl
 sudo apt-get install -y libicu-dev
 
 # Install .NET (for StructureCutter and SecStrAnnotator)
+# TODO check runtime version (--list-runtimes)
+# TODO install here with --install-dir ./dependencies/dotnet
 if dotnet --info; then
     echo "OverProtCore/install.sh: Dotnet already installed"
 else

@@ -45,7 +45,7 @@ export var Drawing;
     Drawing.zoomAll = zoomAll;
     function zoomSet(viewer, newZoomout, centerXY) {
         Geometry.zoomInfoSetZoomout(viewer.zoom, newZoomout);
-        let [centerX, centerY] = centerXY !== null && centerXY !== void 0 ? centerXY : Geometry.rectangleCenter(viewer.visWorld);
+        let [centerX, centerY] = (centerXY !== null && centerXY !== void 0 ? centerXY : Geometry.rectangleCenter(viewer.visWorld));
         let visWidth = viewer.screen.width * viewer.zoom.xZoomout;
         let visHeight = viewer.screen.height * viewer.zoom.yZoomout;
         viewer.visWorld = {
@@ -680,7 +680,7 @@ export var Drawing;
             sses: sses,
             ladders: edges,
         };
-        console.log('event:', eventType, eventDetail);
+        // console.log('event:', eventType, eventDetail);
         viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
     }
     Drawing.dispatchMixedEvent = dispatchMixedEvent;
@@ -694,8 +694,8 @@ export var Drawing;
         if (detail.sourceType == ((_a = viewer.d3viewer.node()) === null || _a === void 0 ? void 0 : _a.tagName.toLowerCase()) && detail.sourceInternalId == viewer.internalId) {
             return;
         }
-        const sses = (_b = detail.sses) !== null && _b !== void 0 ? _b : [];
-        const ladders = (_c = detail.ladders) !== null && _c !== void 0 ? _c : [];
+        const sses = (_b = detail.sses, (_b !== null && _b !== void 0 ? _b : []));
+        const ladders = (_c = detail.ladders, (_c !== null && _c !== void 0 ? _c : []));
         const PDB_OVERPROT_DO_SELECT = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_SELECT;
         const PDB_OVERPROT_DO_HOVER = Constants.EVENT_PREFIX + Constants.EVENT_TYPE_DO_HOVER;
         let attribute;
@@ -732,7 +732,7 @@ export var Drawing;
             const u = ladder[0];
             const v = ladder[1];
             const dir = ladder[2];
-            const g = (_d = viewer.ladderMap.get([u, v, dir])) !== null && _d !== void 0 ? _d : viewer.ladderMap.get([v, u, dir]);
+            const g = (_d = viewer.ladderMap.get([u, v, dir]), (_d !== null && _d !== void 0 ? _d : viewer.ladderMap.get([v, u, dir])));
             if (g != undefined) {
                 d3.select(g).attr(attribute, attribute);
             }

@@ -120,7 +120,7 @@ export var OverProtViewerCore;
         const VIEWER = 'div.overprot-viewer';
         let styleLines = [];
         for (const sheet of document.styleSheets) {
-            var rules = (_a = sheet.cssRules) !== null && _a !== void 0 ? _a : [];
+            var rules = (_a = sheet.cssRules, (_a !== null && _a !== void 0 ? _a : []));
             for (const rule of rules) {
                 if (rule.cssText.includes(VIEWER)) {
                     let ruleText = rule.cssText.replace(VIEWER, '');

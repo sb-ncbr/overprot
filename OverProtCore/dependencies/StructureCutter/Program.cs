@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http;
 using System.Linq;
 using Cif;
 using Cif.Filtering;
@@ -33,9 +34,9 @@ namespace StructureCutter
             options.GlobalHelp = "StructureCutter 0.9";
             options.AddArgument(new Argument("DOMAIN_LIST_FILE")
                 .AddHelp("JSON file with the list of domains to be downloaded, in format")
-                .AddHelp("[{\"pdb\": pdb, \"domain_name\": domain_name, \"chain\": chain, \"ranges\": ranges}*]")
+                .AddHelp("[{\"pdb\": pdb, \"domain\": domain_name, \"chain_id\": chain_id, \"ranges\": ranges}*]")
                 .AddHelp("or")
-                .AddHelp("[[pdb, domain_name, chain, ranges]*]")
+                .AddHelp("[[pdb, domain_name, chain_id, ranges]*]")
             );
 
             options.AddOption(Option.StringOption(new string[]{"--cif_outdir"}, v => { cifOutDirectory = v; })
@@ -129,6 +130,7 @@ namespace StructureCutter
             }
 
             WebClient webClient = new WebClient();
+            // export DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0 seems to solve the bugs
 
             int[] downloadedCounts = new int[sources.Length];
 
@@ -278,6 +280,8 @@ namespace StructureCutter
                     throw new ArgumentException($"Invalid URI: {url}");
                 }
                 try {
+                    Console.WriteLine("Picovina");
+                    // Get2(url);
                     // string content = webClient.DownloadString(url);
                     byte[] bytes = webClient.DownloadData(url);
                     string content = DecompressGzip(bytes) ?? webClient.Encoding.GetString(bytes);
@@ -287,6 +291,14 @@ namespace StructureCutter
                 }
             }
             throw new Exception($"Could not get any of these URLs: {String.Join(' ', urls)}", lastException);
+        }
+
+        static byte[] Get2(string url){
+            HttpClient hc = new HttpClient();
+            var bytesx = hc.GetAsync(url).Result;
+            Console.WriteLine("bytesx");
+            Console.WriteLine(bytesx);
+            throw new NotImplementedException();
         }
 
         ///<summary> Changes chain and residue numbering in model (chainID = DEFAULT_CHAIN_ID, resi = numbered sequentially starting from DEFAULT_CHAIN_ID). </summary>

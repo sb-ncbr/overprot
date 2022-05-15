@@ -148,8 +148,8 @@ export var Controls;
             maxValue: maxValue,
             step: step,
             selectedValue: selectedValue,
-            minValueLabel: minValueLabel !== null && minValueLabel !== void 0 ? minValueLabel : minValue.toString(),
-            maxValueLabel: maxValueLabel !== null && maxValueLabel !== void 0 ? maxValueLabel : maxValue.toString(),
+            minValueLabel: (minValueLabel !== null && minValueLabel !== void 0 ? minValueLabel : minValue.toString()),
+            maxValueLabel: (maxValueLabel !== null && maxValueLabel !== void 0 ? maxValueLabel : maxValue.toString()),
             onMove: onMove,
             onRelease: onRelease
         };

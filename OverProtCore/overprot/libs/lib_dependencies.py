@@ -17,6 +17,7 @@ def _find_dotnet(candidates: List[str|Path]) -> str|Path:
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
     raise FileNotFoundError(f'Cannot find dotnet (tried these: {candidates})')
+    # TODO check if the right runtime version is available (--list-runtimes)
 
 
 PYTHON = sys.executable

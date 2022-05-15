@@ -1,29 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj": {}
+    "/app/StructureCutter.csproj": {}
   },
   "projects": {
-    "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj": {
+    "/app/StructureCutter.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj",
+        "projectUniqueName": "/app/StructureCutter.csproj",
         "projectName": "StructureCutter",
-        "projectPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj",
-        "packagesPath": "/home/adam/.nuget/packages/",
-        "outputPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/obj/",
+        "projectPath": "/app/StructureCutter.csproj",
+        "packagesPath": "/app/.nuget/packages/",
+        "outputPath": "/app/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/adam/.nuget/NuGet/NuGet.Config"
+          "/app/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "netcoreapp3.1"
+          "net6.0"
         ],
         "sources": {
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "netcoreapp3.1": {
+          "net6.0": {
+            "targetAlias": "net6.0",
             "projectReferences": {}
           }
         },
@@ -34,7 +35,8 @@
         }
       },
       "frameworks": {
-        "netcoreapp3.1": {
+        "net6.0": {
+          "targetAlias": "net6.0",
           "dependencies": {
             "System.Json": {
               "target": "Package",
@@ -51,12 +53,26 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.5, 6.0.5]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[6.0.5, 6.0.5]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.5, 6.0.5]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/3.1.404/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/opt/bitnami/dotnet-sdk/bin/sdk/6.0.300/RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,0 +1,5 @@
+.dotnet/
+.local/
+.nuget/
+dotnet31/
+dotnet60/
