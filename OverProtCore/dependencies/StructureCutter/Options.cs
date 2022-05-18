@@ -101,7 +101,7 @@ namespace StructureCutter
             foreach (Argument argument in ArgumentList)
             {
                 String line = OPTION_INDENT + argument.Name;
-                Console.WriteLine (line);
+                Console.WriteLine(line);
                 // Lib2.WriteInColor(ConsoleColor.Cyan, line + "\n");
                 foreach (String help in argument.Helps)
                 {
@@ -113,7 +113,7 @@ namespace StructureCutter
             foreach (Option option in OptionList)
             {
                 String line = OPTION_INDENT + string.Join(", ", option.Names) + " " + string.Join(" ", option.Parameters);
-                Console.WriteLine (line);
+                Console.WriteLine(line);
                 // Lib2.WriteInColor(ConsoleColor.Cyan, line + "\n");
                 foreach (String help in option.Helps)
                 {
@@ -125,7 +125,7 @@ namespace StructureCutter
 
         public static void PrintError(String message, params object[] args)
         {
-            string formattedMessage = args.Length>0 ? String.Format(message, args) : message;
+            string formattedMessage = args.Length > 0 ? String.Format(message, args) : message;
             string appName = System.AppDomain.CurrentDomain.FriendlyName;
             Console.WriteLine(formattedMessage);
             Console.WriteLine($"Run   dotnet {appName}.dll --help   for usage information.");
@@ -220,7 +220,6 @@ namespace StructureCutter
             };
             return new Option(names, 1, action);
         }
-
         public static Option ChoiceOption(String[] names, Action<String> storeResult, IEnumerable<String> choices)
         {
             Action<IEnumerable<String>> action = args =>
@@ -284,7 +283,8 @@ namespace StructureCutter
 
     }
 
-    static class Extensions{
+    static class Extensions
+    {
         public static List<T> Pop<T>(this List<T> queue, int count)
         {
             if (queue.Count < count)

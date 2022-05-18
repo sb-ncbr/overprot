@@ -1,14 +1,15 @@
 #!/bin/bash
-
 set -e
 
-CONFIG="Debug";
+echo "This script is just for the case that dotnet (outside podman/docker) cannot be installed properly"
 
-for ARG in $@; do
-    if [ "$ARG" = "--release" ]; then
-        CONFIG="Release";
-    fi;
-done;
+# CONFIG="Debug";
 
-docker run --volume $PWD:/app bitnami/dotnet-sdk:6 dotnet build -c $CONFIG
+# for ARG in $@; do
+#     if [ "$ARG" = "--release" ]; then
+#         CONFIG="Release";
+#     fi;
+# done;
+
+# podman run --volume $PWD:/app bitnami/dotnet-sdk:6 dotnet build -c $CONFIG
 

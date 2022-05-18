@@ -72,7 +72,7 @@ test -n "$HTTPS_PORT" && export MAYBE_INCLUDE_HTTPS="include $NGINX_CONF_DIR/ngi
 ENVS='$NGINX_LOG_DIR $SSL_CERT $SSL_KEY $HTTP_PORT $HTTPS_PORT $GUNICORN_PORT $MAYBE_INCLUDE_HTTP $MAYBE_INCLUDE_HTTPS'
 for F in $NGINX_CONF_DIR/*.template.conf; do envsubst "$ENVS" < $F > ${F%.template.conf}.conf; done
 NGINX_CONF=$NGINX_CONF_DIR/nginx.conf
-sudo nginx -c $NGINX_CONF
+nginx -c $NGINX_CONF
 
 # Print some logs:
 echo "N_GUNICORN_WORKERS=$N_GUNICORN_WORKERS"

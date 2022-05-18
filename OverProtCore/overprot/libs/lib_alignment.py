@@ -6,7 +6,6 @@ import numpy as np  # type: ignore
 from matplotlib import pyplot as plt  # type: ignore
 from numba import jit  # type: ignore
 
-import Bio  # type: ignore
 from ete3 import Tree  # type: ignore  # sudo apt install python3-pyqt5.qtsvg
 
 from . import lib
@@ -110,7 +109,12 @@ def substitution_matrix(scores: Dict[Tuple[str, str], float], alphabet=None, gap
     return matrix, alphabet, letter2index
 
 def default_substitution_matrix(match_value=10) -> np.ndarray:
-    mat, alph, index = substitution_matrix(Bio.SubsMat.MatrixInfo.blosum30, alphabet=ALPHABET)
+    try:
+        import Bio  # type: ignore
+        dict_blosum30 = Bio.SubsMat.MatrixInfo.blosum30
+    except:
+        raise NotImplementedError('Apparently Biopython does not contain Bio.SubsMat anymore. Try getting the BLOSUM30 matrix from another source (maybe https://web.archive.org/web/19991109223934/http://www.embl-heidelberg.de/~vogt/matrices/blosum30.cmp)')
+    mat, alph, index = substitution_matrix(dict_blosum30, alphabet=ALPHABET)
     if mat.diagonal().min() <= -match_value:
         raise Exception(f'match_value must be more than {-mat.diagonal().min()}')
     mat += match_value

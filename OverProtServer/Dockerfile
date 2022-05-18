@@ -1,10 +1,9 @@
 # Build: docker build .. -f Dockerfile -t overprot-server
 # Run:   docker-compose up [-d]
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update -y
-RUN apt-get install -y sudo
 
 # # Debug:
 # RUN apt-get install -y wget iputils-ping iputils-tracepath traceroute less
@@ -19,11 +18,11 @@ RUN mkdir -p var/logs
 RUN mkdir -p data
 
 COPY OverProtCore/ bin/overprot/OverProtCore/
-RUN bash bin/overprot/OverProtCore/install.sh --clean
+RUN bash bin/overprot/OverProtCore/install.sh --clean --no-sudo
 
 COPY OverProtServer/install.sh bin/overprot/OverProtServer/install.sh
 COPY OverProtServer/requirements.txt bin/overprot/OverProtServer/requirements.txt
-RUN bash bin/overprot/OverProtServer/install.sh --clean
+RUN bash bin/overprot/OverProtServer/install.sh --clean --no-sudo
 COPY OverProtServer/ bin/overprot/OverProtServer/
 COPY LICENSE bin/overprot/LICENSE
 

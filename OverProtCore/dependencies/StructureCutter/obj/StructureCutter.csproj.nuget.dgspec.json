@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/app/StructureCutter.csproj": {}
+    "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj": {}
   },
   "projects": {
-    "/app/StructureCutter.csproj": {
+    "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/StructureCutter.csproj",
+        "projectUniqueName": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj",
         "projectName": "StructureCutter",
-        "projectPath": "/app/StructureCutter.csproj",
-        "packagesPath": "/app/.nuget/packages/",
-        "outputPath": "/app/obj/",
+        "projectPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj",
+        "packagesPath": "/home/adam/.nuget/packages/",
+        "outputPath": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/app/.nuget/NuGet/NuGet.Config"
+          "/home/adam/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
@@ -53,26 +53,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[6.0.5, 6.0.5]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.linux-x64",
-              "version": "[6.0.5, 6.0.5]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[6.0.5, 6.0.5]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/bitnami/dotnet-sdk/bin/sdk/6.0.300/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/opt/dotnet60/sdk/6.0.300/RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "SX0HkXBdw92W71iaotxPyvxdGXv2wVlFnpIRz/7OUaoaj3mEJdP52uwvuh1rqKBLwCSTvqvcV1hTvV3e+tMaJw==",
+  "dgSpecHash": "errv0daOS7dieyOKM0LpnjOUGTW6wYLZJuCZVFxorF0dHy7ayIIGcxfOpBviXP80/lllhuLMVxx2O218njkgfw==",
   "success": true,
-  "projectFilePath": "/app/StructureCutter.csproj",
+  "projectFilePath": "/home/adam/Workspace/Python/OverProt/overprot/OverProtCore/dependencies/StructureCutter/StructureCutter.csproj",
   "expectedPackageFiles": [
-    "/app/.nuget/packages/system.json/4.5.0/system.json.4.5.0.nupkg.sha512",
-    "/app/.nuget/packages/microsoft.netcore.app.ref/6.0.5/microsoft.netcore.app.ref.6.0.5.nupkg.sha512",
-    "/app/.nuget/packages/microsoft.aspnetcore.app.ref/6.0.5/microsoft.aspnetcore.app.ref.6.0.5.nupkg.sha512",
-    "/app/.nuget/packages/microsoft.netcore.app.host.linux-x64/6.0.5/microsoft.netcore.app.host.linux-x64.6.0.5.nupkg.sha512"
+    "/home/adam/.nuget/packages/system.json/4.5.0/system.json.4.5.0.nupkg.sha512"
   ],
   "logs": []
 }

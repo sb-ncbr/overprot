@@ -27,6 +27,7 @@ namespace StructureCutter
             string cifOutDirectory = "";
             string pdbOutDirectory = "";
             string summaryOutDirectory = "";
+            string residueSummaryOutDirectory = "";
             string[] sources = DEFAULT_URL_SOURCES;
             string failuresFile = null;
 
@@ -51,6 +52,10 @@ namespace StructureCutter
             options.AddOption(Option.StringOption(new string[]{"--summary_outdir"}, v => { summaryOutDirectory = v; })
                 .AddParameter("DIRECTORY")
                 .AddHelp("Directory for output files with chain summary (list of chains with their type, average XYZ, etc.)")
+            );
+            options.AddOption(Option.StringOption(new string[]{"--residue_summary_outdir"}, v => { residueSummaryOutDirectory = v; })
+                .AddParameter("DIRECTORY")
+                .AddHelp("Directory for output files with residue summary (same as chain summary plus info per residue)")
             );
             options.AddOption(Option.StringOption(new string[]{"--sources"}, v => { sources = v.Split(' ', StringSplitOptions.RemoveEmptyEntries); })
                 .AddParameter("SOURCES")
@@ -280,8 +285,6 @@ namespace StructureCutter
                     throw new ArgumentException($"Invalid URI: {url}");
                 }
                 try {
-                    Console.WriteLine("Picovina");
-                    // Get2(url);
                     // string content = webClient.DownloadString(url);
                     byte[] bytes = webClient.DownloadData(url);
                     string content = DecompressGzip(bytes) ?? webClient.Encoding.GetString(bytes);
@@ -291,14 +294,6 @@ namespace StructureCutter
                 }
             }
             throw new Exception($"Could not get any of these URLs: {String.Join(' ', urls)}", lastException);
-        }
-
-        static byte[] Get2(string url){
-            HttpClient hc = new HttpClient();
-            var bytesx = hc.GetAsync(url).Result;
-            Console.WriteLine("bytesx");
-            Console.WriteLine(bytesx);
-            throw new NotImplementedException();
         }
 
         ///<summary> Changes chain and residue numbering in model (chainID = DEFAULT_CHAIN_ID, resi = numbered sequentially starting from DEFAULT_CHAIN_ID). </summary>

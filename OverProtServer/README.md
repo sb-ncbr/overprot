@@ -58,7 +58,7 @@ See `server_files.md`.
 Build:
 
 ```bash
-docker build .. -f DockerFile -t registry.gitlab.com/midlik/overprot/overprot-server
+docker build .. -f Dockerfile -t registry.gitlab.com/midlik/overprot/overprot-server
 docker images
 ```
 
