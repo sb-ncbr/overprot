@@ -21,64 +21,97 @@ namespace StructureCutter
         const char DEFAULT_CHAIN_ID = '.';  // Assigned to chains with multi-character IDs, when converting to PDB.
         const int FIRST_RESIDUE_ID = 1;  // Assigned to the first residue, when converting to PDB.
         const int SKIPPED_RESIDUES_AT_GAP = 1;  // Number of residue numbers to be skipped when some residues are missing in a chain, when converting to PDB.
+        
+        enum AlignMethod { None, Align, Super, Cealign };//DEBUG
+
+        private class MainOptions : Options{
+            StringOption os;
+            public MainOptions(){
+                os = AddStringOption("-s");
+                (int i, string s) t = (x: 5, i: "ahoj");
+                t.i = 5;
+            }
+        }
+        private (string x, string y) GetArguments(string[] args){
+            return (x: "ahoj", y: "cau");
+        }
 
         static int Main(string[] args)
         {
-            string cifOutDirectory = "";
-            string pdbOutDirectory = "";
-            string summaryOutDirectory = "";
-            string residueSummaryOutDirectory = "";
-            string[] sources = DEFAULT_URL_SOURCES;
-            string failuresFile = null;
-
             Options options = new Options();
             options.GlobalHelp = "StructureCutter 0.9";
-            options.AddArgument(new Argument("DOMAIN_LIST_FILE")
+            var optDomainListFile = options.AddStringOption("DOMAIN_LIST_FILE")
                 .AddHelp("JSON file with the list of domains to be downloaded, in format")
                 .AddHelp("[{\"pdb\": pdb, \"domain\": domain_name, \"chain_id\": chain_id, \"ranges\": ranges}*]")
                 .AddHelp("or")
-                .AddHelp("[[pdb, domain_name, chain_id, ranges]*]")
-            );
+                .AddHelp("[[pdb, domain_name, chain_id, ranges]*]");
 
-            options.AddOption(Option.StringOption(new string[]{"--cif_outdir"}, v => { cifOutDirectory = v; })
+            var optCifOutdir = options.AddStringOption("--cif_outdir")
                 .AddParameter("DIRECTORY")
-                .AddHelp("Directory for output files in mmCIF format (or empty string to suppress mmCIF output).")
-            );
-            options.AddOption(Option.StringOption(new string[]{"--pdb_outdir"}, v => { pdbOutDirectory = v; })
+                .AddHelp("Directory for output files in mmCIF format (or empty string to suppress mmCIF output).");
+            var optPdbOutdir = options.AddStringOption("--pdb_outdir")
                 .AddParameter("DIRECTORY")
                 .AddHelp("Directory for output files in PDB format (or empty string to suppress PDB output).")
-                .AddHelp("The PDB files will contain renumbered chain ID, residue number, and atom ID!")
-            );
-            options.AddOption(Option.StringOption(new string[]{"--summary_outdir"}, v => { summaryOutDirectory = v; })
+                .AddHelp("The PDB files will contain renumbered chain ID, residue number, and atom ID!");
+            var optSummaryOutdir = options.AddStringOption("--summary_outdir")
                 .AddParameter("DIRECTORY")
-                .AddHelp("Directory for output files with chain summary (list of chains with their type, average XYZ, etc.)")
-            );
-            options.AddOption(Option.StringOption(new string[]{"--residue_summary_outdir"}, v => { residueSummaryOutDirectory = v; })
+                .AddHelp("Directory for output files with chain summary (list of chains with their type, average XYZ, etc.)");
+            var optResidueSummaryOutdir = options.AddStringOption("--residue_summary_outdir")
                 .AddParameter("DIRECTORY")
-                .AddHelp("Directory for output files with residue summary (same as chain summary plus info per residue)")
-            );
-            options.AddOption(Option.StringOption(new string[]{"--sources"}, v => { sources = v.Split(' ', StringSplitOptions.RemoveEmptyEntries); })
+                .AddHelp("Directory for output files with residue summary (same as chain summary plus info per residue)");
+            var optSources = options.AddOption(1, args => args[0].Split(' ', StringSplitOptions.RemoveEmptyEntries), "--sources")
+                .SetDefault(DEFAULT_URL_SOURCES)
                 .AddParameter("SOURCES")
                 .AddHelp("Space-separated list of URL sources (each starting with http:// or file:///).")
                 .AddHelp("{pdb} in each source will be replaced by the actual PDB ID,")
                 .AddHelp("{pdb_0}, {pdb_1}, {pdb_2}, {pdb_3} will be replaced by the individual characters of the PDB ID.")
-                .AddHelp($"Default: '{String.Join(' ', DEFAULT_URL_SOURCES)}'")
-            );
-            options.AddOption(Option.StringOption(new string[]{"--failures"}, v => { failuresFile = v; })
+                .AddHelp($"Default: '{string.Join(' ', DEFAULT_URL_SOURCES)}'");
+            var optFailures = options.AddStringOption("--failures")
                 .AddParameter("FILE")
-                .AddHelp("Filename for output of failed PDBIDs. Use '-' to output on stderr. Default is to exit on any failures.")
-            );
+                .AddHelp("Filename for output of failed PDBIDs. Use '-' to output on stderr. Default is to exit on any failures.");
 
-            List<string> otherArgs;
-            bool optionsOK = options.TryParse(args, out otherArgs);
+            StringOption os = options.AddStringOption("-s");
+            os.AddAction(() => Console.WriteLine(os.Value));
+            IntOption oi = options.AddIntOption("-i").SetDefault(-1);
+            oi.AddAction(() => Console.WriteLine(oi.Value));
+            DoubleOption ox = options.AddDoubleOption("-x");
+            SwitchOption oy = options.AddSwitchOption("-y");
+            SwitchOption on = options.AddSwitchOption("-n");
+            var choices = new string[]{"A", "B", "C"};
+            var alignMethodNames = new Dictionary<AlignMethod, string> {{ AlignMethod.None,"none" }, { AlignMethod.Align,"align" }, { AlignMethod.Super,"super"}, { AlignMethod.Cealign,"cealign" }};
+            ChoiceOption oc = options.AddChoiceOption(choices, "-c").SetDefault("B");
+            DictionaryChoiceOption<AlignMethod> od = options.AddDictionaryChoiceOption(alignMethodNames, "-d").SetDefault(AlignMethod.Align);
+            
+            StringOption ars = options.AddStringOption("STRING");
+            Option<string[]> arv = options.AddOption(2, args=> args, "VARARGS");
+            IntOption ari = options.AddIntOption("INT");
+            SwitchOption ard = options.AddSwitchOption("[SWITCH]");
+            SwitchOption ard2 = options.AddSwitchOption("DUMMY?");
+
+            bool optionsOK = options.TryParse(args);
             if (!optionsOK){
                 return 1;
             }
-            if (otherArgs.Count != 1){
-                Options.PrintError($"Wrong number arguments (expected 1, got {otherArgs.Count}).");
-                return 1;
-            }
-            string domainListFile = otherArgs[0];
+            string domainListFile = optDomainListFile.Value;            
+            string cifOutDirectory = optCifOutdir.Value;
+            string pdbOutDirectory = optPdbOutdir.Value;
+            string summaryOutDirectory = optSummaryOutdir.Value;
+            string residueSummaryOutDirectory = optResidueSummaryOutdir.Value;
+            string[] sources = optSources.Value;
+            string failuresFile = optFailures.Value;
+
+            Console.WriteLine($"OPTIONS: summaryOutDirectory: {summaryOutDirectory}");
+            Console.WriteLine($"OPTIONS: {os} {os.Value}");
+            Console.WriteLine($"OPTIONS: {oi} {oi.Value}");
+            Console.WriteLine($"OPTIONS: {ox} {ox.Value}");
+            Console.WriteLine($"OPTIONS: {oy} {oy.Value}");
+            Console.WriteLine($"OPTIONS: {on} {on.Value}");
+            Console.WriteLine($"OPTIONS: {oc} {oc.Value}");
+            Console.WriteLine($"OPTIONS: {od} {od.Value}");
+            Console.WriteLine($"OPTIONS: {optSources} {optSources.Value}" + string.Join(',', optSources.Value));
+            Console.WriteLine($"{optSources} " + string.Join(',', sources));
+            Console.WriteLine();
+            // return 0;
 
             if (sources.Length == 0){
                 Options.PrintError("Option --sources has invalid value. You must specify at least one source.");
@@ -92,7 +125,7 @@ namespace StructureCutter
                 }
             }
 
-            if (cifOutDirectory == "" && pdbOutDirectory == "" && summaryOutDirectory == ""){
+            if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null){
                 Console.WriteLine("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
             }
             
@@ -119,13 +152,13 @@ namespace StructureCutter
             }
             Dictionary<string,List<Domain>> domainsByPdb = Domain.SortDomainsByPdb(domains);
 
-            if (cifOutDirectory != ""){
+            if (cifOutDirectory != null){
                 Directory.CreateDirectory(cifOutDirectory);
             }
-            if (pdbOutDirectory != ""){
+            if (pdbOutDirectory != null){
                 Directory.CreateDirectory(pdbOutDirectory);
             }
-            if (summaryOutDirectory != ""){
+            if (summaryOutDirectory != null){
                 Directory.CreateDirectory(summaryOutDirectory);
             }
             if (failuresFile != null && failuresFile != "-"){
@@ -175,7 +208,7 @@ namespace StructureCutter
                 CifBlock block = package.Blocks[0];
                 CifCategory atomSiteCategory = block.GetCategory("_atom_site");
                 
-                if (cifOutDirectory != "" || pdbOutDirectory != ""){
+                if (cifOutDirectory != null || pdbOutDirectory != null){
                     foreach (Domain domain in domainsByPdb[pdb]){
                         Filter filter = Filter.StringEquals("label_asym_id", domain.Chain) & Filter.IntegerInRange("label_seq_id", domain.Ranges);
                         int[] rows = filter.GetFilteredRows(atomSiteCategory).ToArray();
@@ -195,7 +228,7 @@ namespace StructureCutter
                             }
                         }
 
-                        if (cifOutDirectory != ""){
+                        if (cifOutDirectory != null){
                             string outputFile = Path.Combine(cifOutDirectory, domain.Name + OUTPUT_EXTENSION);
                             using (StreamWriter w = new StreamWriter(outputFile)){
                                 w.WriteLine("#");
@@ -208,7 +241,7 @@ namespace StructureCutter
                             }
                         }
 
-                        if (pdbOutDirectory != ""){
+                        if (pdbOutDirectory != null){
                             string pdbOutputFile = Path.Combine(pdbOutDirectory, domain.Name + PDB_OUTPUT_EXTENSION);
                             ModelCollection models = ModelCollection.FromCifBlock(block, rows);
                             if (models.Count == 0) {
@@ -230,7 +263,7 @@ namespace StructureCutter
                     }
                 }
                 
-                if (summaryOutDirectory != ""){
+                if (summaryOutDirectory != null){
                     StructureSummary summary = new StructureSummary(pdb, block);
                     summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                 }
