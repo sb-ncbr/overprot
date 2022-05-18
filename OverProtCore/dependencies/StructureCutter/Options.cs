@@ -24,17 +24,17 @@ namespace StructureCutter
     public class Options
     {
         public String GlobalHelp { get; set; }
-        private List<IOption<object>> ArgumentList { get; }
-        private List<IOption<object>> OptionList { get; }
-        private Dictionary<string, IOption<object>> OptionDict { get; }
+        private List<IOption> ArgumentList { get; }
+        private List<IOption> OptionList { get; }
+        private Dictionary<string, IOption> OptionDict { get; }
         private const String OPTION_INDENT = "  ";
         private const String OPTION_HELP_INDENT = "          ";
 
         public Options()
         {
-            this.ArgumentList = new List<IOption<object>>();
-            this.OptionList = new List<IOption<object>>();
-            this.OptionDict = new Dictionary<string, IOption<object>>();
+            this.ArgumentList = new List<IOption>();
+            this.OptionList = new List<IOption>();
+            this.OptionDict = new Dictionary<string, IOption>();
             this.AddHelpOption("-h", "--help").AddHelp("Print this help message and exit.");
         }
 
@@ -46,12 +46,12 @@ namespace StructureCutter
                 {
                     throw new ArgumentException($"Option conflict: multiple definitions for option {name}");
                 }
-                OptionDict[name] = (IOption<object>) option;
+                OptionDict[name] = (IOption) option;
             }
             if (option.IsOption)
-                this.OptionList.Add((IOption<object>) option);
+                this.OptionList.Add((IOption) option);
             else
-                this.ArgumentList.Add((IOption<object>) option);
+                this.ArgumentList.Add((IOption) option);
             return option;
         }
 
@@ -106,7 +106,7 @@ namespace StructureCutter
         }
 
 
-        private void ParseOption(IOption<object> option, string optionName, Queue<string> argQueue){
+        private void ParseOption(IOption option, string optionName, Queue<string> argQueue){
             if (argQueue.Count < option.NumArgs)
             {
                 string message = option.NumArgs==1 ? "Missing value." : $"Requires {option.NumArgs} values, got {argQueue.Count}.";
@@ -148,7 +148,7 @@ namespace StructureCutter
                 if (name.Length > 0 && name[0] == '-')
                 {
                     if (OptionDict.ContainsKey(name)){
-                        IOption<object> option = OptionDict[name];
+                        IOption option = OptionDict[name];
                         try {
                             ParseOption(option, name, argQueue);
                         } catch (OptionParseException e) {
@@ -185,7 +185,7 @@ namespace StructureCutter
             Console.WriteLine("\nUsage:");
             Console.WriteLine(OPTION_INDENT + "dotnet " + System.AppDomain.CurrentDomain.FriendlyName + ".dll [options] " + string.Join(" ", ArgumentList.Select(a => a.Names[0])));
             Console.WriteLine("\nArguments:");
-            foreach (IOption<object> argument in ArgumentList)
+            foreach (IOption argument in ArgumentList)
             {
                 String line = OPTION_INDENT + argument.Names[0];
                 WriteInColor(ConsoleColor.Cyan, line);
@@ -196,7 +196,7 @@ namespace StructureCutter
             }
 
             Console.WriteLine("\nOptions:");
-            foreach (IOption<object> option in OptionList)
+            foreach (IOption option in OptionList)
             {
                 String line = OPTION_INDENT + string.Join(", ", option.Names) + " " + string.Join(" ", option.Parameters);
                 WriteInColor(ConsoleColor.Cyan, line);
@@ -228,11 +228,10 @@ namespace StructureCutter
     }
 
 
-    public interface IOption<out T>
+    public interface IOption
     {
         String[] Names { get; }
         int NumArgs { get; }
-        Func<string[], T> Parser { get; }
         List<Action> Actions { get; }
         List<(Func<string[], bool> constraint, string message)> Constraints { get; }
         List<String> Parameters { get; }
@@ -240,21 +239,24 @@ namespace StructureCutter
         public void SetInternalValue(string[] args);
     }
 
-    public class Option<T> : IOption<T>
+    public class Option<T> : IOption
     {
         public string[] Names { get; private set; }
         public bool IsOption { get; private set; }
         public int NumArgs { get; private set; }
-        public Func<string[], T> Parser { get; private set; }
+        private Func<string[], T> Parser { get; }
         public List<Action> Actions { get; private set; }
         public List<(Func<string[], bool>, string)> Constraints { get; private set; }
         public List<string> Parameters { get; private set; }
         public List<string> Helps { get; private set; }
-        protected T InternalValue { get; set; }
-        public T Value { get => InternalValue; }
+        protected Box<T> InternalValue { get; set; }
+        public T Value { get => InternalValue.Value; }
         public void SetInternalValue(string[] args)
         {
-            InternalValue = Parser(args);
+            InternalValue = new Box<T>(Parser(args));
+        }
+        protected void SetInternalValueProt(T value){
+            InternalValue = new Box<T>(value);
         }
 
         public Option(int numArgs, Func<string[], T> parser, params string[] names)
@@ -279,6 +281,7 @@ namespace StructureCutter
             Constraints = new List<(Func<string[], bool>, string)>();
             Parameters = new List<string>();
             Helps = new List<string>();
+            InternalValue = new Box<T>(default(T));
         }
 
         public Option<T> AddAction(Action action)
@@ -307,7 +310,7 @@ namespace StructureCutter
 
         public Option<T> SetDefault(T value)
         {
-            InternalValue = value;
+            InternalValue = new Box<T>(value);
             return this;
         }
 
@@ -316,19 +319,19 @@ namespace StructureCutter
     }
 
 
-    public class SwitchOption : Option<Box<bool>>
+    public class SwitchOption : Option<bool>
     {
-        public new bool Value { get => InternalValue.Value; }
-        public SwitchOption(params string[] names) : base(0, args => new Box<bool>(true), names)
+        // public new bool Value { get => InternalValue.Value; }
+        public SwitchOption(params string[] names) : base(0, args => true, names)
         {
             this.InternalValue = new Box<bool>(false);
         }
     }
 
-    public class IntOption : Option<Box<int>>
+    public class IntOption : Option<int>
     {
-        public new int Value { get => InternalValue.Value; }
-        public IntOption(params string[] names) : base(1, args => new Box<int>(ParseInt(args[0])), names)
+        // public new int Value { get => InternalValue.Value; }
+        public IntOption(params string[] names) : base(1, args => ParseInt(args[0]), names)
         {
             this.InternalValue = new Box<int>(0);
         }
@@ -350,10 +353,10 @@ namespace StructureCutter
         }
     }
 
-    public class DoubleOption : Option<Box<double>>
+    public class DoubleOption : Option<double>
     {
-        public new double Value { get => InternalValue.Value; }
-        public DoubleOption(params string[] names) : base(1, args => new Box<double>(ParseDouble(args[0])), names)
+        // public new double Value { get => InternalValue.Value; }
+        public DoubleOption(params string[] names) : base(1, args => ParseDouble(args[0]), names)
         {
             this.InternalValue = new Box<double>(0.0);
         }
@@ -380,7 +383,7 @@ namespace StructureCutter
     {
         public StringOption(params string[] names) : base(1, args => args[0], names) { }
         public new StringOption SetDefault(string value){
-            InternalValue = value;
+            InternalValue = new Box<string>(value);
             return this;
         }
     }
@@ -391,10 +394,10 @@ namespace StructureCutter
         public ChoiceOption(IEnumerable<string> choices, params string[] names) : base(1, args => ParseChoice(args[0], choices), names) { 
             this.choices = choices;
             if (choices.Count() == 0) throw new ArgumentException($"Argument/option {names[0]}: choices must contain at least one value.");
-            InternalValue = choices.First();
+            InternalValue = new Box<string>(choices.First());
         }
         public new ChoiceOption SetDefault(string value){
-            InternalValue = ParseChoice(value, choices);
+            InternalValue = new Box<string>(ParseChoice(value, choices));
             return this;
         }
         private static string ParseChoice(string str, IEnumerable<String> choices)
@@ -410,11 +413,11 @@ namespace StructureCutter
         }
     }
 
-    public class DictionaryChoiceOption<K> : Option<Box<K>>
+    public class DictionaryChoiceOption<K> : Option<K>
     {
         private Dictionary<K, String> dictionary;
-        public new K Value { get => InternalValue.Value; }
-        public DictionaryChoiceOption(Dictionary<K, String> dictionary, params string[] names) : base(1, args => new Box<K>(ParseDictionaryChoice(args[0], dictionary)), names) {
+        // public new K Value { get => InternalValue.Value; }
+        public DictionaryChoiceOption(Dictionary<K, String> dictionary, params string[] names) : base(1, args => ParseDictionaryChoice(args[0], dictionary), names) {
             this.dictionary = dictionary;
             if (dictionary.Count == 0) throw new ArgumentException($"Argument/option {names[0]}: dictionary must have at least one key-value pair.");
             InternalValue = new Box<K>(dictionary.First().Key);
@@ -442,7 +445,7 @@ namespace StructureCutter
     {
         public HelpOption(Options options, params string[] names) : base(0, args => new Null(), names)
         {
-            this.InternalValue = new Null();
+            this.InternalValue = new Box<Null>(new Null());
             this.AddAction(options.PrintHelp);
         }
     }
