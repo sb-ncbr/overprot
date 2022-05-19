@@ -13,8 +13,8 @@ namespace StructureCutter
 {
     public class Program
     {   
-        const string DEFAULT_URL_SOURCE = "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif";
         static readonly string[] DEFAULT_URL_SOURCES = { "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif" };
+        static readonly string[] ALLOWED_URL_PROTOCOLS = {"http://", "https://", "file://", "ftp://"};
         const string OUTPUT_EXTENSION = ".cif";
         const string PDB_OUTPUT_EXTENSION = ".pdb";
         const string SUMMARY_OUTPUT_EXTENSION = ".json";
@@ -22,76 +22,74 @@ namespace StructureCutter
         const int FIRST_RESIDUE_ID = 1;  // Assigned to the first residue, when converting to PDB.
         const int SKIPPED_RESIDUES_AT_GAP = 1;  // Number of residue numbers to be skipped when some residues are missing in a chain, when converting to PDB.
         
-        enum AlignMethod { None, Align, Super, Cealign };//DEBUG
-
-        private class MainOptions : Options{
-            StringOption os;
-            public MainOptions(){
-                os = AddStringOption("-s");
-                (int i, string s) t = (x: 5, i: "ahoj");
-                t.i = 5;
-            }
-        }
-        private (string x, string y) GetArguments(string[] args){
-            return (x: "ahoj", y: "cau");
-        }
+        // enum AlignMethod { None, Align, Super, Cealign };//DEBUG
 
         static int Main(string[] args)
         {
-            Options options = new Options();
-            options.GlobalHelp = "StructureCutter 0.9";
-            var optDomainListFile = options.AddStringOption("DOMAIN_LIST_FILE")
+            ArgumentParser parser = new ArgumentParser("StructureCutter 0.9");
+            var optDomainListFile = parser.AddStringArg("DOMAIN_LIST_FILE")
                 .AddHelp("JSON file with the list of domains to be downloaded, in format")
                 .AddHelp("[{\"pdb\": pdb, \"domain\": domain_name, \"chain_id\": chain_id, \"ranges\": ranges}*]")
                 .AddHelp("or")
                 .AddHelp("[[pdb, domain_name, chain_id, ranges]*]");
 
-            var optCifOutdir = options.AddStringOption("--cif_outdir")
-                .AddParameter("DIRECTORY")
+            var optCifOutdir = parser.AddStringArg("--cif_outdir")
+                .NameParameters("DIRECTORY")
                 .AddHelp("Directory for output files in mmCIF format (or empty string to suppress mmCIF output).");
-            var optPdbOutdir = options.AddStringOption("--pdb_outdir")
-                .AddParameter("DIRECTORY")
+            var optPdbOutdir = parser.AddStringArg("--pdb_outdir")
+                .NameParameters("DIRECTORY")
                 .AddHelp("Directory for output files in PDB format (or empty string to suppress PDB output).")
                 .AddHelp("The PDB files will contain renumbered chain ID, residue number, and atom ID!");
-            var optSummaryOutdir = options.AddStringOption("--summary_outdir")
-                .AddParameter("DIRECTORY")
+            var optSummaryOutdir = parser.AddStringArg("--summary_outdir")
+                .NameParameters("DIRECTORY")
                 .AddHelp("Directory for output files with chain summary (list of chains with their type, average XYZ, etc.)");
-            var optResidueSummaryOutdir = options.AddStringOption("--residue_summary_outdir")
-                .AddParameter("DIRECTORY")
+            var optResidueSummaryOutdir = parser.AddStringArg("--residue_summary_outdir")
+                .NameParameters("DIRECTORY")
                 .AddHelp("Directory for output files with residue summary (same as chain summary plus info per residue)");
-            var optSources = options.AddOption(1, args => args[0].Split(' ', StringSplitOptions.RemoveEmptyEntries), "--sources")
+            var optSources = parser.AddArg(1, args => args[0].Split(' ', StringSplitOptions.RemoveEmptyEntries), "--sources")
+                .AddConstraintX(srcs => srcs.Length > 0, "You must specify at least one source.")
+                .AddConstraintX(srcs => srcs.All(CheckSourceProtocol), "Each source must start with one of " + string.Join(", ", ALLOWED_URL_PROTOCOLS))
+                .AddConstraintX(srcs => srcs.All(CheckSourceUri), "Each source must be a valid URL, possibly with special marks ({pdb}, {pdb_0}, {pdb_1}, {pdb_2}, {pdb_3}). ")
                 .SetDefault(DEFAULT_URL_SOURCES)
-                .AddParameter("SOURCES")
-                .AddHelp("Space-separated list of URL sources (each starting with http:// or file:///).")
+                .NameParameters("SOURCES")
+                .AddHelp("Space-separated list of URL sources (each starting with http:// or file://).")
                 .AddHelp("{pdb} in each source will be replaced by the actual PDB ID,")
                 .AddHelp("{pdb_0}, {pdb_1}, {pdb_2}, {pdb_3} will be replaced by the individual characters of the PDB ID.")
                 .AddHelp($"Default: '{string.Join(' ', DEFAULT_URL_SOURCES)}'");
-            var optFailures = options.AddStringOption("--failures")
-                .AddParameter("FILE")
+            var optFailures = parser.AddStringArg("--failures")
+                .NameParameters("FILE")
                 .AddHelp("Filename for output of failed PDBIDs. Use '-' to output on stderr. Default is to exit on any failures.");
 
-            StringOption os = options.AddStringOption("-s");
-            os.AddAction(() => Console.WriteLine(os.Value));
-            IntOption oi = options.AddIntOption("-i").SetDefault(-1);
-            oi.AddAction(() => Console.WriteLine(oi.Value));
-            DoubleOption ox = options.AddDoubleOption("-x");
-            SwitchOption oy = options.AddSwitchOption("-y");
-            SwitchOption on = options.AddSwitchOption("-n");
-            var choices = new string[]{"A", "B", "C"};
-            var alignMethodNames = new Dictionary<AlignMethod, string> {{ AlignMethod.None,"none" }, { AlignMethod.Align,"align" }, { AlignMethod.Super,"super"}, { AlignMethod.Cealign,"cealign" }};
-            ChoiceOption oc = options.AddChoiceOption(choices, "-c").SetDefault("B");
-            DictionaryChoiceOption<AlignMethod> od = options.AddDictionaryChoiceOption(alignMethodNames, "-d").SetDefault(AlignMethod.Align);
-            
-            StringOption ars = options.AddStringOption("STRING");
-            Option<string[]> arv = options.AddOption(2, args=> args, "VARARGS");
-            IntOption ari = options.AddIntOption("INT");
-            SwitchOption ard = options.AddSwitchOption("[SWITCH]");
-            SwitchOption ard2 = options.AddSwitchOption("DUMMY?");
+            // // DEBUG
+            // Argument<string> os = parser.AddStringArg("-s");
+            // os.AddAction(() => Console.WriteLine(os.Value));
+            // Argument<int> oi = parser.AddIntArg("--count-n", "-i").SetChoices(1, 2, 3, 4, 5).SetDefault(5);
+            // oi.AddAction(() => Console.WriteLine(oi.Value));
+            // Argument<double> ox = parser.AddDoubleArg("-x");;
+            // Argument<bool> oy = parser.AddSwitchArg("-y");
+            // Argument<bool> on = parser.AddSwitchArg("-n");
+            // var choices = new string[]{"A", "B", "C"};
+            // var alignMethodNames = new Dictionary<AlignMethod, string> {{ AlignMethod.None,"none" }, { AlignMethod.Align,"align" }, { AlignMethod.Super,"super"}, { AlignMethod.Cealign,"cealign" }};
+            // Argument<string> oc = parser.AddStringArg("-c").SetChoices(choices).SetDefault("B");
+            // Argument<AlignMethod> od = parser.AddDictionaryChoiceArg(alignMethodNames, "-d").SetDefault(AlignMethod.Align);
+            // Argument<string> ars = parser.AddStringArg("STRING");
+            // Argument<string[]> arv = parser.AddArg(2, args=> args, "VARARGS");
+            // Argument<int> ari = parser.AddIntArg("INT");
+            // Argument<bool> ard = parser.AddSwitchArg("[SWITCH]");
+            // Argument<bool> ard2 = parser.AddSwitchArg("DUMMY?");
 
-            bool optionsOK = options.TryParse(args);
+            bool optionsOK = parser.TryParse(args);
             if (!optionsOK){
                 return 1;
             }
+            
+            // // DEBUG
+            // foreach (var opt in parser.Arguments)
+            //     Console.WriteLine($"{opt}");
+            // foreach (var opt in parser.Options)
+            //     Console.WriteLine($"{opt}");
+            // return 0;
+
             string domainListFile = optDomainListFile.Value;            
             string cifOutDirectory = optCifOutdir.Value;
             string pdbOutDirectory = optPdbOutdir.Value;
@@ -100,35 +98,9 @@ namespace StructureCutter
             string[] sources = optSources.Value;
             string failuresFile = optFailures.Value;
 
-            Console.WriteLine($"OPTIONS: summaryOutDirectory: {summaryOutDirectory}");
-            Console.WriteLine($"OPTIONS: {os} {os.Value}");
-            Console.WriteLine($"OPTIONS: {oi} {oi.Value}");
-            Console.WriteLine($"OPTIONS: {ox} {ox.Value}");
-            Console.WriteLine($"OPTIONS: {oy} {oy.Value}");
-            Console.WriteLine($"OPTIONS: {on} {on.Value}");
-            Console.WriteLine($"OPTIONS: {oc} {oc.Value}");
-            Console.WriteLine($"OPTIONS: {od} {od.Value}");
-            Console.WriteLine($"OPTIONS: {optSources} {optSources.Value}" + string.Join(',', optSources.Value));
-            Console.WriteLine($"{optSources} " + string.Join(',', sources));
-            Console.WriteLine();
-            // return 0;
-
-            if (sources.Length == 0){
-                Options.PrintError("Option --sources has invalid value. You must specify at least one source.");
-                return 1;
-            }
-            foreach (string source in sources){
-                string dummyUrl = FormatSource(source, "1234");
-                if (!Uri.IsWellFormedUriString(dummyUrl, UriKind.RelativeOrAbsolute)) {
-                    Options.PrintError($"Option --sources has invalid value. Invalid source: \"{source}\". The source must be a valid URL, possibly with special marks ({{pdb}}, {{pdb_0}}, {{pdb_1}}, {{pdb_2}}, {{pdb_3}}).");
-                    return 1;
-                }
-            }
-
             if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null){
                 Console.WriteLine("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
-            }
-            
+            }            
 
             Console.WriteLine($"Domain list file: {domainListFile}");
             Console.WriteLine($"Sources:");
@@ -435,5 +407,7 @@ namespace StructureCutter
             }
         }
 
+        private static bool CheckSourceProtocol(string source) => ALLOWED_URL_PROTOCOLS.Any(prot => source.StartsWith(prot));
+        private static bool CheckSourceUri(string source) => Uri.IsWellFormedUriString(FormatSource(source, "1234"), UriKind.RelativeOrAbsolute);
     }
 }
