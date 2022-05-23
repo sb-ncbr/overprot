@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 
 namespace StructureCutter
 {
@@ -13,6 +14,8 @@ namespace StructureCutter
         public string entity_polymer_type { get; set; }  // _entity_poly.type
         public string entity_comp { get; set; }          // _pdbx_entity_nonpoly.comp_id 
         public string entity_description { get; set; }   // _entity.pdbx_description
+
+        public List<ResidueSummary> residues { get; set; } // residue summaries
 
         public override string ToString()
         {

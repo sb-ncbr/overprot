@@ -11,7 +11,7 @@ using Cif.Tables;
 
 namespace StructureCutter
 {
-    public class Program
+    public static class Program
     {   
         static readonly string[] DEFAULT_URL_SOURCES = { "http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif" };
         static readonly string[] ALLOWED_URL_PROTOCOLS = {"http://", "https://", "file://", "ftp://"};
@@ -22,10 +22,10 @@ namespace StructureCutter
         const int FIRST_RESIDUE_ID = 1;  // Assigned to the first residue, when converting to PDB.
         const int SKIPPED_RESIDUES_AT_GAP = 1;  // Number of residue numbers to be skipped when some residues are missing in a chain, when converting to PDB.
         
-        // enum AlignMethod { None, Align, Super, Cealign };//DEBUG
-
         static int Main(string[] args)
         {
+            // Debugging.ArgumentParserTest(args);
+            // return 0;
             ArgumentParser parser = new ArgumentParser("StructureCutter 0.9");
             var optDomainListFile = parser.AddStringArg("DOMAIN_LIST_FILE")
                 .AddHelp("JSON file with the list of domains to be downloaded, in format")
@@ -59,37 +59,14 @@ namespace StructureCutter
             var optFailures = parser.AddStringArg("--failures")
                 .NameParameters("FILE")
                 .AddHelp("Filename for output of failed PDBIDs. Use '-' to output on stderr. Default is to exit on any failures.");
-
-            // // DEBUG
-            // Argument<string> os = parser.AddStringArg("-s");
-            // os.AddAction(() => Console.WriteLine(os.Value));
-            // Argument<int> oi = parser.AddIntArg("--count-n", "-i").SetChoices(1, 2, 3, 4, 5).SetDefault(5);
-            // oi.AddAction(() => Console.WriteLine(oi.Value));
-            // Argument<double> ox = parser.AddDoubleArg("-x");;
-            // Argument<bool> oy = parser.AddSwitchArg("-y");
-            // Argument<bool> on = parser.AddSwitchArg("-n");
-            // var choices = new string[]{"A", "B", "C"};
-            // var alignMethodNames = new Dictionary<AlignMethod, string> {{ AlignMethod.None,"none" }, { AlignMethod.Align,"align" }, { AlignMethod.Super,"super"}, { AlignMethod.Cealign,"cealign" }};
-            // Argument<string> oc = parser.AddStringArg("-c").SetChoices(choices).SetDefault("B");
-            // Argument<AlignMethod> od = parser.AddDictionaryChoiceArg(alignMethodNames, "-d").SetDefault(AlignMethod.Align);
-            // Argument<string> ars = parser.AddStringArg("STRING");
-            // Argument<string[]> arv = parser.AddArg(2, args=> args, "VARARGS");
-            // Argument<int> ari = parser.AddIntArg("INT");
-            // Argument<bool> ard = parser.AddSwitchArg("[SWITCH]");
-            // Argument<bool> ard2 = parser.AddSwitchArg("DUMMY?");
+            var optNoBar = parser.AddSwitchArg("--no_bar")
+                .AddHelp("Do not show progress bar.");
 
             bool optionsOK = parser.TryParse(args);
             if (!optionsOK){
                 return 1;
             }
             
-            // // DEBUG
-            // foreach (var opt in parser.Arguments)
-            //     Console.WriteLine($"{opt}");
-            // foreach (var opt in parser.Options)
-            //     Console.WriteLine($"{opt}");
-            // return 0;
-
             string domainListFile = optDomainListFile.Value;            
             string cifOutDirectory = optCifOutdir.Value;
             string pdbOutDirectory = optPdbOutdir.Value;
@@ -97,6 +74,7 @@ namespace StructureCutter
             string residueSummaryOutDirectory = optResidueSummaryOutdir.Value;
             string[] sources = optSources.Value;
             string failuresFile = optFailures.Value;
+            bool noBar = optNoBar.Value;
 
             if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null){
                 Console.WriteLine("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
@@ -110,20 +88,25 @@ namespace StructureCutter
             Console.WriteLine($"CIF output directory: {cifOutDirectory}");
             Console.WriteLine($"PDB output directory: {pdbOutDirectory}");
 
-
             Domain[] domains;
             try {
                 domains = Domain.ReadDomainsFromJson(domainListFile);
             } catch (IOException){
-                Console.Error.WriteLine($"ERROR: Cannot find or read the domain list file '{domainListFile}'");
+                Lib.PrintError($"ERROR: Cannot find or read the domain list file '{domainListFile}'");
                 return 2;
             } catch (FormatException ex){
-                Console.Error.WriteLine($"ERROR: Domain list file has invalid format:");
-                Console.Error.WriteLine($"       {ex.Message}");
+                Lib.PrintError($"ERROR: Domain list file has invalid format:");
+                Lib.PrintError($"       {ex.Message}");
                 return 2;
             }
             Dictionary<string,List<Domain>> domainsByPdb = Domain.SortDomainsByPdb(domains);
 
+            if (pdbOutDirectory != null && domains.Any(dom => dom.Chain == null)){
+                Lib.PrintError($"ERROR: Output in PDB format is not available when some of the input");
+                Lib.PrintError($"       domains are multi-chain (i.e. \"chain_id\": null).");
+                Lib.PrintError($"       Please run without --pdb_outdir or specify chain for each domain.");
+                return 3;
+            }
             if (cifOutDirectory != null){
                 Directory.CreateDirectory(cifOutDirectory);
             }
@@ -132,6 +115,9 @@ namespace StructureCutter
             }
             if (summaryOutDirectory != null){
                 Directory.CreateDirectory(summaryOutDirectory);
+            }
+            if (residueSummaryOutDirectory != null){
+                Directory.CreateDirectory(residueSummaryOutDirectory);
             }
             if (failuresFile != null && failuresFile != "-"){
                 using(var r = new StreamWriter(failuresFile, false)){
@@ -144,12 +130,11 @@ namespace StructureCutter
 
             int[] downloadedCounts = new int[sources.Length];
 
-            ProgressBar progressBar = new ProgressBar(domainsByPdb.Keys.Count, $"Downloading {domainsByPdb.Keys.Count} structures ({domains.Length} domains)");
+            ProgressBar progressBar = new ProgressBar(domainsByPdb.Keys.Count, $"Downloading {domainsByPdb.Keys.Count} structures ({domains.Length} domains)", ProgressBar.DEFAULT_WIDTH, noBar? null : ProgressBar.DEFAULT_WRITER);
 
             // TODO nice progress bar
             progressBar.Start();
             foreach (string pdb in domainsByPdb.Keys){
-                // string[] urls = sources.Select(source => source.Replace("{pdb}", pdb).Replace("{pdb12}", pdb.Substring(1, 2))).ToArray();
                 string[] urls = sources.Select(source => FormatSource(source, pdb)).ToArray();
                 string url;
                 string cifString;
@@ -162,7 +147,7 @@ namespace StructureCutter
                     } else {
                         string message = pdb;
                         if (failuresFile == "-"){
-                            Console.Error.WriteLine(message);
+                            Lib.PrintError(message);
                         } else {
                             using(var r = new StreamWriter(failuresFile, true)){
                                 r.WriteLine(message);
@@ -174,30 +159,26 @@ namespace StructureCutter
                 }
                 CifPackage package = CifPackage.FromString(cifString);
                 if (package.Blocks.Length == 0){
-                    Console.Error.WriteLine("ERROR: CIF file contains no blocks.");
+                    Lib.PrintError("ERROR: CIF file contains no blocks.");
                     return 3;
                 }
                 CifBlock block = package.Blocks[0];
                 CifCategory atomSiteCategory = block.GetCategory("_atom_site");
+                int[] modelRows = SelectFirstModel(atomSiteCategory, pdb);
                 
                 if (cifOutDirectory != null || pdbOutDirectory != null){
                     foreach (Domain domain in domainsByPdb[pdb]){
-                        Filter filter = Filter.StringEquals("label_asym_id", domain.Chain) & Filter.IntegerInRange("label_seq_id", domain.Ranges);
-                        int[] rows = filter.GetFilteredRows(atomSiteCategory).ToArray();
-
-                        // Select only the first model, if there are more than one
-                        if (atomSiteCategory.ContainsItem("pdbx_PDB_model_num")){
-                            int[] modelNumbers = atomSiteCategory.GetItem("pdbx_PDB_model_num").GetIntegers(rows).Distinct().ToArray();
-                            if (modelNumbers.Length == 0) {
-                                Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-                                break;
-                            }
-                            if (modelNumbers.Length > 1) {
-                                int firstModelNumber = modelNumbers[0];
-                                Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using only model {firstModelNumber})");
-                                Filter modelFilter= Filter.IntegerInRange("pdbx_PDB_model_num", (firstModelNumber, firstModelNumber));
-                                rows = (Filter.TheseRows(rows) & modelFilter).GetFilteredRows(atomSiteCategory).ToArray();
-                            }
+                        // Select chain and ranges
+                        Filter filter = Filter.TheseRows(modelRows);
+                        if (domain.Chain != null)
+                            filter &= Filter.StringEquals("label_asym_id", domain.Chain);
+                        if (domain.Ranges != null)
+                            filter &= Filter.IntegerInRange("label_seq_id", domain.Ranges);
+                        int[] domainRows = filter.GetFilteredRows(atomSiteCategory).ToArray();
+                        
+                        if (domainRows.Length == 0) {
+                            Lib.PrintError($"Warning: {domain} contains no atoms.");
+                            // break;
                         }
 
                         if (cifOutDirectory != null){
@@ -209,36 +190,44 @@ namespace StructureCutter
                                 if (block.ContainsCategory("_entry")){
                                     w.Write(block.GetCategory("_entry").MakeCifString());
                                 }
-                                w.Write(atomSiteCategory.MakeCifString(rows));
+                                w.Write(atomSiteCategory.MakeCifString(domainRows));
                             }
                         }
 
                         if (pdbOutDirectory != null){
                             string pdbOutputFile = Path.Combine(pdbOutDirectory, domain.Name + PDB_OUTPUT_EXTENSION);
-                            ModelCollection models = ModelCollection.FromCifBlock(block, rows);
-                            if (models.Count == 0) {
-                                Console.Error.WriteLine($"Warning: No model found for domain {domain.Name} (or the selection is empty)");
-                                break;
-                            }
-                            Model model = models.GetModel(0);
-                            if (models.Count > 1) {
-                                Console.Error.WriteLine($"Warning: More than one model found for domain {domain.Name} (using onlymodel {model.ModelNumber})");
-                            }
-                            RenumberModel(model);
-                            try {
-                                PrintModelToPdb(model, pdbOutputFile);
-                            } catch (PDBFormatSucksException ex) {
-                                Console.Error.WriteLine($"ERROR: Cannot fit model for {domain.Name} into PDB format: {ex.Message}");
-                                return 4;
+                            if (domainRows.Length != 0){
+                                ModelCollection models = ModelCollection.FromCifBlock(block, domainRows);
+                                Model model = models.GetModel(0);
+                                RenumberModel(model);
+                                try {
+                                    PrintModelToPdb(model, pdbOutputFile);
+                                } catch (PDBFormatSucksException ex) {
+                                    Lib.PrintError($"ERROR: Cannot fit model for {domain.Name} into PDB format: {ex.Message}");
+                                    return 4;
+                                }
+                            } else {
+                                using (StreamWriter w = new StreamWriter(pdbOutputFile)){/* Create empty file */}
                             }
                         }
                     }
                 }
                 
-                if (summaryOutDirectory != null){
-                    StructureSummary summary = new StructureSummary(pdb, block);
+                if (residueSummaryOutDirectory != null){
+                    StructureSummary summary = new StructureSummary(pdb, block, true, modelRows);
+                    summary.Save(Path.Combine(residueSummaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
+                    if (summaryOutDirectory != null){
+                        summary.DropResidueSummaries();
+                        summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
+                    }
+                } else if (summaryOutDirectory != null){
+                    StructureSummary summary = new StructureSummary(pdb, block, false, modelRows);
                     summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                 }
+                // if (summaryOutDirectory != null){
+                //     StructureSummary summary = new StructureSummary(pdb, block, true, modelRows);
+                //     summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
+                // }
                 progressBar.Step();
             }
             progressBar.Finish();
@@ -248,6 +237,23 @@ namespace StructureCutter
             }
 
             return 0;
+        }
+
+        static private int[] SelectFirstModel(CifCategory atomSiteCategory, string nameForWarnings = null){
+            if (!atomSiteCategory.ContainsItem("pdbx_PDB_model_num")){
+                return Enumerable.Range(0, atomSiteCategory.RowCount).ToArray();
+            }
+            int[] modelNumbers = atomSiteCategory.GetItem("pdbx_PDB_model_num").GetIntegers().Distinct().ToArray();
+            if (modelNumbers.Length == 0) {
+                if (nameForWarnings != null) 
+                    Lib.PrintError($"Warning: No model found for structure {nameForWarnings}.");
+                return new int[0];
+            }
+            int firstModelNumber = modelNumbers[0];
+            if (modelNumbers.Length > 1 && nameForWarnings != null)
+                Lib.PrintError($"Warning: More than one model found for structure {nameForWarnings} (using only model {firstModelNumber}).");
+            Filter modelFilter= Filter.IntegerInRange("pdbx_PDB_model_num", (firstModelNumber, firstModelNumber));
+            return modelFilter.GetFilteredRows(atomSiteCategory).ToArray();
         }
 
         /** Add PDB ID into source, e.g. "http://blabla.org/{pdb_1}{pdb_2}/{pdb}.cif" -> "http://blabla.org/tq/1tqn.cif" */

@@ -26,6 +26,7 @@ namespace StructureCutter
         }
 
         public void Start(){
+            if (Writer==null) return;
             Writer.WriteLine("|" + Title.PadRight(Width, '_') + "|");
             Writer.Write("|");
             Step(0);
@@ -33,6 +34,7 @@ namespace StructureCutter
 
         public void Step() => Step(1);
         public void Step(int nSteps){
+            if (Writer==null) return;
             StepsDone = Math.Min(StepsDone + nSteps, TotalSteps);
             int newShown = TotalSteps>0 ? Convert.ToInt32(Math.Floor(1.0 * Width * StepsDone / TotalSteps)) : Width;
             for (; SymbolsShown < newShown; SymbolsShown++) {
@@ -41,6 +43,7 @@ namespace StructureCutter
         }
 
         public void Finish(){
+            if (Writer==null) return;
             Step(TotalSteps - StepsDone);
             Writer.WriteLine("|");
         }

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -75,7 +74,8 @@ namespace StructureCutter
             if (!ok) return false;
             if (extraArgs.Length > 0)
             {
-                PrintError($"Too many arguments: " + string.Join(' ', extraArgs));
+                Lib.PrintError($"Too many arguments: " + string.Join(' ', extraArgs));
+                Lib.PrintError($"Run   dotnet {System.AppDomain.CurrentDomain.FriendlyName}.dll --help   for usage information.");
                 return false;
             }
             return true;
@@ -99,13 +99,15 @@ namespace StructureCutter
                         }
                         catch (ArgParseException e)
                         {
-                            PrintError($"Option {name}: {e.Message}");
+                            Lib.PrintError($"Option {name}: {e.Message}");
+                            Lib.PrintError($"Run   dotnet {System.AppDomain.CurrentDomain.FriendlyName}.dll --help   for usage information.");
                             return false;
                         }
                     }
                     else
                     {
-                        PrintError($"Unknown option: {name}.");
+                        Lib.PrintError($"Unknown option: {name}.");
+                        Lib.PrintError($"Run   dotnet {System.AppDomain.CurrentDomain.FriendlyName}.dll --help   for usage information.");
                         return false;
                     }
                 }
@@ -123,7 +125,8 @@ namespace StructureCutter
                 }
                 catch (ArgParseException e)
                 {
-                    PrintError($"Argument {argument.Names[0]}: {e.Message}");
+                    Lib.PrintError($"Argument {argument.Names[0]}: {e.Message}");
+                    Lib.PrintError($"Run   dotnet {System.AppDomain.CurrentDomain.FriendlyName}.dll --help   for usage information.");
                     return false;
                 }
             }
@@ -148,7 +151,7 @@ namespace StructureCutter
                 foreach (IArgument argument in Arguments)
                 {
                     string line = OPTION_INDENT + argument.Names[0];
-                    WriteInColor(ConsoleColor.Cyan, line);
+                    Lib.WriteInColor(ConsoleColor.Cyan, line);
                     foreach (string help in argument.Helps)
                         Console.WriteLine(OPTION_HELP_INDENT + help);
                 }
@@ -159,29 +162,12 @@ namespace StructureCutter
                 foreach (IArgument option in Options)
                 {
                     string line = OPTION_INDENT + string.Join(", ", option.Names) + " " + string.Join(" ", option.Parameters);
-                    WriteInColor(ConsoleColor.Cyan, line);
+                    Lib.WriteInColor(ConsoleColor.Cyan, line);
                     foreach (string help in option.Helps)
                         Console.WriteLine(OPTION_HELP_INDENT + help);
                 }
             }
             Environment.Exit(0);
-        }
-
-        public static void PrintError(string message)
-        {
-            string appName = System.AppDomain.CurrentDomain.FriendlyName;
-            WriteInColor(ConsoleColor.Red, message, file: Console.Error);
-            WriteInColor(ConsoleColor.Red, $"Run   dotnet {appName}.dll --help   for usage information.", file: Console.Error);
-        }
-
-        private static void WriteInColor(ConsoleColor color, string text, TextWriter file = null, bool newline = true)
-        {
-            file = file ?? Console.Out;
-            ConsoleColor orig = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-            file.Write(text);
-            if (newline) file.WriteLine();
-            Console.ForegroundColor = orig;
         }
 
     }

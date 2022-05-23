@@ -41,6 +41,7 @@ namespace StructureCutter
             }
         }
         public static (int,int)[] ParseRangeString(string rangeString) {
+            if (rangeString == null) return null;
             return rangeString.Split(',').Select(range => ParseOneRangeString(range)).ToArray();
         }
 
@@ -85,8 +86,10 @@ namespace StructureCutter
                     JsonObject domainObj = domainJson as JsonObject;
                     domainName = JsonValueToString(GetJsonObjectValue(domainObj, "domain"), valueName: "Content[\"domain\"]", mustBe: "a string (domain name)");
                     pdb = JsonValueToString(GetJsonObjectValue(domainObj, "pdb"), valueName: "Content[\"pdb\"]", mustBe: "a string (PDB ID)");
-                    chain = JsonValueToString(GetJsonObjectValue(domainObj, "chain_id"), valueName: "Content[\"chain_id\"]", mustBe: "a string (chain ID)");
-                    range = JsonValueToString(GetJsonObjectValue(domainObj, "ranges"), valueName: "Content[\"ranges\"]", mustBe: "a string (residue ranges)");
+                    chain = JsonValueToString(GetJsonObjectValue(domainObj, "chain_id"), valueName: "Content[\"chain_id\"]", mustBe: "a string (chain ID)", allowNull: true);
+                    range = JsonValueToString(GetJsonObjectValue(domainObj, "ranges"), valueName: "Content[\"ranges\"]", mustBe: "a string (residue ranges)", allowNull: true);
+                    if (chain == "") chain = null;
+                    if (range == "") range = null;
                 } catch (KeyNotFoundException ex) {
                     string missingKey = ex.Message;
                     throw new FormatException($"Content must contain key \"{missingKey}\".");
@@ -106,8 +109,11 @@ namespace StructureCutter
         }
 
         private static string JsonValueToString(JsonValue jsonValue, string valueName = "Content", string mustBe = "a string", bool allowNull = false){
-            if (jsonValue == null && !allowNull){
-                throw new FormatException($"{valueName} must be {mustBe}, not null.");
+            if (jsonValue == null){
+                if (allowNull) 
+                    return null;
+                else
+                    throw new FormatException($"{valueName} must be {mustBe}, not null.");
             }
             if (jsonValue.JsonType != JsonType.String){
                 throw new FormatException($"{valueName} must be {mustBe}, not {jsonValue}.");
