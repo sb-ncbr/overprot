@@ -33,7 +33,7 @@ namespace StructureCutter
                 rows = Enumerable.Range(0, NAtomsAll).ToArray();
             }
 
-            Filter filter = Filter.TheseRows(rows) & !Filter.StringEquals("type_symbol", "H");
+            Filter filter = Filter.TheseRows(rows) & Filter.StringEquals("label_alt_id", new string[]{".", "A"}) & !Filter.StringEquals("type_symbol", "H");
             rows = filter.GetFilteredRows(_atom_site).ToArray();
             NAtomsFiltered = rows.Length;
 
@@ -152,7 +152,7 @@ namespace StructureCutter
                 sum.entity_polymer_type = entity_PolyTypeDict.ContainsKey(sum.entity) ? entity_PolyTypeDict[sum.entity] : null;
                 sum.entity_comp = entity_CompDict.ContainsKey(sum.entity) ? entity_CompDict[sum.entity] : null;
                 ChainSummaries[chain] = sum;
-                if (includeResidueSummaries && (sum.entity_type == "polymer" || sum.entity_type == "branched"))  // TODO macrolide?
+                if (includeResidueSummaries && (sum.entity_type == "polymer" || sum.entity_type == "branched"))
                 {
                     sum.residues = new List<ResidueSummary>();
                     foreach (var residue in chainResidueIndex[chain].Keys)
@@ -163,7 +163,7 @@ namespace StructureCutter
                         ressum.residue = residue.resi != RESI_NULL ? residue.resi : null;
                         ressum.auth_residue = residue.authResi != RESI_NULL ? residue.authResi : null;
                         ressum.auth_ins_code = residue.authIns;
-                        ressum.comp = TheOnlyValue(atom_Compound, indices, errorMessage: $"{name}: label_seq_id '{ressum.residue}' maps to multiple pdbx_PDB_ins_code.");
+                        ressum.comp = TheOnlyValue(atom_Compound, indices, errorMessage: $"{name}: label_seq_id '{ressum.residue}' maps to multiple label_comp_id.");
                         ressum.n_atoms = indices.Count;
                         ressum.center = Center(atom_X, atom_Y, atom_Z, indices);
                         if (BASE_TIP_NAMES.ContainsKey(ressum.comp)) // is a nucleic base?
@@ -179,7 +179,6 @@ namespace StructureCutter
                     }
                 }
             }
-            // TODO test on NMR structure if really filters out H and multiple models1
 
             // TODO _entity_name_com.name, _pdbx_entity_nonpoly.name ?
         }

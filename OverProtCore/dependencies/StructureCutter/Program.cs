@@ -77,7 +77,7 @@ namespace StructureCutter
             bool noBar = optNoBar.Value;
 
             if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null){
-                Console.WriteLine("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
+                Lib.PrintError("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
             }            
 
             Console.WriteLine($"Domain list file: {domainListFile}");
