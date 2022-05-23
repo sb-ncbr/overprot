@@ -187,7 +187,7 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
             get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
             get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
             get_pdb_entry_list.main(out=directory/'pdbs.txt')
-            make_chain_summaries.main(directory/'pdbs.txt', directory/'chain_summaries', conf.download.structure_sources, breakdown=True, processes=processes)
+            make_chain_summaries.main(directory/'pdbs.txt', directory/'chain_summaries', directory/'residue_summaries', conf.download.structure_sources, breakdown=True, processes=processes)
         if only_get_lists:
             return
         out_err_dir = directory/'stdout_stderr'
@@ -245,6 +245,8 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
                     lib_sh.cp(directory/'cath_b_names_options.json', c)
                     lib_sh.cp(directory/'chain_summaries', c/'pdb'/'chain_summary')
                     lib_sh.archive(c/'pdb'/'chain_summary', c/'bulk'/'pdb'/'chain_summary.zip')
+                    lib_sh.cp(directory/'residue_summaries', c/'pdb'/'residue_summary')
+                    lib_sh.archive(c/'pdb'/'residue_summary', c/'bulk'/'pdb'/'residue_summary.zip')
 
                 (c/'last_update.txt').write_text(start_time.strftime('%d %B %Y').lstrip('0'))
                 (c/'last_update_iso.txt').write_text(start_time.isoformat(timespec='seconds'))

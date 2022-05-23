@@ -22,15 +22,26 @@ from .libs.lib_logging import ProgressBar
 from .libs.lib_cli import cli_command, run_cli_command
 
 
-def make_summaries(pdbs: list[str], outdir: Path, structure_sources: list[str], failures_file: Optional[Path] = None) -> None:
-    outdir.mkdir(parents=True, exist_ok=True)
+def make_summaries(pdbs: list[str], chain_outdir: Path|None, residue_outdir: Path|None, structure_sources: list[str], failures_file: Path|None = None) -> None:
+    if chain_outdir is not None:
+        chain_outdir.mkdir(parents=True, exist_ok=True)
+    if residue_outdir is not None:
+        residue_outdir.mkdir(parents=True, exist_ok=True)
     if len(pdbs) == 0:
         return
-    js = [{"domain": ".", "pdb": pdb, "chain_id": ".", "ranges": ":"} for pdb in pdbs]
-    sample_file = outdir/f'sample.json'
+    if chain_outdir is None and residue_outdir is None:
+        return
+    js = [{"domain": ".", "pdb": pdb, "chain_id": None, "ranges": None} for pdb in pdbs]
+    sample_file = (chain_outdir or residue_outdir)/f'sample.json'
     with open(sample_file, 'w') as w:
         json.dump(js, w)
-    args = [STRUCTURE_CUTTER_DLL, sample_file, '--summary_outdir', outdir]
+    args = [STRUCTURE_CUTTER_DLL, sample_file]
+    if chain_outdir is not None:
+        args.append('--summary_outdir')
+        args.append(chain_outdir)
+    if residue_outdir is not None:
+        args.append('--residue_summary_outdir')
+        args.append(residue_outdir)
     if len(structure_sources) > 0:
         args.append('--sources')
         args.append(' '.join(structure_sources))
@@ -49,10 +60,11 @@ def append_file(source: Path, dest: Path, remove_source: bool = False):
         source.unlink()
 
 @cli_command(parsers={'structure_sources': str.split})
-def main(pdb_list: Path, outdir: Path, structure_sources: list[str], breakdown: bool = False, save_failures: bool = False, processes: Optional[int] = None) -> Optional[int]:
+def main(pdb_list: Path, chain_outdir: Path, residue_outdir: Path, structure_sources: list[str], breakdown: bool = False, save_failures: bool = False, processes: Optional[int] = None) -> Optional[int]:
     '''Create chain summaries for a list of PDB entries.
     @param  `pdb_list`  File with PDB entry list (PDB IDs separated by whitespace).
-    @param  `outdir`    Directory for output files.
+    @param  `chain_outdir`       Directory for output files (chain summaries).
+    @param  `residue_outdir`     Directory for output files (residue summaries).
     @param  `structure_sources`  List of structure sources, e.g. 'http://www.ebi.ac.uk/pdbe/entry-files/download/{pdb}_updated.cif.gz'.
                                  (From command line, separate the sources by space within the argument.)
     @param  `breakdown`      Split the output files into subdirectories based on the middle 2 characters of the PDB ID (e.g. 1tqn -> outdir/tq/1tqn.json).
@@ -64,7 +76,8 @@ def main(pdb_list: Path, outdir: Path, structure_sources: list[str], breakdown: 
     for pdb in pdbs:
         if not pdb.isalnum():
             raise ValueError(f"PDB ID must be alphanumeric, not '{pdb}'")
-    outdir.mkdir(parents=True, exist_ok=True)
+    chain_outdir.mkdir(parents=True, exist_ok=True)
+    residue_outdir.mkdir(parents=True, exist_ok=True)
     if breakdown:
         subsets = defaultdict(list)
         for pdb in pdbs:
@@ -72,15 +85,15 @@ def main(pdb_list: Path, outdir: Path, structure_sources: list[str], breakdown: 
             subsets[sub].append(pdb)
         jobs = []
         for subdir, subset in subsets.items():
-            kwargs = {'failures_file': outdir/subdir/'failures.txt'} if save_failures else {}
-            jobs.append(lib_multiprocessing.Job(name=subdir, func=make_summaries, args=(subset, outdir/subdir, structure_sources)))
+            kwargs = {'failures_file': chain_outdir/subdir/'failures.txt'} if save_failures else {}
+            jobs.append(lib_multiprocessing.Job(name=subdir, func=make_summaries, args=(subset, chain_outdir/subdir, residue_outdir/subdir, structure_sources)))
         print(f'Making chain summaries for {len(pdbs)} PDBs:')
         def append_failures(subdir: str) -> None:
             if save_failures:
-                append_file(outdir/subdir/'failures.txt', outdir/'failures.txt', remove_source=True)
+                append_file(chain_outdir/subdir/'failures.txt', chain_outdir/'failures.txt', remove_source=True)
         lib_multiprocessing.run_jobs_with_multiprocessing(jobs, n_processes=processes, progress_bar=True, callback = append_failures)
     else:
-        make_summaries(pdbs, outdir, structure_sources)
+        make_summaries(pdbs, chain_outdir, residue_outdir, structure_sources)
     return 0
 
 
