@@ -120,7 +120,7 @@ export var OverProtViewerCore;
         const VIEWER = 'div.overprot-viewer';
         let styleLines = [];
         for (const sheet of document.styleSheets) {
-            var rules = (_a = sheet.cssRules, (_a !== null && _a !== void 0 ? _a : []));
+            var rules = (_a = sheet.cssRules) !== null && _a !== void 0 ? _a : [];
             for (const rule of rules) {
                 if (rule.cssText.includes(VIEWER)) {
                     let ruleText = rule.cssText.replace(VIEWER, '');
@@ -241,10 +241,24 @@ export var OverProtViewerCore;
         Controls.addToControlPanel(controlPanel, colorMethodDropdown);
         let shapeMethodDropdown = Controls.newDropdownList(viewer, 'shape-method', 'Shape', shapeOptions, viewer.settings.shapeMethod, method => applyShapes(viewer, method), 'Choose shape method.', true, false);
         Controls.addToControlPanel(controlPanel, shapeMethodDropdown);
-        let betaConnectivityDropdown = Controls.newDropdownList(viewer, 'beta-connectivity', 'Beta-connectivity', connectivityOptions, viewer.settings.betaConnectivityVisibility, method => Drawing.showBetaConnectivity(viewer, method, true), '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.', true, false);
-        Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
         let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
         Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
+        // let betaConnectivityDropdown = Controls.newDropdownList(viewer, 'beta-connectivity', 'Beta-connectivity', connectivityOptions, viewer.settings.betaConnectivityVisibility,
+        //     method => Drawing.showBetaConnectivity(viewer, method, true),
+        //     '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.',
+        //     true, true);
+        // Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
+        // let showBetaConnectivityButton = Controls.newToggleButton(viewer, 'show-beta-connectivity', 'Beta-connectivity', false, false, 
+        //     viewer.settings.betaConnectivityVisibility,
+        //     method => Drawing.showBetaConnectivity(viewer, method, true),
+        //     '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.');
+        // Controls.addToControlPanel(controlPanel, showBetaConnectivityButton);
+        let showBetaConnButton = Controls.newToggleButton(viewer, 'show-beta-connectivity', [Constants.ICON_BETA_CONNECTIVITY, Constants.ICON_BETA_CONNECTIVITY_CHECKED], true, true, viewer.settings.betaConnectivityVisibility, method => Drawing.showBetaConnectivity(viewer, method, true), 'Show/hide beta-connectivity.<br>(<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.)');
+        Controls.addToControlPanel(controlPanel, showBetaConnButton);
+        let showLabelsButton = Controls.newToggleButton(viewer, 'show-labels', [Constants.ICON_LABELS, Constants.ICON_LABELS_CHECKED], true, true, viewer.settings.showLabels, method => { viewer.settings.showLabels = method; Drawing.redraw(viewer); }, 'Show/hide SSE labels.');
+        Controls.addToControlPanel(controlPanel, showLabelsButton);
+        let showLegendButton = Controls.newToggleButton(viewer, 'show-legend', [Constants.ICON_LEGEND, Constants.ICON_LEGEND_CHECKED], true, true, viewer.settings.showLegend, method => { viewer.settings.showLegend = method; Drawing.showLegend(viewer); }, 'Show/hide legend.');
+        Controls.addToControlPanel(controlPanel, showLegendButton);
         // let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, false, () => Drawing.save(viewer), 'Save image.');
         // Controls.addToControlPanel(controlPanel, saveButton);
         let saveButton2 = Controls.newButton(viewer, 'save', Constants.ICON_CAMERA, true, true, () => Drawing.save(viewer), 'Save image.');

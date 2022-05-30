@@ -15,6 +15,7 @@ export declare namespace Drawing {
     function recolor(viewer: Types.Viewer, transition?: boolean): void;
     function redraw(viewer: Types.Viewer, transition?: boolean): void;
     function nodeBigEnoughForLabel(viewer: Types.Viewer, node: Dag.Node): boolean;
+    function showLegend(viewer: Types.Viewer, transition?: boolean): void;
     function showBetaConnectivity(viewer: Types.Viewer, on: boolean, transition?: boolean): void;
     function selectNodeFromShape(viewer: Types.Viewer, shape: SVGElement, includeLadders: boolean): Types.D3Selection;
     function fadeOutRemove(selection: Types.D3Selection, delay?: number): Types.D3Transition;

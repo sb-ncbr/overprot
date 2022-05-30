@@ -1,8 +1,98 @@
 <html>
-    <head>	
-        <meta http-equiv = "refresh" content = "0; url = web/home-dev.html" />
-    </head>
-    <body>
-        Redirecting to <a href="web/home-dev.html">web/home-dev.html</a>
-    </body>
+<head>
+    <meta charset='UTF-8'>
+    <base href="..">
+    <link rel='stylesheet' type='text/css' href='dist/overprot-viewer.min.css'>
+    <script type='text/javascript' src='dist/d3.v5.min.js'></script>
+    <script type='text/javascript' src='dist/d3-selection-multi.v1.min.js'></script>
+    <script type='text/javascript' src='dist/overprot-viewer.min.js'></script>
+</head>
+<body>
+    <p>This pages contains the minimum of code needed to embed the OverProtViewer component.</p>
+    <overprot-viewer id="rossmann"
+        file="sample_data/rossmann_3-40-50-2300/diagram.json"
+        width="1200" height="300"
+        color-method="sheet" shape-method="rectangle" beta-connectivity="true" occurrence-threshold="0.2"
+        show-labels="true" show-legend="true"
+        dispatch-events="false" listen-events="false">
+    </overprot-viewer>
+    
+    <br>
+    <!-- PLUS -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke: black; fill: black; fill-rule: evenodd;" d="M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z"></path>
+        </svg>
+    </div>
+    <!-- CAMERA -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke: black; fill: black; fill-rule: evenodd;" d="M15,30 H32 L40,22 H60 L68,30 H85 V72 H15 z 
+                M34,50 A16,16,0,0,0,66,50 A16,16,0,0,0,34,50 z
+                M40,50 A10,10,0,0,0,60,50 A10,10,0,0,0,40,50 z
+                M80,35 V41 H72 V35 z"></path>
+        </svg>
+    </div>
+    <!-- LABELS -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+    <!-- <div style="display: inline-block; margin: 1px; background: lightgray; height: 100px; width: 100px;"> -->
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke: black; fill: black; fill-rule: evenodd;" 
+            d="M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z 
+            M40,55 L50,30 L60,55 z
+            "></path>
+            <path style="stroke-width: 17px; stroke: lightgray; fill: none" 
+            d="M58,62 l12,22 h1 l22,-34"></path>
+            <path style="stroke-width: 7px; stroke: black; fill: none" 
+            d="M60,66 l10,18 h1 l20,-30"></path>
+        </svg>
+    </div>
+    <!-- LEGEND -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+    <!-- <div style="display: inline-block; margin: 1px; background: lightgray; height: 100px; width: 100px;"> -->
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke: black; fill: black; fill-rule: evenodd;" 
+            d="
+            M18,21 h12 v12 h-12 z
+            M37,21 h45 v12 h-45 z
+            M18,42 h12 v12 h-12 z
+            M37,42 h45 v12 h-45 z
+            M18,63 h12 v12 h-12 z
+            M37,63 h45 v12 h-45 z
+            "></path>
+            <path style="stroke-width: 17px; stroke: lightgray; fill: none" 
+            d="M58,62 l12,22 h1 l22,-34"></path>
+            <path style="stroke-width: 7px; stroke: black; fill: none" 
+            d="M60,66 l10,18 h1 l20,-30"></path>
+        </svg>
+    </div>
+    <!-- BETA-CONNECTIVITY -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+    <!-- <div style="display: inline-block; margin: 1px; background: lightgray; height: 100px; width: 100px;"> -->
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke-width: 7px; stroke: black; fill: none;" 
+            d="M20,65 A30,40 0 0,1 80,65" fill="none" stroke="#595959"></path>
+
+            <path style="stroke-width: 17px; stroke: lightgray; fill: none" 
+            d="M58,62 l12,22 h1 l22,-34"></path>
+            <path style="stroke-width: 7px; stroke: black; fill: none" 
+            d="M60,66 l10,18 h1 l20,-30"></path>
+        </svg>
+    </div>
+    <!-- BETA-CONNECTIVITY -->
+    <div style="display: inline-block; margin: 1px; background: lightgray; height: 26px; width: 26px;">
+    <!-- <div style="display: inline-block; margin: 1px; background: lightgray; height: 100px; width: 100px;"> -->
+        <svg viewBox="0 0 100 100" style="height: 100%; width: 100%;">
+            <path style="stroke-width: 7px; stroke: black; fill: none;" 
+            d="M20,44 a30,30 0 0,1 60,0" fill="none" stroke="#595959"></path>
+            <path style="stroke-width: 7px; stroke: black; fill: none;" 
+            d="M30,87 v-35 a8,8 0 1,1 8,8 h-2 h+2 a8,8 0 1,1 -2,15" fill="none" stroke="#595959"></path>
+
+            <path style="stroke-width: 17px; stroke: lightgray; fill: none" 
+            d="M58,62 l12,22 h1 l22,-34"></path>
+            <path style="stroke-width: 7px; stroke: black; fill: none" 
+            d="M60,66 l10,18 h1 l20,-30"></path>
+        </svg>
+    </div>
+</body>
 </html>

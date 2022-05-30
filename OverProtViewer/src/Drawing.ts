@@ -275,7 +275,7 @@ export namespace Drawing {
                 let { x, y, height, width } = Geometry.rectToScreen(viewer.visWorld, viewer.screen, (n as Dag.Node).visual.rect);
                 return { x: x + width / 2, y: y + height + Constants.HANGING_TEXT_OFFSET }
             })
-            .style('opacity', (n, i) => labelVisibility[i] ? 1 : 0)
+            .style('opacity', (n, i) => viewer.settings.showLabels && labelVisibility[i] ? 1 : 0)
             .transition().duration(0)
             .style('fill', (n, i) => labelVisibility[i] ? Constants.NODE_LABEL_COLOR : 'none');
         viewer.canvas
@@ -388,31 +388,33 @@ export namespace Drawing {
     const LEGEND_SPACING = 15;  // between items
     const LEGEND_SPACING_INNER = 5;  // between item shape and label
     
-    function showLegend(viewer: Types.Viewer, transition: boolean = true): void {
+    export function showLegend(viewer: Types.Viewer, transition: boolean = true): void {
         fadeOutRemove(viewer.canvas.selectAll('g.legend'));
-        let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend') as any as Types.D3Selection;
-        let ellipsisIndex = null;
-        switch(viewer.settings.colorMethod){
-            case Enums.ColorMethod.Stdev: 
-                show3DVariabilityLegend(viewer, legendGroup, transition); 
-                break;
-            case Enums.ColorMethod.Type: 
-                showTypeLegend(viewer, legendGroup, transition);
-                break;
-            case Enums.ColorMethod.Sheet: 
-                ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
-                break;
-        }
-        if (viewer.settings.betaConnectivityVisibility){
-            showBetaConnectivityLegend(viewer, legendGroup, transition);
-        }
-        distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2*LEGEND_HMARGIN, 
-            () => addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, '...', 'none'));
-        let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
-        let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
-        legendGroup.attr('transform', `translate(${x},${y})`);
-        if (transition) {
-            fadeIn(legendGroup);
+        if (viewer.settings.showLegend){
+            let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend') as any as Types.D3Selection;
+            let ellipsisIndex = null;
+            switch(viewer.settings.colorMethod){
+                case Enums.ColorMethod.Stdev: 
+                    show3DVariabilityLegend(viewer, legendGroup, transition); 
+                    break;
+                case Enums.ColorMethod.Type: 
+                    showTypeLegend(viewer, legendGroup, transition);
+                    break;
+                case Enums.ColorMethod.Sheet: 
+                    ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
+                    break;
+            }
+            if (viewer.settings.betaConnectivityVisibility){
+                showBetaConnectivityLegend(viewer, legendGroup, transition);
+            }
+            distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2*LEGEND_HMARGIN, 
+                () => addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, '...', 'none'));
+            let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
+            let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
+            legendGroup.attr('transform', `translate(${x},${y})`);
+            if (transition) {
+                fadeIn(legendGroup);
+            }
         }
     }
 
@@ -510,11 +512,11 @@ export namespace Drawing {
         let itemHelix = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
         let itemStrand = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('E'), 'Strand');
         Drawing.addPointBehavior(viewer, itemHelix, 
-            () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
+            () => concatSelections(itemHelix, selectNodesBySSEType(viewer, Constants.HELIX_TYPE)),
             nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
         );
         Drawing.addPointBehavior(viewer, itemStrand, 
-            () =>  selectNodesBySSEType(viewer, Constants.STRAND_TYPE),
+            () => concatSelections(itemStrand, selectNodesBySSEType(viewer, Constants.STRAND_TYPE)),
             nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
         );
     }
@@ -529,15 +531,16 @@ export namespace Drawing {
         let sheetIds = [...sheetIdSet];
         sheetIds.sort((a, b) => a-b);
         
-        let item = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
-        Drawing.addPointBehavior(viewer, item, 
-            () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
+        let helixItem = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.bySseType('H'), 'Helix');
+        Drawing.addPointBehavior(viewer, helixItem, 
+            // () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
+            () => concatSelections(helixItem, selectNodesBySSEType(viewer, Constants.HELIX_TYPE)),
             nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
         );
         for (let id of sheetIds){
-            item = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.byIndex1(id), `\u03b2${id}`);
-            Drawing.addPointBehavior(viewer, item, 
-                () =>  selectNodesBySheetId(viewer, id, true),
+            let strandItem = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.byIndex1(id), `\u03b2${id}`);
+            Drawing.addPointBehavior(viewer, strandItem, 
+                () => concatSelections(strandItem, selectNodesBySheetId(viewer, id, true)),
                 nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data())
             );
         }
@@ -547,8 +550,8 @@ export namespace Drawing {
     function showBetaConnectivityLegend(viewer: Types.Viewer, legendGroup: Types.D3Selection, transition: boolean = true): void {
         let itemPara = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
         let itemAnti = addLegendItem(viewer, legendGroup, {x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT}, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
-        Drawing.addPointBehavior(viewer, itemPara, () => selectArcsByOrientation(viewer, 1));
-        Drawing.addPointBehavior(viewer, itemAnti, () => selectArcsByOrientation(viewer, -1));
+        Drawing.addPointBehavior(viewer, itemPara, () => concatSelections(itemPara, selectArcsByOrientation(viewer, 1)));
+        Drawing.addPointBehavior(viewer, itemAnti, () => concatSelections(itemAnti, selectArcsByOrientation(viewer, -1)));
     }
 
     function boxWidth(selection: Types.D3Selection, spacing: number = 0): number {

@@ -194,7 +194,10 @@ class IntegratedViewer {
 			// moleculeId: this.pdbId,
 			hideControls: true,
 			customData: {
-				url: `https://www.ebi.ac.uk/pdbe/coordinates/${this.pdbId}/chains?entityId=${this.entityId}&authAsymId=${this.authAsymId}&encoding=bcif`,
+				// url: `https://www.ebi.ac.uk/pdbe/coordinates/${this.pdbId}/chains?entityId=${this.entityId}&authAsymId=${this.authAsymId}&encoding=bcif`,
+				// url: `https://www.ebi.ac.uk/pdbe/coordinates/${this.pdbId}/chains?authAsymId=${this.authAsymId}&modelId=1&encoding=bcif`,
+				url: `https://cs.litemol.org/${this.pdbId}/chains?authAsymId=${this.authAsymId}&modelId=1&encoding=bcif`,  
+				// Get whole authAsymId (including ligands and water, then hide water later). Get just model 1 to save bandwidth.
 				format: 'cif',
 				binary: true
 			},
@@ -253,7 +256,8 @@ class IntegratedViewer {
 			// viewerInstance.visual.select({data: targetChainSelection, nonSelectedColor: {r:16,g:16,b:16}}).then(() => {
 				// viewerInstance.visual.select({ data: allSSEs, nonSelectedColor: {r:16,g:16,b:16}})
 			// });
-			
+
+			viewerInstance.visual.visibility({water:false});  // Hide Water Visual			
 			viewerInstance.visual.select({ data: allSSEs, nonSelectedColor: {r:64,g:64,b:64}}).then(() => {
 				viewerInstance.visual.focus(allSSEs);
 			});

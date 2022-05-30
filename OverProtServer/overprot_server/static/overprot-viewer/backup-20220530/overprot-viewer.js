@@ -98,8 +98,6 @@
         Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
         Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
         Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
-        Constants.DEFAULT_SHOW_LABELS = true;
-        Constants.DEFAULT_SHOW_LEGEND = true;
         Constants.DEFAULT_DISPATCH_EVENTS = false;
         Constants.DEFAULT_LISTEN_EVENTS = false;
         //#region measurements in the world
@@ -129,21 +127,6 @@
         // Inbound events (listened to by the viewer):
         Constants.EVENT_TYPE_DO_SELECT = 'do.select';
         Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
-        Constants.ICON_LEGEND = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path></svg>';
-        Constants.ICON_LEGEND_CHECKED = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path>' +
-            '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
-            '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
-            '</svg>';
-        Constants.ICON_LABELS = '<svg viewBox="0 0 100 100"><path d="M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z M40,55 L50,30 L60,55 z"></path></svg>';
-        Constants.ICON_LABELS_CHECKED = '<svg viewBox="0 0 100 100"><path d="M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z M40,55 L50,30 L60,55 z"></path>' +
-            '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
-            '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
-            '</svg>';
-        Constants.ICON_BETA_CONNECTIVITY = '<svg viewBox="0 0 100 100"><path nofill style="stroke-width: 7px;" d="M20,65 A30,40 0 0,1 80,65"></path></svg>';
-        Constants.ICON_BETA_CONNECTIVITY_CHECKED = '<svg viewBox="0 0 100 100"><path nofill style="stroke-width: 7px;" d="M20,65 A30,40 0 0,1 80,65"></path>' +
-            '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
-            '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
-            '</svg>';
         Constants.ICON_PLUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z"></path></svg>';
         Constants.ICON_MINUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H75 V55 H25 z"></path></svg>';
         Constants.ICON_RESET = '<svg viewBox="0 0 100 100"><path d="M50,25 A25,25,0,1,0,75,50 H65 A15,15,0,1,1,50,35 V47 L70,31 L50,15 z"></path></svg>';
@@ -548,8 +531,6 @@
                 layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
                 betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
                 occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD,
-                showLabels: Constants.DEFAULT_SHOW_LABELS,
-                showLegend: Constants.DEFAULT_SHOW_LEGEND,
                 dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
                 listenEvents: Constants.DEFAULT_LISTEN_EVENTS
             };
@@ -560,7 +541,6 @@
             let MANDATORY_ATTRIBUTES = ['file'];
             let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
                 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
-                'show-labels', 'show-legend',
                 'dispatch-events', 'listen-events'];
             MANDATORY_ATTRIBUTES.forEach(attributeName => {
                 if (!element.hasAttribute(attributeName)) {
@@ -607,8 +587,6 @@
                 layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
                 betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), booleanDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
                 occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true),
-                showLabels: parseEnumAttribute('show-labels', d3element.attr('show-labels'), booleanDictionary, Constants.DEFAULT_SHOW_LABELS),
-                showLegend: parseEnumAttribute('show-legend', d3element.attr('show-legend'), booleanDictionary, Constants.DEFAULT_SHOW_LEGEND),
                 dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
                 listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
             };
@@ -1410,7 +1388,7 @@
                 let { x, y, height, width } = Geometry.rectToScreen(viewer.visWorld, viewer.screen, n.visual.rect);
                 return { x: x + width / 2, y: y + height + Constants.HANGING_TEXT_OFFSET };
             })
-                .style('opacity', (n, i) => viewer.settings.showLabels && labelVisibility[i] ? 1 : 0)
+                .style('opacity', (n, i) => labelVisibility[i] ? 1 : 0)
                 .transition().duration(0)
                 .style('fill', (n, i) => labelVisibility[i] ? Constants.NODE_LABEL_COLOR : 'none');
             viewer.canvas
@@ -1488,33 +1466,30 @@
         const LEGEND_SPACING_INNER = 5; // between item shape and label
         function showLegend(viewer, transition = true) {
             fadeOutRemove(viewer.canvas.selectAll('g.legend'));
-            if (viewer.settings.showLegend) {
-                let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend');
-                let ellipsisIndex = null;
-                switch (viewer.settings.colorMethod) {
-                    case Enums.ColorMethod.Stdev:
-                        show3DVariabilityLegend(viewer, legendGroup, transition);
-                        break;
-                    case Enums.ColorMethod.Type:
-                        showTypeLegend(viewer, legendGroup, transition);
-                        break;
-                    case Enums.ColorMethod.Sheet:
-                        ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
-                        break;
-                }
-                if (viewer.settings.betaConnectivityVisibility) {
-                    showBetaConnectivityLegend(viewer, legendGroup, transition);
-                }
-                distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2 * LEGEND_HMARGIN, () => addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, '...', 'none'));
-                let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
-                let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
-                legendGroup.attr('transform', `translate(${x},${y})`);
-                if (transition) {
-                    fadeIn(legendGroup);
-                }
+            let legendGroup = viewer.canvas.select('g.legends').append('g').attr('class', 'legend');
+            let ellipsisIndex = null;
+            switch (viewer.settings.colorMethod) {
+                case Enums.ColorMethod.Stdev:
+                    show3DVariabilityLegend(viewer, legendGroup, transition);
+                    break;
+                case Enums.ColorMethod.Type:
+                    showTypeLegend(viewer, legendGroup, transition);
+                    break;
+                case Enums.ColorMethod.Sheet:
+                    ellipsisIndex = showSheetLegend(viewer, legendGroup, transition);
+                    break;
+            }
+            if (viewer.settings.betaConnectivityVisibility) {
+                showBetaConnectivityLegend(viewer, legendGroup, transition);
+            }
+            distributeItemsHorizontally(legendGroup.selectAll('g.legend-item'), LEGEND_SPACING, ellipsisIndex, viewer.screen.width - 2 * LEGEND_HMARGIN, () => addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, '...', 'none'));
+            let x = viewer.screen.width - LEGEND_HMARGIN - boxWidth(legendGroup);
+            let y = viewer.screen.height - LEGEND_VMARGIN - LEGEND_BAR_HEIGHT;
+            legendGroup.attr('transform', `translate(${x},${y})`);
+            if (transition) {
+                fadeIn(legendGroup);
             }
         }
-        Drawing.showLegend = showLegend;
         function show3DVariabilityLegend(viewer, legendGroup, transition = true) {
             addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_WIDTH, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, '3D variability [\u212B]', 'heatmap');
         }
@@ -1588,8 +1563,8 @@
         function showTypeLegend(viewer, legendGroup, transition = true) {
             let itemHelix = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
             let itemStrand = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('E'), 'Strand');
-            Drawing.addPointBehavior(viewer, itemHelix, () => concatSelections(itemHelix, selectNodesBySSEType(viewer, Constants.HELIX_TYPE)), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
-            Drawing.addPointBehavior(viewer, itemStrand, () => concatSelections(itemStrand, selectNodesBySSEType(viewer, Constants.STRAND_TYPE)), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            Drawing.addPointBehavior(viewer, itemHelix, () => selectNodesBySSEType(viewer, Constants.HELIX_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            Drawing.addPointBehavior(viewer, itemStrand, () => selectNodesBySSEType(viewer, Constants.STRAND_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
         }
         function showSheetLegend(viewer, legendGroup, transition = true) {
             let sheetIdSet = new Set();
@@ -1600,21 +1575,19 @@
             sheetIdSet.delete(0);
             let sheetIds = [...sheetIdSet];
             sheetIds.sort((a, b) => a - b);
-            let helixItem = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
-            Drawing.addPointBehavior(viewer, helixItem, 
-            // () =>  selectNodesBySSEType(viewer, Constants.HELIX_TYPE),
-            () => concatSelections(helixItem, selectNodesBySSEType(viewer, Constants.HELIX_TYPE)), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+            let item = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.bySseType('H'), 'Helix');
+            Drawing.addPointBehavior(viewer, item, () => selectNodesBySSEType(viewer, Constants.HELIX_TYPE), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             for (let id of sheetIds) {
-                let strandItem = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.byIndex1(id), `\u03b2${id}`);
-                Drawing.addPointBehavior(viewer, strandItem, () => concatSelections(strandItem, selectNodesBySheetId(viewer, id, true)), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
+                item = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.byIndex1(id), `\u03b2${id}`);
+                Drawing.addPointBehavior(viewer, item, () => selectNodesBySheetId(viewer, id, true), nodes => Drawing.dispatchMixedEvent(viewer, Constants.EVENT_TYPE_HOVER, nodes.data()));
             }
             return sheetIds.length + 1;
         }
         function showBetaConnectivityLegend(viewer, legendGroup, transition = true) {
             let itemPara = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Parallel', 'lower_arc');
             let itemAnti = addLegendItem(viewer, legendGroup, { x: 0, y: 0, width: LEGEND_BAR_HEIGHT, height: LEGEND_BAR_HEIGHT }, Colors.NEUTRAL_COLOR, 'Antiparallel', 'upper_arc');
-            Drawing.addPointBehavior(viewer, itemPara, () => concatSelections(itemPara, selectArcsByOrientation(viewer, 1)));
-            Drawing.addPointBehavior(viewer, itemAnti, () => concatSelections(itemAnti, selectArcsByOrientation(viewer, -1)));
+            Drawing.addPointBehavior(viewer, itemPara, () => selectArcsByOrientation(viewer, 1));
+            Drawing.addPointBehavior(viewer, itemAnti, () => selectArcsByOrientation(viewer, -1));
         }
         function boxWidth(selection, spacing = 0) {
             let result = selection.node().getBBox().width;
@@ -1776,7 +1749,7 @@
                 sses: sses,
                 ladders: edges,
             };
-            // console.log('event:', eventType, eventDetail);
+            console.log('event:', eventType, eventDetail);
             viewer.d3viewer.dispatch(Constants.EVENT_PREFIX + eventType, { detail: eventDetail, bubbles: true });
         }
         Drawing.dispatchMixedEvent = dispatchMixedEvent;
@@ -1887,24 +1860,6 @@
             button.base.div.select('div.button-icon,div.button-text').html(newText);
         }
         Controls.changeButtonText = changeButtonText;
-        function newToggleButton(viewer, id, text, square, icon, selectedValue, onSelect, tooltip) {
-            let isChecked = selectedValue;
-            let textOff = typeof text == 'string' ? '<span style="opacity:0;">&check;</span>' + text : text[0];
-            let textOn = typeof text == 'string' ? '&check;' + text : text[1];
-            let button = {
-                base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showButton(button, par) },
-                text: isChecked ? textOn : textOff,
-                square: square,
-                icon: icon,
-                onClick: () => {
-                    isChecked = !isChecked;
-                    onSelect(isChecked);
-                    changeButtonText(button, isChecked ? textOn : textOff);
-                }
-            };
-            return button;
-        }
-        Controls.newToggleButton = newToggleButton;
         function newPopup(viewer, id, text, autocollapse, tooltip) {
             // console.log('newPopup');
             let popup = {
@@ -2238,6 +2193,10 @@
                 ['Rectangle', Enums.ShapeMethod.Rectangle, 'Show SSEs as rectangles. <br>Height of the rectangle indicates <strong>occurrence</strong> (what percentage of structures contain this SSE), <br>width indicates <strong>average length</strong> (number of residues).'],
                 ['SymCDF', Enums.ShapeMethod.SymCdf, '<strong>Cumulative distribution function</strong> describes the statistical distribution of the SSE length. <br>The widest part of the shape corresponds to maximum length, the narrowest to minimum length, <br> the height corresponds to occurrence. <br>(The SymCDF shape consists of four symmetrical copies of the CDF, the bottom right quarter is the classical CDF.)'],
             ];
+            let connectivityOptions = [
+                ['On', true, null],
+                ['Off', false, null],
+            ];
             let controlPanel = Controls.newControlPanel(viewer, 'main-panel', null);
             // let zoomInButton = Controls.newButton(viewer, 'zoom-in', '+', true, false, () => Drawing.zoomIn(viewer), 'Zoom in. <br>Tip: Use Ctrl + mouse wheel to zoom.');
             // Controls.addToControlPanel(controlPanel, zoomInButton);
@@ -2255,24 +2214,10 @@
             Controls.addToControlPanel(controlPanel, colorMethodDropdown);
             let shapeMethodDropdown = Controls.newDropdownList(viewer, 'shape-method', 'Shape', shapeOptions, viewer.settings.shapeMethod, method => applyShapes(viewer, method), 'Choose shape method.', true, false);
             Controls.addToControlPanel(controlPanel, shapeMethodDropdown);
+            let betaConnectivityDropdown = Controls.newDropdownList(viewer, 'beta-connectivity', 'Beta-connectivity', connectivityOptions, viewer.settings.betaConnectivityVisibility, method => Drawing.showBetaConnectivity(viewer, method, true), '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.', true, false);
+            Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
             let occurrenceThresholdSlider = Controls.newPopupSlider(viewer, 'occurrence-threshold', 'Occurrence threshold: ', '%', 0, 100, 1, viewer.settings.occurrenceThreshold * 100, '0%', '100%', val => { }, val => applyFiltering(viewer, val / 100), 'Hide SSEs with occurrence lower than the specified threshold.');
             Controls.addToControlPanel(controlPanel, occurrenceThresholdSlider);
-            // let betaConnectivityDropdown = Controls.newDropdownList(viewer, 'beta-connectivity', 'Beta-connectivity', connectivityOptions, viewer.settings.betaConnectivityVisibility,
-            //     method => Drawing.showBetaConnectivity(viewer, method, true),
-            //     '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.',
-            //     true, true);
-            // Controls.addToControlPanel(controlPanel, betaConnectivityDropdown);
-            // let showBetaConnectivityButton = Controls.newToggleButton(viewer, 'show-beta-connectivity', 'Beta-connectivity', false, false, 
-            //     viewer.settings.betaConnectivityVisibility,
-            //     method => Drawing.showBetaConnectivity(viewer, method, true),
-            //     '<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.');
-            // Controls.addToControlPanel(controlPanel, showBetaConnectivityButton);
-            let showBetaConnButton = Controls.newToggleButton(viewer, 'show-beta-connectivity', [Constants.ICON_BETA_CONNECTIVITY, Constants.ICON_BETA_CONNECTIVITY_CHECKED], true, true, viewer.settings.betaConnectivityVisibility, method => Drawing.showBetaConnectivity(viewer, method, true), 'Show/hide beta-connectivity.<br>(<strong>Beta-connectivity</strong> shows how &beta;-strands are connected to each other in &beta;-sheets.<br>Upper arcs indicate antiparallel connections,<br>lower arcs indicate parallel connections.)');
-            Controls.addToControlPanel(controlPanel, showBetaConnButton);
-            let showLabelsButton = Controls.newToggleButton(viewer, 'show-labels', [Constants.ICON_LABELS, Constants.ICON_LABELS_CHECKED], true, true, viewer.settings.showLabels, method => { viewer.settings.showLabels = method; Drawing.redraw(viewer); }, 'Show/hide SSE labels.');
-            Controls.addToControlPanel(controlPanel, showLabelsButton);
-            let showLegendButton = Controls.newToggleButton(viewer, 'show-legend', [Constants.ICON_LEGEND, Constants.ICON_LEGEND_CHECKED], true, true, viewer.settings.showLegend, method => { viewer.settings.showLegend = method; Drawing.showLegend(viewer); }, 'Show/hide legend.');
-            Controls.addToControlPanel(controlPanel, showLegendButton);
             // let saveButton = Controls.newButton(viewer, 'save', '&#10515;', true, false, () => Drawing.save(viewer), 'Save image.');
             // Controls.addToControlPanel(controlPanel, saveButton);
             let saveButton2 = Controls.newButton(viewer, 'save', Constants.ICON_CAMERA, true, true, () => Drawing.save(viewer), 'Save image.');

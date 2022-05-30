@@ -48,6 +48,7 @@ export declare namespace Controls {
     export function addToControlPanel(panel: ControlPanel, child: Control): void;
     export function newButton(viewer: Types.Viewer, id: string | null, text: string, square: boolean, icon: boolean, onClick: () => any, tooltip: string | null): Button;
     export function changeButtonText(button: Button, newText: string): void;
+    export function newToggleButton(viewer: Types.Viewer, id: string | null, text: string | [string, string], square: boolean, icon: boolean, selectedValue: boolean, onSelect: (value: boolean) => any, tooltip: string | null): Button;
     export function newPopup(viewer: Types.Viewer, id: string | null, text: string, autocollapse: boolean, tooltip: string | null): Popup;
     export function addToPopup(popup: Popup, child: Control): void;
     export function newListbox<T>(viewer: Types.Viewer, id: string | null, namesValuesTooltips: NameValueTooltip<T>[], selectedValue: T, onSelect: (value: T) => any, tooltip: string | null): Listbox<T>;

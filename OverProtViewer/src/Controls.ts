@@ -70,6 +70,32 @@ export namespace Controls {
         button.base.div.select('div.button-icon,div.button-text').html(newText);
     }
 
+
+    export function newToggleButton(viewer: Types.Viewer, id: string|null, text: string|[string,string], square: boolean, icon: boolean, 
+            selectedValue: boolean, onSelect: (value: boolean) => any, tooltip: string|null): Button {
+        let isChecked = selectedValue;
+        if (text instanceof String){
+
+        }
+        let textOff = typeof text == 'string' ? '<span style="opacity:0;">&check;</span>' + text : text[0];
+        let textOn = typeof text == 'string' ? '&check;' + text : text[1];
+        let button = { 
+            base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par: Types.D3Selection) => showButton(button, par)}, 
+            text: isChecked ? textOn : textOff, 
+            square: square,
+            icon: icon,
+            onClick: () => { 
+                isChecked = !isChecked; 
+                onSelect(isChecked);
+                changeButtonText(button, isChecked ? textOn : textOff);
+            }
+        };
+        return button;
+    }
+    function updateToggleButtonText(button: Button, isChecked: boolean, text: string): void {
+        changeButtonText(button, isChecked ? '&check;' + text : '<span style="opacity:0;">&check;</span>' + text);
+    }
+
     export function newPopup(viewer: Types.Viewer, id: string|null, text: string, autocollapse: boolean, tooltip: string|null): Popup {
         // console.log('newPopup');
         let popup: Popup = { 

@@ -18,7 +18,7 @@ export var Types;
             visWorld: Geometry.newRectangle(),
             screen: Geometry.rectangleFromCanvas(d3canvas),
             zoom: Geometry.newZoomInfo(1, 1, 1, 1, 1),
-            settings: (settings !== null && settings !== void 0 ? settings : newSettings()),
+            settings: settings !== null && settings !== void 0 ? settings : newSettings(),
             nodeMap: new Map(),
             ladderMap: new TupleMap(),
         };
@@ -35,6 +35,8 @@ export var Types;
             layoutMethod: Constants.DEFAULT_LAYOUT_METHOD,
             betaConnectivityVisibility: Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY,
             occurrenceThreshold: Constants.DEFAULT_OCCURRENCE_THRESHOLD,
+            showLabels: Constants.DEFAULT_SHOW_LABELS,
+            showLegend: Constants.DEFAULT_SHOW_LEGEND,
             dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
             listenEvents: Constants.DEFAULT_LISTEN_EVENTS
         };
@@ -45,6 +47,7 @@ export var Types;
         let MANDATORY_ATTRIBUTES = ['file'];
         let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
             'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
+            'show-labels', 'show-legend',
             'dispatch-events', 'listen-events'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)) {
@@ -83,7 +86,7 @@ export var Types;
             '0': false,
         };
         return {
-            file: (_a = d3element.attr('file'), (_a !== null && _a !== void 0 ? _a : '')),
+            file: (_a = d3element.attr('file')) !== null && _a !== void 0 ? _a : '',
             height: parseIntAttribute('height', d3element.attr('height'), Constants.CANVAS_HEIGHT),
             width: parseIntAttribute('width', d3element.attr('width'), Constants.CANVAS_WIDTH),
             colorMethod: parseEnumAttribute('color-method', d3element.attr('color-method'), colorMethodDictionary, Constants.DEFAULT_COLOR_METHOD),
@@ -91,6 +94,8 @@ export var Types;
             layoutMethod: parseEnumAttribute('layout-method', d3element.attr('layout-method'), layoutMethodDictionary, Constants.DEFAULT_LAYOUT_METHOD),
             betaConnectivityVisibility: parseEnumAttribute('beta-connectivity', d3element.attr('beta-connectivity'), booleanDictionary, Constants.DEFAULT_BETA_CONNECTIVITY_VISIBILITY),
             occurrenceThreshold: parseFloatAttribute('occurrence-threshold', d3element.attr('occurrence-threshold'), Constants.DEFAULT_OCCURRENCE_THRESHOLD, [0, 1], true),
+            showLabels: parseEnumAttribute('show-labels', d3element.attr('show-labels'), booleanDictionary, Constants.DEFAULT_SHOW_LABELS),
+            showLegend: parseEnumAttribute('show-legend', d3element.attr('show-legend'), booleanDictionary, Constants.DEFAULT_SHOW_LEGEND),
             dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
             listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
         };

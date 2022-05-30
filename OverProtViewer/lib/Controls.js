@@ -46,6 +46,29 @@ export var Controls;
         button.base.div.select('div.button-icon,div.button-text').html(newText);
     }
     Controls.changeButtonText = changeButtonText;
+    function newToggleButton(viewer, id, text, square, icon, selectedValue, onSelect, tooltip) {
+        let isChecked = selectedValue;
+        if (text instanceof String) {
+        }
+        let textOff = typeof text == 'string' ? '<span style="opacity:0;">&check;</span>' + text : text[0];
+        let textOn = typeof text == 'string' ? '&check;' + text : text[1];
+        let button = {
+            base: { viewer: viewer, id: id, children: [], div: emptySelection(), tooltip: tooltip, show: (par) => showButton(button, par) },
+            text: isChecked ? textOn : textOff,
+            square: square,
+            icon: icon,
+            onClick: () => {
+                isChecked = !isChecked;
+                onSelect(isChecked);
+                changeButtonText(button, isChecked ? textOn : textOff);
+            }
+        };
+        return button;
+    }
+    Controls.newToggleButton = newToggleButton;
+    function updateToggleButtonText(button, isChecked, text) {
+        changeButtonText(button, isChecked ? '&check;' + text : '<span style="opacity:0;">&check;</span>' + text);
+    }
     function newPopup(viewer, id, text, autocollapse, tooltip) {
         // console.log('newPopup');
         let popup = {
@@ -148,8 +171,8 @@ export var Controls;
             maxValue: maxValue,
             step: step,
             selectedValue: selectedValue,
-            minValueLabel: (minValueLabel !== null && minValueLabel !== void 0 ? minValueLabel : minValue.toString()),
-            maxValueLabel: (maxValueLabel !== null && maxValueLabel !== void 0 ? maxValueLabel : maxValue.toString()),
+            minValueLabel: minValueLabel !== null && minValueLabel !== void 0 ? minValueLabel : minValue.toString(),
+            maxValueLabel: maxValueLabel !== null && maxValueLabel !== void 0 ? maxValueLabel : maxValue.toString(),
             onMove: onMove,
             onRelease: onRelease
         };

@@ -31,6 +31,8 @@ export declare namespace Types {
         layoutMethod: Enums.LayoutMethod;
         betaConnectivityVisibility: boolean;
         occurrenceThreshold: number;
+        showLabels: boolean;
+        showLegend: boolean;
         dispatchEvents: boolean;
         listenEvents: boolean;
     };

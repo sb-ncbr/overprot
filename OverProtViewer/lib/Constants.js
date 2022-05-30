@@ -31,6 +31,8 @@ export var Constants;
     Constants.DEFAULT_LAYOUT_METHOD = Enums.LayoutMethod.New;
     Constants.DEFAULT_COLOR_METHOD = Enums.ColorMethod.Sheet;
     Constants.DEFAULT_SHAPE_METHOD = Enums.ShapeMethod.Rectangle;
+    Constants.DEFAULT_SHOW_LABELS = true;
+    Constants.DEFAULT_SHOW_LEGEND = true;
     Constants.DEFAULT_DISPATCH_EVENTS = false;
     Constants.DEFAULT_LISTEN_EVENTS = false;
     //#region measurements in the world
@@ -60,6 +62,21 @@ export var Constants;
     // Inbound events (listened to by the viewer):
     Constants.EVENT_TYPE_DO_SELECT = 'do.select';
     Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
+    Constants.ICON_LEGEND = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path></svg>';
+    Constants.ICON_LEGEND_CHECKED = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path>' +
+        '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
+        '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
+        '</svg>';
+    Constants.ICON_LABELS = '<svg viewBox="0 0 100 100"><path d="M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z M40,55 L50,30 L60,55 z"></path></svg>';
+    Constants.ICON_LABELS_CHECKED = '<svg viewBox="0 0 100 100"><path d="M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z M40,55 L50,30 L60,55 z"></path>' +
+        '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
+        '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
+        '</svg>';
+    Constants.ICON_BETA_CONNECTIVITY = '<svg viewBox="0 0 100 100"><path nofill style="stroke-width: 7px;" d="M20,65 A30,40 0 0,1 80,65"></path></svg>';
+    Constants.ICON_BETA_CONNECTIVITY_CHECKED = '<svg viewBox="0 0 100 100"><path nofill style="stroke-width: 7px;" d="M20,65 A30,40 0 0,1 80,65"></path>' +
+        '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
+        '<path nofill style="stroke-width: 7px;" d="M60,66 l10,18 h1 l20,-30"></path>' +
+        '</svg>';
     Constants.ICON_PLUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H45 V25 H55 V45 H75 V55 H55 V75 H45 V55 H25 z"></path></svg>';
     Constants.ICON_MINUS = '<svg viewBox="0 0 100 100"><path d="M25,45 H75 V55 H25 z"></path></svg>';
     Constants.ICON_RESET = '<svg viewBox="0 0 100 100"><path d="M50,25 A25,25,0,1,0,75,50 H65 A15,15,0,1,1,50,35 V47 L70,31 L50,15 z"></path></svg>';
