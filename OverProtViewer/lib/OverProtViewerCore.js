@@ -399,6 +399,9 @@ export var OverProtViewerCore;
         d3nodes
             .append('text').attr('class', 'node-label')
             .text(n => n.label);
+        if (Constants.SHOW_TYPE_GLYPHS) {
+            d3nodes.append('path').style('stroke', 'black').style('fill', 'none').attr('d', 'M10,30 l5,10 l5,-10 l5,10 l5,-10 l5,10 l5,-10');
+        }
         viewer.canvas
             .append('g').attr('class', 'edges')
             .selectAll()

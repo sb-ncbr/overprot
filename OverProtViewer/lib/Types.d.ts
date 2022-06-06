@@ -35,6 +35,7 @@ export declare namespace Types {
         showLegend: boolean;
         dispatchEvents: boolean;
         listenEvents: boolean;
+        saveName: string;
     };
     function newSettings(): Settings;
     function newSettingsFromHTMLElement(element: HTMLElement): Settings;

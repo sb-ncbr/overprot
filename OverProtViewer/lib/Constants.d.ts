@@ -36,6 +36,7 @@ export declare namespace Constants {
     const DEFAULT_SHOW_LEGEND = true;
     const DEFAULT_DISPATCH_EVENTS = false;
     const DEFAULT_LISTEN_EVENTS = false;
+    const DEFAULT_SAVE_NAME = "overprot";
     const LENGTH_SCALE = 4;
     const OCCURRENCE_SCALE = 100;
     const FLOOR_HEIGHT: number;
@@ -59,6 +60,7 @@ export declare namespace Constants {
     const EVENT_TYPE_HOVER = "hover";
     const EVENT_TYPE_DO_SELECT = "do.select";
     const EVENT_TYPE_DO_HOVER = "do.hover";
+    const SHOW_TYPE_GLYPHS = false;
     const ICON_LEGEND = "<svg viewBox=\"0 0 100 100\"><path d=\"M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z\"></path></svg>";
     const ICON_LEGEND_CHECKED: string;
     const ICON_LABELS = "<svg viewBox=\"0 0 100 100\"><path d=\"M20,80 L44,20 H56 L80,80 L70,80 L64,65 L36,65 L30,80 z M40,55 L50,30 L60,55 z\"></path></svg>";

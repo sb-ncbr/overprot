@@ -38,17 +38,18 @@ export var Types;
             showLabels: Constants.DEFAULT_SHOW_LABELS,
             showLegend: Constants.DEFAULT_SHOW_LEGEND,
             dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
-            listenEvents: Constants.DEFAULT_LISTEN_EVENTS
+            listenEvents: Constants.DEFAULT_LISTEN_EVENTS,
+            saveName: Constants.DEFAULT_SAVE_NAME,
         };
     }
     Types.newSettings = newSettings;
     function newSettingsFromHTMLElement(element) {
-        var _a;
+        var _a, _b;
         let MANDATORY_ATTRIBUTES = ['file'];
         let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
             'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
             'show-labels', 'show-legend',
-            'dispatch-events', 'listen-events'];
+            'dispatch-events', 'listen-events', 'save-name'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)) {
                 console.error(`Missing attribute: "${attributeName}".`);
@@ -98,6 +99,7 @@ export var Types;
             showLegend: parseEnumAttribute('show-legend', d3element.attr('show-legend'), booleanDictionary, Constants.DEFAULT_SHOW_LEGEND),
             dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
             listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
+            saveName: (_b = d3element.attr('save-name')) !== null && _b !== void 0 ? _b : Constants.DEFAULT_SAVE_NAME,
         };
     }
     Types.newSettingsFromHTMLElement = newSettingsFromHTMLElement;

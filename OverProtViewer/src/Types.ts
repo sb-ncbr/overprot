@@ -64,7 +64,8 @@ export namespace Types {
         showLabels: boolean,
         showLegend: boolean,
         dispatchEvents: boolean,
-        listenEvents: boolean
+        listenEvents: boolean,
+        saveName: string,
     };
 
     export function newSettings(): Settings {
@@ -80,7 +81,8 @@ export namespace Types {
             showLabels: Constants.DEFAULT_SHOW_LABELS,
             showLegend: Constants.DEFAULT_SHOW_LEGEND,
             dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
-            listenEvents: Constants.DEFAULT_LISTEN_EVENTS
+            listenEvents: Constants.DEFAULT_LISTEN_EVENTS,
+            saveName: Constants.DEFAULT_SAVE_NAME,
         };
     }
 
@@ -89,7 +91,7 @@ export namespace Types {
         let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
             'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
             'show-labels', 'show-legend',
-            'dispatch-events', 'listen-events'];
+            'dispatch-events', 'listen-events', 'save-name'];
         MANDATORY_ATTRIBUTES.forEach(attributeName => {
             if (!element.hasAttribute(attributeName)) {
                 console.error(`Missing attribute: "${attributeName}".`);
@@ -140,6 +142,7 @@ export namespace Types {
             showLegend: parseEnumAttribute('show-legend', d3element.attr('show-legend'), booleanDictionary, Constants.DEFAULT_SHOW_LEGEND),
             dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
             listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
+            saveName: d3element.attr('save-name') ?? Constants.DEFAULT_SAVE_NAME,
         }
     }
 

@@ -47,6 +47,7 @@ export namespace Constants {
 
     export const DEFAULT_DISPATCH_EVENTS = false;
     export const DEFAULT_LISTEN_EVENTS = false;
+    export const DEFAULT_SAVE_NAME = 'overprot';
 
 
     //#region measurements in the world
@@ -84,6 +85,8 @@ export namespace Constants {
     // Inbound events (listened to by the viewer):
     export const EVENT_TYPE_DO_SELECT = 'do.select';
     export const EVENT_TYPE_DO_HOVER = 'do.hover';
+
+    export const SHOW_TYPE_GLYPHS = false;  // debug
 
     export const ICON_LEGEND = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path></svg>';
     export const ICON_LEGEND_CHECKED = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path>' +

@@ -102,6 +102,7 @@
         Constants.DEFAULT_SHOW_LEGEND = true;
         Constants.DEFAULT_DISPATCH_EVENTS = false;
         Constants.DEFAULT_LISTEN_EVENTS = false;
+        Constants.DEFAULT_SAVE_NAME = 'overprot';
         //#region measurements in the world
         Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
         Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
@@ -129,6 +130,7 @@
         // Inbound events (listened to by the viewer):
         Constants.EVENT_TYPE_DO_SELECT = 'do.select';
         Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
+        Constants.SHOW_TYPE_GLYPHS = false; // debug
         Constants.ICON_LEGEND = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path></svg>';
         Constants.ICON_LEGEND_CHECKED = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path>' +
             '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +
@@ -551,17 +553,18 @@
                 showLabels: Constants.DEFAULT_SHOW_LABELS,
                 showLegend: Constants.DEFAULT_SHOW_LEGEND,
                 dispatchEvents: Constants.DEFAULT_DISPATCH_EVENTS,
-                listenEvents: Constants.DEFAULT_LISTEN_EVENTS
+                listenEvents: Constants.DEFAULT_LISTEN_EVENTS,
+                saveName: Constants.DEFAULT_SAVE_NAME,
             };
         }
         Types.newSettings = newSettings;
         function newSettingsFromHTMLElement(element) {
-            var _a;
+            var _a, _b;
             let MANDATORY_ATTRIBUTES = ['file'];
             let ALLOWED_ATTRIBUTES = ['id', 'file', 'width', 'height',
                 'color-method', 'shape-method', 'layout-method', 'beta-connectivity', 'occurrence-threshold',
                 'show-labels', 'show-legend',
-                'dispatch-events', 'listen-events'];
+                'dispatch-events', 'listen-events', 'save-name'];
             MANDATORY_ATTRIBUTES.forEach(attributeName => {
                 if (!element.hasAttribute(attributeName)) {
                     console.error(`Missing attribute: "${attributeName}".`);
@@ -611,6 +614,7 @@
                 showLegend: parseEnumAttribute('show-legend', d3element.attr('show-legend'), booleanDictionary, Constants.DEFAULT_SHOW_LEGEND),
                 dispatchEvents: parseEnumAttribute('dispatch-events', d3element.attr('dispatch-events'), booleanDictionary, Constants.DEFAULT_DISPATCH_EVENTS),
                 listenEvents: parseEnumAttribute('listen-events', d3element.attr('listen-events'), booleanDictionary, Constants.DEFAULT_LISTEN_EVENTS),
+                saveName: (_b = d3element.attr('save-name')) !== null && _b !== void 0 ? _b : Constants.DEFAULT_SAVE_NAME,
             };
         }
         Types.newSettingsFromHTMLElement = newSettingsFromHTMLElement;
@@ -1225,13 +1229,14 @@
             viewer.canvas.attr('rendering', 'rendering');
             const svgString = serializer.serializeToString(viewer.canvas.node());
             viewer.canvas.attr('rendering', null);
+            const saveName = viewer.settings.saveName;
             const img = new Image(w, h);
             img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
             const canvas = d3.select(document.createElement('canvas')).attr('width', w).attr('height', h); // not attaching canvas to DOM
             d3.select(img).on('load', () => {
                 canvas.node().getContext('2d').drawImage(img, 0, 0, w, h);
                 const imgData = canvas.node().toDataURL("image/png").replace("image/png", "image/octet-stream");
-                saveFile(imgData, 'overprot.png');
+                saveFile(imgData, `${viewer.settings.saveName}.png`);
             });
         }
         Drawing.save = save;
@@ -2413,6 +2418,9 @@
             d3nodes
                 .append('text').attr('class', 'node-label')
                 .text(n => n.label);
+            if (Constants.SHOW_TYPE_GLYPHS) {
+                d3nodes.append('path').style('stroke', 'black').style('fill', 'none').attr('d', 'M10,30 l5,10 l5,-10 l5,10 l5,-10 l5,10 l5,-10');
+            }
             viewer.canvas
                 .append('g').attr('class', 'edges')
                 .selectAll()

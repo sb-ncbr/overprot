@@ -35,6 +35,7 @@ export var Constants;
     Constants.DEFAULT_SHOW_LEGEND = true;
     Constants.DEFAULT_DISPATCH_EVENTS = false;
     Constants.DEFAULT_LISTEN_EVENTS = false;
+    Constants.DEFAULT_SAVE_NAME = 'overprot';
     //#region measurements in the world
     Constants.LENGTH_SCALE = 4; // width of 1 residue in the world
     Constants.OCCURRENCE_SCALE = 100; // height of occurrence 1.0 (100%) in the world
@@ -62,6 +63,7 @@ export var Constants;
     // Inbound events (listened to by the viewer):
     Constants.EVENT_TYPE_DO_SELECT = 'do.select';
     Constants.EVENT_TYPE_DO_HOVER = 'do.hover';
+    Constants.SHOW_TYPE_GLYPHS = false; // debug
     Constants.ICON_LEGEND = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path></svg>';
     Constants.ICON_LEGEND_CHECKED = '<svg viewBox="0 0 100 100"><path d="M18,21 h12 v12 h-12 z M37,21 h45 v12 h-45 z M18,42 h12 v12 h-12 z M37,42 h45 v12 h-45 z M18,63 h12 v12 h-12 z M37,63 h45 v12 h-45 z"></path>' +
         '<path erase style="stroke-width: 17px" d="M58,62 l12,22 h1 l22,-34"></path>' +

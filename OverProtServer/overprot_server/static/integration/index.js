@@ -379,7 +379,7 @@ class IntegratedViewer {
 	
 	render1D() {
 		// Actually insert in HTML rather than render
-		const html = `<overprot-viewer id="anything" file="${this.overprotDatabaseUrl}/data/db/family/diagram/diagram-${this.familyId}.json" width="1800" height="200" color-method="rainbow" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%" dispatch-events="true" listen-events="true"></overprot-viewer>`;
+		const html = `<overprot-viewer id="anything" file="${this.overprotDatabaseUrl}/data/db/family/diagram/diagram-${this.familyId}.json" width="1800" height="200" color-method="rainbow" shape-method="symcdf" beta-connectivity="on" occurrence-threshold="25%" dispatch-events="true" listen-events="true" save-name="overprot-${this.familyId}"></overprot-viewer>`;
 		this.view1dDiv.innerHTML = html;
 	}
 	

@@ -87,6 +87,7 @@ export namespace Drawing {
         const svgString = serializer.serializeToString(viewer.canvas.node()!);
         viewer.canvas.attr('rendering', null);
 
+        const saveName = viewer.settings.saveName;
         const img = new Image(w, h);
         img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
 
@@ -94,7 +95,7 @@ export namespace Drawing {
         d3.select(img).on('load', () => {
             canvas.node()!.getContext('2d')!.drawImage(img, 0, 0, w, h);
             const imgData = canvas.node()!.toDataURL("image/png").replace("image/png", "image/octet-stream");
-            saveFile(imgData, 'overprot.png');
+            saveFile(imgData, `${viewer.settings.saveName}.png`);
         });
     }
 
