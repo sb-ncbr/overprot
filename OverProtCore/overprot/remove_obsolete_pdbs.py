@@ -35,7 +35,8 @@ def is_obsolete(pdb: str) -> bool:
 @cli_command()
 def main(sample_json: Path, missing_list: Path, 
          output_sample_json: Path, output_missing_list: Path) -> int:
-    '''Check missing PDB entries, if they are not obsolete.    
+    '''Check missing PDB entries, whether they are not obsolete. 
+    Return 1 if any non-obsolete entries are still missing, 0 otherwise.
     @params  `sample_json`          Input file with all domains.
     @params  `missing_list`         Input file with the list of missing (possibly obsolete) PDB entries.
     @params  `output_sample_json`   Output file with non-obsolete domains.

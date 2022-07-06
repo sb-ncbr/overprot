@@ -32,14 +32,15 @@ def rm(*paths: Path, recursive: bool = False, ignore_errors: bool = False) -> No
     for path in paths:
         if ignore_errors:
             with suppress(OSError):
-                return rm(path, recursive=recursive, ignore_errors=False)
-        if path.is_dir():
-            if recursive:
-                shutil.rmtree(path)
-            else:
-                path.rmdir()
+                rm(path, recursive=recursive, ignore_errors=False)
         else:
-            path.unlink()
+            if path.is_dir():
+                if recursive:
+                    shutil.rmtree(path)
+                else:
+                    path.rmdir()
+            else:
+                path.unlink()
 
 def ls(directory: Path, recursive: bool = False, only_files: bool = False, only_dirs: bool = False) -> list[Path]:
     '''List files in this directory or [] if self is not a directory. ($ ls [-R] directory)'''

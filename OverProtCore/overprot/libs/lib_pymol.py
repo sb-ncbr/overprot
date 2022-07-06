@@ -22,7 +22,7 @@ from . import lib
 from . import lib_sses
 from . import lib_domains
 from .lib_logging import ProgressBar
-from .lib_structure import Structure
+from . import lib_structure
 from . import superimpose3d
 
 
@@ -167,35 +167,37 @@ def rotation_translation_to_ttt_matrix(rot_trans: RotationTranslation) -> list[f
     result[3, 3] = 1.0
     return list(result.reshape((16,)))
 
-def read_cif(structfile: Path, only_polymer=False):
+def read_cif(structfile: Path, only_polymer=False) -> lib_structure.Structure:
     obj = 'obj_read_cif'
-    cmd.load(structfile, obj)
-    symbol = np.array(querying.cif_get_array(obj, '_atom_site.type_symbol'))
-    name = np.array(querying.cif_get_array(obj, '_atom_site.label_atom_id'))
-    resn = np.array(querying.cif_get_array(obj, '_atom_site.label_comp_id'))
-    resi = np.array(querying.cif_get_array(obj, '_atom_site.label_seq_id'))
-    chain = np.array(querying.cif_get_array(obj, '_atom_site.label_asym_id'))
-    auth_chain = np.array(querying.cif_get_array(obj, '_atom_site.auth_asym_id'))
-    entity = np.array(querying.cif_get_array(obj, '_atom_site.label_entity_id'))
-    alt = np.array(querying.cif_get_array(obj, '_atom_site.label_alt_id'))
-    coords = querying.get_coordset(obj).transpose()
-    n_models = querying.count_states(obj)
-    if n_models > 1:
-        print(f'WARNING: {structfile} contains multiple models. Assuming that atoms are sorted by the model ID and taking only first n_atoms atoms', file=sys.stderr)
-        n_atoms = coords.shape[-1]
-        if symbol.shape[-1] > n_atoms:
-            symbol = symbol[0:n_atoms]
-            name = name[0:n_atoms]
-            resn = resn[0:n_atoms]
-            resi = resi[0:n_atoms]
-            chain = chain[0:n_atoms]
-            auth_chain = auth_chain[0:n_atoms]
-            entity = entity[0:n_atoms]
-            alt = alt[0:n_atoms]
-    cmd.delete(obj)
-    result = Structure(symbol=symbol, name=name, resn=resn, resi=resi, chain=chain, auth_chain=auth_chain, entity=entity, coords=coords)
+    try:
+        cmd.load(structfile, obj)
+        symbol = np.array(querying.cif_get_array(obj, '_atom_site.type_symbol'))
+        name = np.array(querying.cif_get_array(obj, '_atom_site.label_atom_id'))
+        resn = np.array(querying.cif_get_array(obj, '_atom_site.label_comp_id'))
+        resi = np.array(querying.cif_get_array(obj, '_atom_site.label_seq_id'))
+        chain = np.array(querying.cif_get_array(obj, '_atom_site.label_asym_id'))
+        auth_chain = np.array(querying.cif_get_array(obj, '_atom_site.auth_asym_id'))
+        entity = np.array(querying.cif_get_array(obj, '_atom_site.label_entity_id'))
+        alt = np.array(querying.cif_get_array(obj, '_atom_site.label_alt_id'))
+        coords = querying.get_coordset(obj).T
+        n_models = querying.count_states(obj)
+        if n_models > 1:
+            print(f'WARNING: {structfile} contains multiple models. Assuming that atoms are sorted by the model ID and taking only first n_atoms atoms', file=sys.stderr)
+            n_atoms = coords.shape[-1]
+            if symbol.shape[-1] > n_atoms:
+                symbol = symbol[0:n_atoms]
+                name = name[0:n_atoms]
+                resn = resn[0:n_atoms]
+                resi = resi[0:n_atoms]
+                chain = chain[0:n_atoms]
+                auth_chain = auth_chain[0:n_atoms]
+                entity = entity[0:n_atoms]
+                alt = alt[0:n_atoms]
+    finally:
+        cmd.delete(obj)
+    result = lib_structure.Structure(symbol=symbol, name=name, resn=resn, resi=resi, chain=chain, auth_chain=auth_chain, entity=entity, coords=coords)
     if only_polymer:
-        result = result.filter(result.resi != None)
+        result = result.get_only_polymer()
     return result
 
 def convert_file(input_file: Path, output_file: Path) -> None:
@@ -244,6 +246,8 @@ def create_consensus_session(consensus_structure_file: Path, consensus_sse_file:
             _create_line_segment(sse, group_name, coloring, enable_occurrence_threshold=enable_occurrence_threshold)
     cmd.hide()
     cmd.show('cartoon', obj)
+    cmd.set('cartoon_trace_atoms', True, obj)
+    cmd.set('ribbon_trace_atoms', True, obj)
     util.chainbow(obj)  # cmd.color('white', obj)
     cmd.show('cgo', group_name)
     cmd.show('dashes', group_name)
@@ -297,6 +301,7 @@ def _color_by_annotation(domain_name: str, annotation_file: Path, base_color: st
         start = str(sse['start'])
         end = str(sse['end'])
         color = sse[coloring]
+        # color = assign_color_x(sse)  # debug
         sel_name = _sses_group_name(domain_name) + '.' + label
         sel_definition = f'{domain_name} & chain {chain} & resi {start}-{end} & symbol C'
         # TODO select only once, then check if empty and possibly delete?
@@ -307,6 +312,14 @@ def _color_by_annotation(domain_name: str, annotation_file: Path, base_color: st
             _create_line_segment(sse, _segment_group_name(domain_name), coloring, enable_occurrence_threshold=0.0)
         cmd.deselect()
     cmd.dss(domain_name)
+
+def assign_color_by_sheet_id(sse: dict) -> str:
+    sheet = sse.get('sheet_id', 0)
+    COLORS = '#7f7f7f #1f77b4 #ff7f0e #2c0a2c #d62728 #9467BD #9467BD #E377C2'.split()
+    if sheet < len(COLORS):
+        return COLORS[sheet]
+    else:
+        return COLORS[-1]
 
 def _segment_group_name(domain_name: str) -> str:
     return domain_name + '_seg'
@@ -320,6 +333,7 @@ def _create_line_segment(sse: dict[str, Any], group_name: str, coloring: Colorin
     start_vector = sse['start_vector']
     end_vector = sse['end_vector']
     color = sse[coloring]
+    # color = assign_color_by_sheet_id(sse)  # debug
     occurrence = sse.get('occurrence')
     if sse['type'] in 'GHIh':  # helix
         _create_line_segment_cylinder(name, start_vector, end_vector, color, occurrence)
@@ -373,28 +387,28 @@ def _cgo_arrow(a=8.0, ah=2.0, b=1.0, bh=1.6, c=0.25, scale=1.0, origin=(0.0, 0.0
     bh *= scale
     c *= scale
     coords = np.array([
-        a+ah, 0, c,
         a+ah, 0, -c,
-        a, -bh, c,
+        a+ah, 0, c,
         a, -bh, -c,
-        a, -b, c,
+        a, -bh, c,
         a, -b, -c,
-        0, -b, c,
+        a, -b, c,
         0, -b, -c,
-        0, +b, c,
+        0, -b, c,
         0, +b, -c,
-        a, +b, c,
+        0, +b, c,
         a, +b, -c,
-        a, +bh, c,
+        a, +b, c,
         a, +bh, -c,
-        a+ah, 0, c,
+        a, +bh, c,
         a+ah, 0, -c,
+        a+ah, 0, c,
     ]).reshape((-1, 3)).T
     if rotation is not None:
         coords = rotation @ coords
     coords += np.array(origin).reshape((3, 1))
     top_face = coords[:, 0::2]
-    bottom_face = coords[:, 1::2]
+    bottom_face = coords[:, :1:-2]
     result = _cgo_from_np(cgo.TRIANGLE_STRIP, _darker_rgb(color), coords)
     result.extend(_cgo_from_np(cgo.TRIANGLE_FAN, color, top_face))
     result.extend(_cgo_from_np(cgo.TRIANGLE_FAN, color, bottom_face))

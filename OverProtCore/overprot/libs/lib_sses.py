@@ -184,8 +184,10 @@ def pymol_spectrum_to_rgb(color: str) -> Tuple[float, float, float]:
     '''Convert color representation from PyMOL spectrum to RGB, e.g. 's500' -> (0.0, 1.0, 0.0) (green).'''
     if color.startswith('s') and len(color) == 4 and color[1:].isdigit():
         i = int(color[1:])
+    elif color.startswith('#') and len(color) == 7:
+        return hex_to_rgb(color)
     else:
-        raise ValueError("PyMOL spectrum color must be in format 'sXYZ' (e.g. 's523'), not '" + color + "'")
+        raise ValueError(f"PyMOL spectrum color must be in format 'sXYZ' (e.g. 's523'), not '{color}'")
     sector = i * 6 // 1000  # The 6 sectors are: mb, bc, cg, gy, yr, rm
     x = i * 6 % 1000 / 1000  # Position within sector [0.0, 1.0)
     if sector == 0:  # magenta-blue
@@ -210,6 +212,15 @@ def pymol_spectrum_to_hex(color: str) -> str:
     G = int(255*g)
     B = int(255*b)
     return '#' + hex2(R) + hex2(G) + hex2(B)
+
+def hex_to_rgb(color: str) -> Tuple[float, float, float]:
+    '''Convert color representation from hexadecimal to RGB, e.g. '#00ff00' -> (0.0, 1.0, 0.0) (green).'''
+    color = color.strip().lstrip('#')
+    assert len(color) == 6
+    r = int(color[0:2], base=16) / 255
+    g = int(color[2:4], base=16) / 255
+    b = int(color[4:6], base=16) / 255
+    return (r, g, b)
 
 def hex2(number: int):
     '''Get two-digit hexadecimal representation of integer from [0, 255], e.g. 10 -> '0A'.'''

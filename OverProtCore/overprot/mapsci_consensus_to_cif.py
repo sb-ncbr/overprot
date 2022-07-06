@@ -7,8 +7,10 @@ Example usage:
 
 from pathlib import Path
 import numpy as np
+from typing import Optional
 
 from .libs import superimpose3d
+from .libs.lib_structure import Structure
 from .libs.lib_cli import cli_command, run_cli_command
 
 #  CONSTANTS  ################################################################################
@@ -50,7 +52,7 @@ def read_pdb_line(line: str):
     index = line[6:11]
     name  = line[12:16]
     resn  = line[17:20]
-    chain = line[21]
+    chain = line[21].strip()
     resi  = line[22:26]
     altloc = line[26]
     x = line[30:38]
@@ -106,17 +108,32 @@ def apply_laying_rotation_translation(atoms: AtomTable) -> None:
 #  MAIN  #####################################################################################
 
 @cli_command()
-def main(input_pdb: Path, output_cif: Path) -> None:
+def main(input_pdb: Path, output_cif: Path, smooth_output_cif: Optional[Path]=None) -> None:
     '''Convert MAPSCI consensus structure from the original PDB to mmCIF format.
-    @param  `input_pdb`   Consensus PDB from MAPSCI.
-    @param  `output_cif`  File for mmCIF output.    
+    @param  `input_pdb`          Consensus PDB from MAPSCI.
+    @param  `output_cif`         File for mmCIF output.
+    @param  `smooth_output_cif`  File for mmCIF output with smoothed coordinates.    
     '''
-    atoms = read_pdb(input_pdb)
-    atoms.entity = [DEFAULT_ENTITY] * atoms.count()
-    atoms.chain = [DEFAULT_CHAIN] * atoms.count()
-    atoms.symbol = [DEFAULT_SYMBOL] * atoms.count()
-    apply_laying_rotation_translation(atoms)  # Center and align PCA axes with XYZ. Place starting and ending more in front, place starting more top-left
-    print_cif_minimal(atoms, output_cif, structure_name='consensus')
+    # atoms = read_pdb(input_pdb)
+    # atoms.entity = [DEFAULT_ENTITY] * atoms.count()
+    # atoms.chain = [DEFAULT_CHAIN] * atoms.count()
+    # atoms.symbol = [DEFAULT_SYMBOL] * atoms.count()
+    # apply_laying_rotation_translation(atoms)  # Center and align PCA axes with XYZ. Place starting and ending more in front, place starting more top-left
+    # print_cif_minimal(atoms, output_cif, structure_name='consensus')
+
+    atoms = Structure.from_pdb(input_pdb)
+    atoms.chain = atoms.auth_chain = np.full(atoms.count, DEFAULT_CHAIN)
+    atoms.symbol = np.full(atoms.count, DEFAULT_SYMBOL)
+    # Center and align PCA axes with XYZ. Place starting and ending more in front, place starting more top-left
+    R, t = superimpose3d.laying_rotation_translation(atoms.coords)
+    atoms.coords = superimpose3d.rotate_and_translate(atoms.coords, R, t)
+    atoms.save_cif(output_cif, name='consensus')
+    if smooth_output_cif is not None:
+        smooth = atoms.smooth_trace()
+        smooth.save_cif(smooth_output_cif, name='smooth_consensus')
+
+
+    
 
 
 if __name__ == '__main__':

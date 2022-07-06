@@ -29,6 +29,7 @@ class OverProtConfig(Config):
         clean_aligned_cif: bool
     class _VisualizationSection(ConfigSection):
         coloring: Literal['color', 'rainbow']
+        use_smooth_trace: bool
         create_multi_session: bool
 
     download: _DownloadSection
