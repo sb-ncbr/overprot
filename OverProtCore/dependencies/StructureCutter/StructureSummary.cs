@@ -19,7 +19,7 @@ namespace StructureCutter
         public readonly int NAtomsAll;
         public readonly int NAtomsFiltered;
 
-        public StructureSummary(string name, CifBlock block, bool includeResidueSummaries, int[] rows = null)
+        public StructureSummary(string name, CifBlock block, bool includeNonproteinResidueSummaries, bool includeProteinResidueSummaries, int[] rows = null)
         {
             Name = name;
             CifCategory _atom_site = block.GetCategory("_atom_site");
@@ -46,6 +46,8 @@ namespace StructureCutter
             string[] atom_AuthInsCode = null;
             string[] atom_Compound = null;
             string[] atom_Name = null;
+
+            bool includeResidueSummaries = includeNonproteinResidueSummaries || includeProteinResidueSummaries;
             if (includeResidueSummaries)
             {
                 atom_Residue = _atom_site.GetItem("label_seq_id").GetIntegers(rows, RESI_NULL);
@@ -152,7 +154,12 @@ namespace StructureCutter
                 sum.entity_polymer_type = entity_PolyTypeDict.ContainsKey(sum.entity) ? entity_PolyTypeDict[sum.entity] : null;
                 sum.entity_comp = entity_CompDict.ContainsKey(sum.entity) ? entity_CompDict[sum.entity] : null;
                 ChainSummaries[chain] = sum;
-                if (includeResidueSummaries && (sum.entity_type == "polymer" || sum.entity_type == "branched"))
+                bool calculateResidueSummaries = 
+                    (sum.entity_type == "polymer" || sum.entity_type == "branched")
+                    && ((includeNonproteinResidueSummaries && sum.entity_polymer_type != "polypeptide(L)")
+                        || (includeProteinResidueSummaries && sum.entity_polymer_type == "polypeptide(L)"));
+                // if (includeResidueSummaries && (sum.entity_type == "polymer" || sum.entity_type == "branched"))
+                if (calculateResidueSummaries)
                 {
                     sum.residues = new List<ResidueSummary>();
                     foreach (var residue in chainResidueIndex[chain].Keys)

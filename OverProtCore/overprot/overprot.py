@@ -21,7 +21,7 @@ from .libs.lib_logging import Timing
 from .libs.lib_io import RedirectIO
 from .libs.lib_overprot_config import OverProtConfig, ConfigException
 from .libs.lib_pipeline import Pipeline, PipelineStepSpecificationError
-from .libs.lib_cli import cli_command, run_cli_command
+from .libs.lib_cli import cli_command, run_cli_command, CliCommandExit
 
 from . import domains_from_pdbeapi
 from . import select_random_domains
@@ -35,6 +35,10 @@ from . import cealign_all
 from . import format_domains
 from .libs.lib_dependencies import DEFAULT_CONFIG_FILE, STRUCTURE_CUTTER_DLL
 
+
+EXIT_CODE_MISSING_CONFIG = 3
+EXIT_CODE_WRONG_CONFIG = 4
+EXIT_CODE_EMPTY_FAMILY = 5
 
 STEPS_HELP = '''Option --steps can be used to define which steps of the whole pipeline should be run.
 Its value is a comma-separated list of items, where each item is either a step name, or a range of steps, e.g. 'A:B+'.
@@ -69,11 +73,9 @@ def main(family: str, outdir: Path,
     try:
         conf = OverProtConfig(config)
     except OSError:
-        print(f'ERROR: Cannot open configuration file: {config}', file=sys.stderr)
-        return 1
+        raise CliCommandExit(EXIT_CODE_MISSING_CONFIG, f'Cannot open configuration file: {config}')
     except ConfigException as ex:
-        print('ERROR:', ex, file=sys.stderr)
-        return 2
+        raise CliCommandExit(EXIT_CODE_WRONG_CONFIG, str(ex))
 
     if structure_source is not None and structure_source != '':
         conf.download.structure_sources.insert(0, structure_source)
@@ -165,7 +167,8 @@ def main(family: str, outdir: Path,
                 n_sample = len(lib_domains.load_domain_list(outdir/'sample.json'))
                 if n_sample == 0:
                     (outdir/'EMPTY_FAMILY').write_text('')
-                    return 1
+                    print('Cannot continue because the family is empty.')
+                    raise CliCommandExit(EXIT_CODE_EMPTY_FAMILY, 'Cannot continue because the family is empty.')
 
             @pipeline.step
             def MAPSCI():

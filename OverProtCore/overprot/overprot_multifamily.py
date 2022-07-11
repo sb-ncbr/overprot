@@ -29,19 +29,24 @@ from . import get_pdb_entry_list
 from . import make_chain_summaries
 from . import domains_from_pdbeapi
 from . import overprot
-from .libs.lib_cli import cli_command, run_cli_command
+from .libs.lib_cli import cli_command, run_cli_command, CliCommandExit
 
 
 #  FUNCTIONS  ################################################################################
 
 HLINE = '-' * 60
+RESIDUE_SUMMARIES_SKIP_PROTEIN = True
 
 def process_family(family: str, directory: Path, sample_size: int|str|None = None, config: Optional[Path] = None, domains: Optional[Path] = None) -> Optional[str]:
     '''Try running OverProt on a family. Return the error traceback if fails, None if succeeds.'''
     print(HLINE, family, sep='\n')
     print(HLINE, family, sep='\n', file=sys.stderr)
     try:
-        overprot.main(family, directory, sample_size=sample_size, config=config, domains=domains)
+        try:
+            overprot.main(family, directory, sample_size=sample_size, config=config, domains=domains)
+        except CliCommandExit as err:
+            if err.exit_code != overprot.EXIT_CODE_EMPTY_FAMILY:
+                raise
         return None
     except Exception as ex:
         error = traceback.format_exc()
@@ -102,6 +107,7 @@ def collect_results(xs: Iterable[str], in_dir: Path, in_subpath: str, out_dir: P
             else:
                 missing.append(x)
                 if alternative_content is not None:
+                    out_file.parent.mkdir(parents=True, exist_ok=True)
                     out_file.write_text(alternative_content(x))
                 if print_missing:
                     print('Missing results:', in_subpath.format(x=x), file=sys.stderr)
@@ -164,11 +170,9 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
         try:
             conf = OverProtConfig(config)
         except OSError:
-            print(f'ERROR: Cannot open configuration file: {config}', file=sys.stderr)
-            return 1
+            raise CliCommandExit(overprot.EXIT_CODE_MISSING_CONFIG, f'Cannot open configuration file: {config}')
         except ConfigException as ex:
-            print('ERROR:', ex, file=sys.stderr)
-            return 2
+            raise CliCommandExit(overprot.EXIT_CODE_WRONG_CONFIG, str(ex))
         start_time = datetime.now().astimezone()
         print('Output directory:', directory)
         directory.mkdir(parents=True, exist_ok=True)
@@ -187,7 +191,7 @@ def main(family_list_file: Path, directory: Path, sample_size: Optional[int] = N
             get_cath_example_domains.main(output=directory/'cath_example_domains.csv')
             get_cath_family_names.main(directory/'cath-b-newest-names.gz', download=True, output=directory/'cath_b_names_options.json')
             get_pdb_entry_list.main(out=directory/'pdbs.txt')
-            make_chain_summaries.main(directory/'pdbs.txt', directory/'chain_summaries', directory/'residue_summaries', conf.download.structure_sources, breakdown=True, processes=processes)
+            make_chain_summaries.main(directory/'pdbs.txt', directory/'chain_summaries', directory/'residue_summaries', conf.download.structure_sources, residue_summaries_skip_protein=RESIDUE_SUMMARIES_SKIP_PROTEIN, breakdown=True, processes=processes)
         if only_get_lists:
             return
         out_err_dir = directory/'stdout_stderr'

@@ -1,7 +1,8 @@
 from __future__ import annotations
-from dataclasses import dataclass
+import sys
 import inspect
 import argparse
+from dataclasses import dataclass
 from collections import defaultdict
 from pathlib import Path  # used in evals
 from typing import Callable, TypeVar, Generic, Type, Union, Optional, Literal, Any, get_origin, get_args
@@ -15,8 +16,22 @@ _T = TypeVar('_T')
 _EMPTY = inspect._empty  # type: ignore
 
 
-class LibCliException(Exception): ...
+class LibCliException(Exception): 
+    '''Raised when `@cli_command` is used in a wrong way.'''
 
+
+class CliCommandExit(Exception): 
+    '''When raised in a function called by `run_cli_command`, prints error message and exits the program execution with code `exit_code`.
+    Use codes >= 3 to specify error type (0 = success; 1 = unspecified error; 2 = usage error, e.g. missing arguments).'''
+    EXIT_CODE_SUCCESS = 0
+    EXIT_CODE_UNSPECIFIED_ERROR = 1
+    EXIT_CODE_WRONG_USAGE = 2
+    exit_code: int
+    message: str
+    def __init__(self, exit_code: int, message: str) -> None:
+        self.exit_code = exit_code
+        self.message = message
+    
 
 class _CliParam(Generic[_T]):
     name: str
@@ -274,6 +289,11 @@ def run_cli_command(function: Callable) -> None:
             name = ''
         raise LibCliException(f'Function {name} must be decorated with @cli_command if it is to be run with run_cli_command')
     args = cli_info.parse_args()
-    exit_code = function(**args)
-    if exit_code is not None:
-        exit(exit_code)
+    try:
+        exit_code = function(**args)
+        if exit_code is not None:
+            exit(exit_code)
+    except CliCommandExit as err:
+        print('ERROR:', err.message, file=sys.stderr)
+        exit(err.exit_code)
+

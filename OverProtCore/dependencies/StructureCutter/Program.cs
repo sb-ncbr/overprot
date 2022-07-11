@@ -46,6 +46,8 @@ namespace StructureCutter
             var optResidueSummaryOutdir = parser.AddStringArg("--residue_summary_outdir")
                 .NameParameters("DIRECTORY")
                 .AddHelp("Directory for output files with residue summary (same as chain summary plus info per residue)");
+            var optResidueSummarySkipProtein = parser.AddSwitchArg("--residue_summary_skip_protein")
+                .AddHelp("Skip protein chains in residue summaries (decreases file size significantly)");
             var optSources = parser.AddArg(1, args => args[0].Split(' ', StringSplitOptions.RemoveEmptyEntries), "--sources")
                 .AddConstraintX(srcs => srcs.Length > 0, "You must specify at least one source.")
                 .AddConstraintX(srcs => srcs.All(CheckSourceProtocol), "Each source must start with one of " + string.Join(", ", ALLOWED_URL_PROTOCOLS))
@@ -72,12 +74,13 @@ namespace StructureCutter
             string pdbOutDirectory = optPdbOutdir.Value;
             string summaryOutDirectory = optSummaryOutdir.Value;
             string residueSummaryOutDirectory = optResidueSummaryOutdir.Value;
+            bool residueSummarySkipProtein = optResidueSummarySkipProtein.Value;
             string[] sources = optSources.Value;
             string failuresFile = optFailures.Value;
             bool noBar = optNoBar.Value;
 
-            if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null){
-                Lib.PrintError("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir. No output will be produced.");
+            if (cifOutDirectory == null && pdbOutDirectory == null && summaryOutDirectory == null && residueSummaryOutDirectory == null){
+                Lib.PrintError("WARNING: You did not specify any of --cif_outdir, --pdb_outdir, --summary_outdir, --residue_summary_outdir. No output will be produced.");
             }            
 
             Console.WriteLine($"Domain list file: {domainListFile}");
@@ -214,20 +217,16 @@ namespace StructureCutter
                 }
                 
                 if (residueSummaryOutDirectory != null){
-                    StructureSummary summary = new StructureSummary(pdb, block, true, modelRows);
+                    StructureSummary summary = new StructureSummary(pdb, block, true, !residueSummarySkipProtein, modelRows);
                     summary.Save(Path.Combine(residueSummaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                     if (summaryOutDirectory != null){
                         summary.DropResidueSummaries();
                         summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                     }
                 } else if (summaryOutDirectory != null){
-                    StructureSummary summary = new StructureSummary(pdb, block, false, modelRows);
+                    StructureSummary summary = new StructureSummary(pdb, block, false, false, modelRows);
                     summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
                 }
-                // if (summaryOutDirectory != null){
-                //     StructureSummary summary = new StructureSummary(pdb, block, true, modelRows);
-                //     summary.Save(Path.Combine(summaryOutDirectory, pdb + SUMMARY_OUTPUT_EXTENSION));
-                // }
                 progressBar.Step();
             }
             progressBar.Finish();

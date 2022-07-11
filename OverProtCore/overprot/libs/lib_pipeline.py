@@ -3,7 +3,7 @@ Building pipelines with `Pipeline` and running parts of the pipelines.
 '''
 
 from __future__ import annotations
-from typing import Callable, TypeVar, ParamSpec, Concatenate
+from typing import Callable  #, TypeVar, ParamSpec, Concatenate
 
 
 class PipelineStepSpecificationError(Exception):
@@ -98,15 +98,17 @@ class Pipeline(object):
                     if do_run:
                         if self._print_step_headers:
                             print(f'::: {step._name} :::')
-                        step.__call__()
-                        if self._print_step_headers:
-                            print()
+                        try:
+                            step.__call__()
+                        finally:
+                            if self._print_step_headers:
+                                print()
     
     def __repr__(self) -> str:
        return  f'{self.__class__.__name__}[{self._name}, {len(self._step_list)}]'
     
     def _parse_step_specs(self, specs: str) -> set[int]:
-        selected_steps = set[int]()
+        selected_steps: set[int] = set()
         for spec in specs.split(','):
             spec_type = spec.count(':')
             if spec_type == 0:
@@ -188,29 +190,30 @@ class Pipeline(object):
 
     
     
-P1 = ParamSpec('P1')
-R1 = TypeVar('R1')
-P2 = ParamSpec('P2')
-R2 = TypeVar('R2')
-DP = ParamSpec('DP')
-T = TypeVar('T')
+# P1 = ParamSpec('P1')
+# R1 = TypeVar('R1')
+# P2 = ParamSpec('P2')
+# R2 = TypeVar('R2')
+# DP = ParamSpec('DP')
+# T = TypeVar('T')
 
-def parametrized_decorator(d: Callable[Concatenate[Callable[P1, R1], DP], Callable[P2, R2]]) -> Callable[DP, Callable[[Callable[P1, R1]], Callable[P2, R2]]]:
-    '''Allow definition of decorators with parameters like this:
-        ```
-        @parametrized_decorator
-        def decorator(function: Callable[P1, R1], *args, *kwargs) -> Callable[P2, R2]:
-            ...
-        @decorator(1, 2, 3, name='blabla')
-        def foo():
-            ...
-        ```
-    '''
-    def decorator_factory(*args, **kwargs) -> Callable[[Callable[P1, R1]], Callable[P2, R2]]:
-        def final_decorator(function: Callable[P1, R1]) -> Callable[P2, R2]:
-            return d(function, *args, **kwargs)
-        return final_decorator
-    return decorator_factory
+# def parametrized_decorator(d: Callable[Concatenate[Callable[P1, R1], DP], Callable[P2, R2]]) -> Callable[DP, Callable[[Callable[P1, R1]], Callable[P2, R2]]]:
+#     '''Allow definition of decorators with parameters like this:
+#         ```
+#         @parametrized_decorator
+#         def decorator(function: Callable[P1, R1], *args, *kwargs) -> Callable[P2, R2]:
+#             ...
+#         @decorator(1, 2, 3, name='blabla')
+#         def foo():
+#             ...
+#         ```
+#     '''
+#     def decorator_factory(*args, **kwargs) -> Callable[[Callable[P1, R1]], Callable[P2, R2]]:
+#         def final_decorator(function: Callable[P1, R1]) -> Callable[P2, R2]:
+#             return d(function, *args, **kwargs)
+#         return final_decorator
+#     return decorator_factory
+
 
 if __name__ == '__main__':
     with Pipeline('EXAMPLE_PIPELINE', steps='?', help='This is example help message.') as pipeline:
