@@ -45,14 +45,12 @@
             </button>
             <div class="navbar-collapse collapse" id="navbarSupportedContent">
 
-                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/search" onsubmit="normalize_input_text('#family-input-on-panel');">
+                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/search" onsubmit="normalize_input_text('#family-input-on-panel'); makeButtonLoading('#btn-go-on-navbar');">
                     <div class="autocomplete">
                         <input id="family-input-on-panel" class="form-control family-input" name="q" type="search" 
                             value="{{query}}" placeholder="e.g. 1.10.630.10, 2nnj, 2nnjA00" 
                             aria-label="Search" title="Enter CATH family ID or PDB ID or CATH domain ID" required>
-                        <!-- <input class="form-control" type="submit" value="Go">
-                        <button class="btn btn-outline-success" type="submit">Go</button> -->
-                        <button class="btn btn-outline-primary" type="submit">Go</button>
+                        <button id="btn-go-on-navbar" class="btn btn-outline-primary family-input form-control" style="width: 5em;" type="submit"> Search </button>
                     </div>
                 </form>
                 <ul class="navbar-nav">
@@ -110,6 +108,13 @@
 
         function normalized_string(string){
             return string.trim().split(/\s+/).join(' ');
+        }
+
+        function makeButtonLoading(buttonSelector){
+            let button = $(buttonSelector);
+            console.log(button);
+            button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+            button.attr('disabled', 'disabled');
         }
     </script>
 

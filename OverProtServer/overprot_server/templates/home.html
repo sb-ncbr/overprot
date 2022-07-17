@@ -32,12 +32,12 @@
 </div>
 <div class="row">
     <div class="col">
-        <form class="form-inline" action="/search" onsubmit="normalize_input_text('#family-input-on-home');">
+        <form class="form-inline" action="/search" onsubmit="normalize_input_text('#family-input-on-home'); makeButtonLoading('#btn-go-on-home');">
             <label for="q">Family CATH ID:</label>
             <div class="autocomplete">
                 <input type="text" id="family-input-on-home" name="q" placeholder="e.g. 1.10.630.10, 2nnj, 2nnjA00" class="family-input form-control" 
                     title="Enter CATH family ID or PDB ID or CATH domain ID" required>
-                <input type="submit" value="Go" class="btn btn-primary">
+                <button id="btn-go-on-home" class="btn btn-primary family-input form-control" style="width: 5em;" type="submit"> Search </button>
             </div>
         </form>
         <p>
