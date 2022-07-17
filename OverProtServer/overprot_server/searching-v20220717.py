@@ -1,6 +1,5 @@
 from __future__ import annotations
 from pathlib import Path
-from collections import defaultdict
 from abc import abstractmethod
 from typing import TypeAlias, Generic, TypeVar
 
@@ -10,12 +9,12 @@ TInsensitive = TypeVar('TInsensitive', contravariant=True)
 TNeutral = TypeVar('TNeutral', covariant=True)
 
 class _BaseReprManager(Generic[TExact, TInsensitive, TNeutral]):
-    '''Abstract class for managing entries with an exact representation (TExact, e.g. case-sensitive strings 'Pole' != 'pole'), 
-    but can be represented in a loose way (TInsensitive, e.g. case-insensitive strings 'POLE' == 'Pole' == 'pole') 
-    all mapping to the same neutral representation (TNeutral, e.g. upper-case string 'POLE').
+    '''Abstract class for managing object that can be represented in different ways (TInsensitive, e.g. case-insensitive strings 'van de graaff' vs 'van DE GRAAFF') 
+    but have a preferred representation (TExact, e.g. exact case-sensitive string 'Van de Graaff),
+    all mapping to the same neutral representation (TNeutral, e.g. upper-case string 'VAN DE GRAPH').
     '''
     entries: set[TExact]
-    index: defaultdict[TNeutral, set[TExact]]
+    regular_entries: dict[TNeutral, TExact]
 
     @classmethod
     @abstractmethod
@@ -27,7 +26,7 @@ class _BaseReprManager(Generic[TExact, TInsensitive, TNeutral]):
 
     def __init__(self) -> None:
         self.entries = set()
-        self.index = defaultdict(set)
+        self.regular_entries = {}
 
     def __contains__(self, exact_key: TExact) -> bool:
         '''Decide if this exact value (e.g. 1tqn) is here'''
@@ -39,23 +38,25 @@ class _BaseReprManager(Generic[TExact, TInsensitive, TNeutral]):
     def add(self, exact_key: TExact) -> None:
         '''Add exact value (e.g. 1tqn)'''
         neutral = self.neutralize(exact_key)
+        if neutral in self.regular_entries.keys():
+            old_key = self.regular_entries[neutral]
+            if exact_key != old_key:
+                raise _BaseReprManager.DuplicateError(f'Equivalent objects: cannot add {exact_key!r} because {old_key!r} is already present')
         self.entries.add(exact_key)
-        self.index[neutral].add(exact_key)
+        self.regular_entries[neutral] = exact_key
     
-    def search(self, insensitive_key: TInsensitive) -> set[TExact]:
+    def search(self, insensitive_key: TInsensitive) -> TExact|None:
         '''Find preferred name for this value (e.g. 1TQn -> 1tqn)'''
-        neutral = self.neutralize(insensitive_key)
-        return self.index[neutral]
-        # return self.index.get(self.neutralize(insensitive_key))
+        return self.regular_entries.get(self.neutralize(insensitive_key))
  
 TExactStr = TypeVar('TExactStr', bound=str)
 TInsensitiveStr = TypeVar('TInsensitiveStr', bound=str, contravariant=True)
 UppercaseStr: TypeAlias = str
 
 class CaseManager(_BaseReprManager[TExactStr, TInsensitiveStr, UppercaseStr]):
-    '''Class for managing entries case-sensitive strings(TExactStr, 'Pole' != 'pole'), 
-    that can be represented as case-insensitive (TInsensitive, 'POLE' == 'Pole' == 'pole') 
-    all mapping to the same neutral representation (TNeutral, upper-case string 'POLE').'''
+    '''Class for managing case-insensitive string (e.g. 'van de graaff' vs 'van DE GRAAFF') 
+    which have a preferred representation case-sensitive (e.g. 'Van de Graaff),
+    all mapping to the same neutral representation (e.g. 'VAN DE GRAPH').'''
     @classmethod
     def neutralize(cls, key: TInsensitiveStr|TExactStr) -> UppercaseStr:
         '''Convert string into a case-neutral form (here uppercase, e.g. '1TQn' -> '1TQN')'''
@@ -117,10 +118,10 @@ class Searcher(object):
     def has_family(self, family: FamilyId) -> bool:
         return family in self._families
 
-    def search_pdb(self, pdb: CaseInsensitivePdbId) -> list[PdbId]:
-        return sorted(self._pdbs.search(pdb))
-    def search_domain(self, domain: CaseInsensitiveDomainId) -> list[DomainId]:
-        return sorted(self._domains.search(domain))
+    def search_pdb(self, pdb: CaseInsensitivePdbId) -> PdbId|None:
+        return self._pdbs.search(pdb)
+    def search_domain(self, domain: CaseInsensitiveDomainId) -> DomainId|None:
+        return self._domains.search(domain)
 
     def get_domains_families_for_pdb(self, pdb: PdbId) -> list[tuple[DomainId, FamilyId]]:
         return self._pdb_to_domains_families.get(pdb, [])

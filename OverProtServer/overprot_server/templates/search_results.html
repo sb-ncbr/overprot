@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+
+{% block title %} OverProt - Search "{{query}}" {% endblock %}
+
+
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <h2>
+            Search results for "{{query}}"
+        </h2>
+    </div>
+</div>
+
+{% if results.len() == 0 %}
+<div class="row mb-3">
+    <div class="col">
+        <p>
+            Did not find exact match for <strong>"{{query}}"</strong>.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col">
+        <h4>{{(results.families.len())}} {{results.families.name}}</h4>
+        <table>
+            {% for family in results.families %}
+            <tr>
+                <td><a href="/family/{{family.id}}">{{family.id}}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        <h4>{{(results.pdbs.len())}} {{results.pdbs.name}}</h4>
+        <table>
+            {% for pdb in results.pdbs %}
+            <tr>
+                <td><a href="/pdb/{{pdb.id}}">{{pdb.id}}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        <h4>{{(results.domains.len())}} {{results.domains.name}}</h4>
+        <table>
+            {% for domain in results.domains %}
+            <tr>
+                <td><a href="/domain/{{domain.id}}">{{domain.id}}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+    {% endblock %}

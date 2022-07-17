@@ -1,7 +1,7 @@
 import flask
 from markupsafe import escape
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 from http import HTTPStatus
 import json
 from pathlib import Path
@@ -11,6 +11,7 @@ from . import constants
 from .constants import DATA_DIR, JOBS_DIR_PENDING, JOBS_DIR_RUNNING, JOBS_DIR_COMPLETED, JOBS_DIR_ARCHIVED, JOBS_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE, LAST_UPDATE_FILE
 from .data_caching import DataCache
 from .searching import Searcher
+from .search_results import SearchResult, SearchResults
 from . import domain_parsing
 from . import queuing
 
@@ -125,19 +126,29 @@ def search() -> Any:
     query = values.get('q') or ''
     query = query.strip()
 
+    # Search families
     if _family_exists(query):
-        return flask.redirect(flask.url_for('family_view', family_id=query))
+        return flask.redirect(flask.url_for('family_view', family_id=query, q=query))
 
-    pdb = SEARCHER_CACHE.value.search_pdb(query)
-    if pdb is not None:
-        return flask.redirect(flask.url_for('pdb', pdb_id=pdb))
+    # Search PDBs
+    pdbs = SEARCHER_CACHE.value.search_pdb(query)
+    if len(pdbs) == 1:
+        return flask.redirect(flask.url_for('pdb', pdb_id=pdbs[0]))
+    elif len(pdbs) > 1:
+        return flask.render_template('search_results.html', query=query, todo='TODO', results=SearchResults.from_pdbs(pdbs))
     
-    domain = SEARCHER_CACHE.value.search_domain(query)
-    if domain is not None:
-        return flask.redirect(flask.url_for('domain', domain_id=domain))
-    
-    return flask.render_template('search_fail.html', entity=query)
+    # Search domains
+    domains = SEARCHER_CACHE.value.search_domain(query)
+    if len(domains) == 1:
+        return flask.redirect(flask.url_for('domain', domain_id=domains[0]))
+    elif len(domains) > 1:
+        return flask.render_template('search_results.html', query=query, todo='TODO', results=SearchResults.from_domains(domains))
 
+    # Search full-text - TODO
+
+    return flask.render_template('search_results.html', query=query, todo='TODO', results=SearchResults())
+
+    
 @app.route('/pdb/<string:pdb_id>', methods=['GET'])
 def pdb(pdb_id: str) -> Any:
     if SEARCHER_CACHE.value.has_pdb(pdb_id):
@@ -149,16 +160,47 @@ def pdb(pdb_id: str) -> Any:
 @app.route('/domain/<string:domain_id>', methods=['GET'])
 def domain(domain_id: str) -> Any:
     if SEARCHER_CACHE.value.has_domain(domain_id):
-        family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
-        return flask.redirect(flask.url_for('domain_view', family_id=family_id, domain_id=domain_id)) # TODO uncomment
-        # domain_info = get_domain_info(domain_id)
+        domain_info = get_domain_info(domain_id)
+        return flask.redirect(flask.url_for('domain_view', family_id=domain_info.family, domain_id=domain_id))
         # return flask.render_template('domain.html', domain=domain_id, pdb=domain_info.pdb, family=domain_info.family, 
         #     chain=domain_info.chain_id, ranges=domain_info.ranges, 
         #     auth_chain= f'[auth {domain_info.auth_chain_id}]' if domain_info.chain_id != domain_info.auth_chain_id else '',
         #     auth_ranges = f'[auth {domain_info.auth_ranges}]' if domain_info.ranges != domain_info.auth_ranges else '')
     else:
         return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
+        
+@app.route('/domain_view', methods=['GET'])
+def domain_view() -> Any:
+    values = flask.request.values 
+    family_id = values.get('family_id')
+    domain_id = values.get('domain_id')
+    if family_id is None and domain_id is None:
+        return flask.redirect(flask.url_for('domain_view', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
+    if family_id is None or domain_id is None:
+        return ResponseTuple('Must either specify both family_id and domain_id, or none of them (redirects to example)', status=HTTPStatus.UNPROCESSABLE_ENTITY)
+    if not _family_exists(family_id):
+        return flask.render_template('404.html', entity_type='Family', entity_id=family_id), HTTPStatus.NOT_FOUND
+    if not SEARCHER_CACHE.value.has_domain(domain_id):
+        return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
+    domain_info = get_domain_info(domain_id)
+    if family_id != domain_info.family:
+        return ResponseTuple(f'Domain {domain_id} does not match family {family_id}', status=HTTPStatus.UNPROCESSABLE_ENTITY)
+    return flask.render_template('domain_view.html', family_id=family_id, domain_id=domain_id, pdb=domain_info.pdb, 
+        chain=domain_info.chain_id, ranges=domain_info.ranges, 
+        auth_chain= f'[auth {domain_info.auth_chain_id}]' if domain_info.chain_id != domain_info.auth_chain_id else '',
+        auth_ranges = f'[auth {domain_info.auth_ranges}]' if domain_info.ranges != domain_info.auth_ranges else '')
+    # return flask.redirect(f'/static/integration/index.html?family_id={family_id}&domain_id={domain_id}')
 
+@app.route('/test/<string:domain_id>', methods=['GET'])
+def test(domain_id: str) -> Any:
+    domains = SEARCHER_CACHE.value.search_domain(domain_id)
+    return {'domains': domains}
+
+
+@app.route('/family/<string:family_id>', methods=['GET'])
+def family(family_id: str) -> Any:
+    return flask.redirect(flask.url_for('family_view', family_id=family_id))
+   
 @app.route('/family_view', methods=['GET'])
 def family_view() -> Any:
     values = flask.request.values 
@@ -169,33 +211,11 @@ def family_view() -> Any:
         if _family_exists(family_id):
             fam_info = _family_info(family_id)
             example_domain = EXAMPLE_DOMAINS_CACHE.value.get(family_id)
-            return flask.render_template('family_view.html', family_id=family_id, family_info=fam_info, example_domain=example_domain, last_update=LAST_UPDATE_CACHE.value)
+            return flask.render_template('family_view.html', family_id=family_id, family_info=fam_info, example_domain=example_domain, 
+                last_update=LAST_UPDATE_CACHE.value, query=values.get('q', ''))
         else:
             return flask.render_template('404.html', entity_type='Family', entity_id=family_id), HTTPStatus.NOT_FOUND
 
-@app.route('/domain_view', methods=['GET'])
-def domain_view() -> Any:
-    values = flask.request.values 
-    family_id = values.get('family_id')
-    domain_id = values.get('domain_id')
-    if domain_id is not None and SEARCHER_CACHE.value.has_domain(domain_id):
-        pdb_id = SEARCHER_CACHE.value.get_pdb_for_domain(domain_id)
-        family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
-        chain, ranges = SEARCHER_CACHE.value.get_chain_ranges_for_domain(domain_id)
-        domain_info = get_domain_info(domain_id)
-        # return flask.redirect(f'/static/integration/index.html?family_id={family_id}&domain_id={domain_id}')  # debug
-        if family_id is None:
-            return flask.redirect(flask.url_for('domain_view', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
-        else:
-            if _family_exists(family_id):
-                return flask.render_template('domain_view.html', family_id=domain_info.family, domain_id=domain_id, pdb=domain_info.pdb, 
-                    chain=domain_info.chain_id, ranges=domain_info.ranges, 
-                    auth_chain= f'[auth {domain_info.auth_chain_id}]' if domain_info.chain_id != domain_info.auth_chain_id else '',
-                    auth_ranges = f'[auth {domain_info.auth_ranges}]' if domain_info.ranges != domain_info.auth_ranges else '')
-            else:
-                return flask.render_template('search_fail.html', entity=family_id)
-    else:
-        return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
 
 @app.route('/favicon.ico')
 def favicon() -> Any:
@@ -281,9 +301,8 @@ def _calculate_time_to_refresh(elapsed_time: timedelta) -> int:
         return -elapsed_seconds % REFRESH_TIMES[-1]
 
 def _family_exists(family_id: str) -> bool:
-    # return SEARCHER_CACHE.value.has_family(family_id)
+    '''More efficient than using Searcher (reads less data)'''
     return family_id in FAMILY_SET_CACHE.value
-    # return Path(DATA_DIR, 'db', 'diagrams', f'diagram-{family_id}.json').exists()
 
 def _family_info(family_id: str) -> Dict[str, str]:
     SEP = ':'
