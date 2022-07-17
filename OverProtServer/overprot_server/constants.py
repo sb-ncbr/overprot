@@ -18,13 +18,13 @@ COMPLETED_JOB_STORING_DAYS = 14  # Currently not implemented
 
 
 LAST_UPDATE_FILE = f'{DATA_DIR}/db/last_update.txt'
-DB_DIR = f'{VAR_DIR}/jobs'
-DB_DIR_PENDING = f'{DB_DIR}/Pending'
-DB_DIR_RUNNING = f'{DB_DIR}/Running'
-DB_DIR_COMPLETED = f'{DB_DIR}/Completed'
-DB_DIR_FAILED = f'{DB_DIR}/Failed'
-DB_DIR_ARCHIVED = f'{DB_DIR}/Archived'
-DB_DIR_DELETED = f'{DB_DIR}/Deleted'
+JOBS_DIR = f'{VAR_DIR}/jobs'
+JOBS_DIR_PENDING = f'{JOBS_DIR}/Pending'
+JOBS_DIR_RUNNING = f'{JOBS_DIR}/Running'
+JOBS_DIR_COMPLETED = f'{JOBS_DIR}/Completed'
+JOBS_DIR_FAILED = f'{JOBS_DIR}/Failed'
+JOBS_DIR_ARCHIVED = f'{JOBS_DIR}/Archived'
+JOBS_DIR_DELETED = f'{JOBS_DIR}/Deleted'
 
 JOB_STATUSINFO_FILE = 'job_status.txt'
 JOB_INFO_FILE = 'job_info.json'
@@ -35,6 +35,8 @@ JOB_RESULT_FILE = 'result.txt'
 JOB_STDOUT_FILE = 'stdout.txt'
 JOB_STDERR_FILE = 'stderr.txt'
 JOB_ERROR_MESSAGE_FILE = 'error_message.txt'
+
+DOMAIN_INFO_FILE_TEMPLATE = f'{DATA_DIR}/db/domain/info/{{domain_middle}}/{{domain}}.json'
 
 
 REFRESH_TIMES = [2, 5, 10, 20, 30, 60, 120, 180, 300, 600, 1200, 1800, 3600]  # Times (in seconds) since submission when the waiting page should be autorefreshed, then each k*REFRESH_TIMES[-1] for any natural k 

@@ -113,6 +113,10 @@
         <h3>Domain info</h3>
         <table class="summary">
             <tr>
+                <th>Domain:</th>
+                <td>{{domain_id}}</td>
+            </tr>
+            <tr>
                 <th>Family:</th>
                 <td><a href="/family_view?family_id={{family_id}}" title="Go to family {{family_id}}">{{family_id}}</a></td>
             </tr>
@@ -122,11 +126,11 @@
             </tr>
             <tr>
                 <th>Chain:</th>
-                <td>{{chain}}</td>
+                <td>{{chain}} &nbsp;<span class="text-muted">{{auth_chain}}</span></td>
             </tr>
             <tr>
                 <th>Residues:</th>
-                <td>{{ranges}}</td>
+                <td>{{ranges}} &nbsp;<span class="text-muted">{{auth_ranges}}</span></td>
             </tr>
         </table>
     </div>

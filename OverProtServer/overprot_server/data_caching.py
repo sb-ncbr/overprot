@@ -14,7 +14,7 @@ class DataCache(Generic[V]):
 
     def __init__(self, factory: Callable[[], V], validity: timedelta = DEFAULT_VALIDITY) -> None:
         super().__init__()
-        self._factory = factory
+        self._factory = factory  # type: ignore
         self._value = None
         self._validity = validity
         self._valid_until = None
@@ -22,6 +22,6 @@ class DataCache(Generic[V]):
     @property
     def value(self) -> V:
         if self._valid_until is None or datetime.now() > self._valid_until:
-            self._value = self._factory()
+            self._value = self._factory()  # type: ignore
             self._valid_until = datetime.now() + self._validity
-        return self._value
+        return self._value  # type: ignore  # (_value has been set, but cannot assert _value is not None, because None might be a valid value for V)

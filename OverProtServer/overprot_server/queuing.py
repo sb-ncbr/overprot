@@ -13,16 +13,16 @@ import uuid
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Any, Union
 
-from .constants import DB_DIR_PENDING, DB_DIR_RUNNING, DB_DIR_COMPLETED, DB_DIR_FAILED, DB_DIR_ARCHIVED, DB_DIR_DELETED, JOB_STATUSINFO_FILE, JOB_INFO_FILE, JOB_DOMAINS_FILE, JOB_DATADIR, JOB_DATAZIP, JOB_RESULT_FILE, JOB_STDOUT_FILE, JOB_STDERR_FILE, JOB_ERROR_MESSAGE_FILE, OVERPROT_PYTHON, OVERPROT_PY, OVERPROT_STRUCTURE_SOURCE, TIME_FORMAT, COMPLETED_JOB_STORING_DAYS, QUEUE_NAME, JOB_TIMEOUT, JOB_CLEANUP_TIMEOUT
+from .constants import JOBS_DIR_PENDING, JOBS_DIR_RUNNING, JOBS_DIR_COMPLETED, JOBS_DIR_FAILED, JOBS_DIR_ARCHIVED, JOBS_DIR_DELETED, JOB_STATUSINFO_FILE, JOB_INFO_FILE, JOB_DOMAINS_FILE, JOB_DATADIR, JOB_DATAZIP, JOB_RESULT_FILE, JOB_STDOUT_FILE, JOB_STDERR_FILE, JOB_ERROR_MESSAGE_FILE, OVERPROT_PYTHON, OVERPROT_PY, OVERPROT_STRUCTURE_SOURCE, TIME_FORMAT, COMPLETED_JOB_STORING_DAYS, QUEUE_NAME, JOB_TIMEOUT, JOB_CLEANUP_TIMEOUT
 from .domain_parsing import Domain
 
 
 def enqueue_job(job_name: str, domains: List[Domain], info: dict) -> Tuple['JobStatusInfo', Any]:
     job_status = JobStatusInfo(name=job_name)  # default status Pending
-    Path(DB_DIR_PENDING, job_status.id).mkdir(parents=True, exist_ok=True)
-    job_status.save(Path(DB_DIR_PENDING, job_status.id, JOB_STATUSINFO_FILE))
-    Path(DB_DIR_PENDING, job_status.id, JOB_DOMAINS_FILE).write_text('\n'.join(str(domain) for domain in sorted(domains)))
-    Path(DB_DIR_PENDING, job_status.id, JOB_INFO_FILE).write_text(json.dumps(info))
+    Path(JOBS_DIR_PENDING, job_status.id).mkdir(parents=True, exist_ok=True)
+    job_status.save(Path(JOBS_DIR_PENDING, job_status.id, JOB_STATUSINFO_FILE))
+    Path(JOBS_DIR_PENDING, job_status.id, JOB_DOMAINS_FILE).write_text('\n'.join(str(domain) for domain in sorted(domains)))
+    Path(JOBS_DIR_PENDING, job_status.id, JOB_INFO_FILE).write_text(json.dumps(info))
 
     queue = rq.Queue(QUEUE_NAME, connection=redis.Redis.from_url('redis://'), default_timeout=JOB_TIMEOUT+JOB_CLEANUP_TIMEOUT)
     job = queue.enqueue(process_job, job_status.id)
@@ -31,16 +31,16 @@ def enqueue_job(job_name: str, domains: List[Domain], info: dict) -> Tuple['JobS
     
 def process_job(job_id: str):
     # time.sleep(10)
-    move(Path(DB_DIR_PENDING, job_id), Path(DB_DIR_RUNNING, job_id))
-    job_status = JobStatusInfo.update(Path(DB_DIR_RUNNING, job_id, JOB_STATUSINFO_FILE), status=JobStatus.RUNNING, start_time=get_current_time())
+    move(Path(JOBS_DIR_PENDING, job_id), Path(JOBS_DIR_RUNNING, job_id))
+    job_status = JobStatusInfo.update(Path(JOBS_DIR_RUNNING, job_id, JOB_STATUSINFO_FILE), status=JobStatus.RUNNING, start_time=get_current_time())
     assert job_status.id == job_id
 
-    stdout_file = Path(DB_DIR_RUNNING, job_id, JOB_STDOUT_FILE)
-    stderr_file = Path(DB_DIR_RUNNING, job_id, JOB_STDERR_FILE)
-    error_message_file = Path(DB_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE)
-    result_file = Path(DB_DIR_RUNNING, job_id, JOB_RESULT_FILE)
+    stdout_file = Path(JOBS_DIR_RUNNING, job_id, JOB_STDOUT_FILE)
+    stderr_file = Path(JOBS_DIR_RUNNING, job_id, JOB_STDERR_FILE)
+    error_message_file = Path(JOBS_DIR_RUNNING, job_id, JOB_ERROR_MESSAGE_FILE)
+    result_file = Path(JOBS_DIR_RUNNING, job_id, JOB_RESULT_FILE)
 
-    info = json.loads(Path(DB_DIR_RUNNING, job_id, JOB_INFO_FILE).read_text())
+    info = json.loads(Path(JOBS_DIR_RUNNING, job_id, JOB_INFO_FILE).read_text())
     with open(result_file, 'w') as w:
         for k, v in info.items():
             w.write(f'{k}: {v}\n\n')
@@ -51,8 +51,8 @@ def process_job(job_id: str):
         with open(stderr_file, 'w') as w_err:
             try:
                 proc = subprocess.run([OVERPROT_PYTHON, OVERPROT_PY, 
-                                    job_id, Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), 
-                                    '--domains', Path(DB_DIR_RUNNING, job_id, JOB_DOMAINS_FILE),
+                                    job_id, Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR), 
+                                    '--domains', Path(JOBS_DIR_RUNNING, job_id, JOB_DOMAINS_FILE),
                                     '--structure_source', OVERPROT_STRUCTURE_SOURCE], 
                                     check=True, timeout=JOB_TIMEOUT, stdout=w_out, stderr=w_err)
                 proc_returncode: Optional[int] = proc.returncode
@@ -94,27 +94,27 @@ def process_job(job_id: str):
 
     if successfull:
         # TODO select only important results
-        shutil.copy(Path(DB_DIR_RUNNING, job_id, JOB_STDOUT_FILE), Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, JOB_STDOUT_FILE))
-        shutil.copy(Path(DB_DIR_RUNNING, job_id, JOB_STDERR_FILE), Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, JOB_STDERR_FILE))
-        make_archive(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR), Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP))
+        shutil.copy(Path(JOBS_DIR_RUNNING, job_id, JOB_STDOUT_FILE), Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR, JOB_STDOUT_FILE))
+        shutil.copy(Path(JOBS_DIR_RUNNING, job_id, JOB_STDERR_FILE), Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR, JOB_STDERR_FILE))
+        make_archive(Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR), Path(JOBS_DIR_RUNNING, job_id, JOB_DATAZIP))
         # shutil.make_archive(Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP), 'zip', Path(DB_DIR_RUNNING, job_id, JOB_DATADIR))
         # move(Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP+'.zip'), Path(DB_DIR_RUNNING, job_id, JOB_DATAZIP))
-        move(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, 'results'), Path(DB_DIR_RUNNING, job_id, 'results'))
-        make_archive(Path(DB_DIR_RUNNING, job_id, 'results'), Path(DB_DIR_RUNNING, job_id, 'results.zip'))
-        move(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR, 'lists'), Path(DB_DIR_RUNNING, job_id, 'lists'))
+        move(Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR, 'results'), Path(JOBS_DIR_RUNNING, job_id, 'results'))
+        make_archive(Path(JOBS_DIR_RUNNING, job_id, 'results'), Path(JOBS_DIR_RUNNING, job_id, 'results.zip'))
+        move(Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR, 'lists'), Path(JOBS_DIR_RUNNING, job_id, 'lists'))
         # shutil.make_archive(Path(DB_DIR_RUNNING, job_id, 'results'), 'zip', Path(DB_DIR_RUNNING, job_id, 'results'))
-        shutil.rmtree(Path(DB_DIR_RUNNING, job_id, JOB_DATADIR))
+        shutil.rmtree(Path(JOBS_DIR_RUNNING, job_id, JOB_DATADIR))
 
     end_time = get_current_time()
     delete_time = end_time + timedelta(COMPLETED_JOB_STORING_DAYS)
     if successfull:
-        Path(DB_DIR_COMPLETED).mkdir(parents=True, exist_ok=True)
-        move(Path(DB_DIR_RUNNING, job_id), Path(DB_DIR_COMPLETED, job_id))
-        job_status = JobStatusInfo.update(Path(DB_DIR_COMPLETED, job_id, JOB_STATUSINFO_FILE), status=JobStatus.COMPLETED, end_time=end_time, delete_time=delete_time)
+        Path(JOBS_DIR_COMPLETED).mkdir(parents=True, exist_ok=True)
+        move(Path(JOBS_DIR_RUNNING, job_id), Path(JOBS_DIR_COMPLETED, job_id))
+        job_status = JobStatusInfo.update(Path(JOBS_DIR_COMPLETED, job_id, JOB_STATUSINFO_FILE), status=JobStatus.COMPLETED, end_time=end_time, delete_time=delete_time)
     else:
-        Path(DB_DIR_FAILED).mkdir(parents=True, exist_ok=True)
-        move(Path(DB_DIR_RUNNING, job_id), Path(DB_DIR_FAILED, job_id))
-        job_status = JobStatusInfo.update(Path(DB_DIR_FAILED, job_id, JOB_STATUSINFO_FILE), status=JobStatus.FAILED, end_time=end_time, delete_time=delete_time)
+        Path(JOBS_DIR_FAILED).mkdir(parents=True, exist_ok=True)
+        move(Path(JOBS_DIR_RUNNING, job_id), Path(JOBS_DIR_FAILED, job_id))
+        job_status = JobStatusInfo.update(Path(JOBS_DIR_FAILED, job_id, JOB_STATUSINFO_FILE), status=JobStatus.FAILED, end_time=end_time, delete_time=delete_time)
 
 def anystr_to_str(string: Union[str, bytes]) -> str:
     if isinstance(string, str):
@@ -234,21 +234,21 @@ class JobStatusInfo(object):
     @staticmethod
     def load_for_job(job_id: str) -> 'JobStatusInfo':
         try:
-            return JobStatusInfo.load(Path(DB_DIR_PENDING, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_PENDING, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         try:
-            return JobStatusInfo.load(Path(DB_DIR_RUNNING, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_RUNNING, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         try:
-            return JobStatusInfo.load(Path(DB_DIR_COMPLETED, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_COMPLETED, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         try:
-            return JobStatusInfo.load(Path(DB_DIR_FAILED, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_FAILED, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         try:
-            return JobStatusInfo.load(Path(DB_DIR_ARCHIVED, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_ARCHIVED, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         try:
-            return JobStatusInfo.load(Path(DB_DIR_DELETED, job_id, JOB_STATUSINFO_FILE))
+            return JobStatusInfo.load(Path(JOBS_DIR_DELETED, job_id, JOB_STATUSINFO_FILE))
         except FileNotFoundError: pass
         return JobStatusInfo(id=job_id, status=JobStatus.NONEXISTENT)

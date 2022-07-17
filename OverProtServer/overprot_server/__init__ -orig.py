@@ -3,7 +3,6 @@ from markupsafe import escape
 import uuid
 from datetime import timedelta
 from http import HTTPStatus
-import json
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Union, Dict, Set
 
@@ -122,7 +121,7 @@ def job(job_id: str) -> Any:
 @app.route('/search', methods=['GET'])
 def search() -> Any:
     values = flask.request.values 
-    query = values.get('q') or ''
+    query: str = values.get('q', '')
     query = query.strip()
 
     if _family_exists(query):
@@ -150,19 +149,28 @@ def pdb(pdb_id: str) -> Any:
 def domain(domain_id: str) -> Any:
     if SEARCHER_CACHE.value.has_domain(domain_id):
         family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
-        return flask.redirect(flask.url_for('domain_view', family_id=family_id, domain_id=domain_id)) # TODO uncomment
-        # domain_info = get_domain_info(domain_id)
-        # return flask.render_template('domain.html', domain=domain_id, pdb=domain_info.pdb, family=domain_info.family, 
-        #     chain=domain_info.chain_id, ranges=domain_info.ranges, 
-        #     auth_chain= f'[auth {domain_info.auth_chain_id}]' if domain_info.chain_id != domain_info.auth_chain_id else '',
-        #     auth_ranges = f'[auth {domain_info.auth_ranges}]' if domain_info.ranges != domain_info.auth_ranges else '')
+        # return flask.redirect(flask.url_for('domain_view', family_id=family_id, domain_id=domain_id)) # TODO uncomment
+        # DEBUG:
+        pdb_id = SEARCHER_CACHE.value.get_pdb_for_domain(domain_id)
+        chain, ranges = SEARCHER_CACHE.value.get_chain_ranges_for_domain(domain_id)
+        return flask.render_template('domain.html', domain=domain_id, pdb=pdb_id, family=family_id, chain=chain, ranges=ranges)
     else:
         return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
+
+@app.route('/test/<string:domain_id>', methods=['GET'])
+def test(domain_id: str) -> Any:
+    domain = SEARCHER_CACHE.value.search_domain(domain_id)
+    return {
+        'PDBs': len(SEARCHER_CACHE.value._pdbs),
+        'Domains': len(SEARCHER_CACHE.value._domains),
+        'Families': len(SEARCHER_CACHE.value._families),
+        'Domain': repr(domain),
+    }
 
 @app.route('/family_view', methods=['GET'])
 def family_view() -> Any:
     values = flask.request.values 
-    family_id = values.get('family_id')
+    family_id = values.get('family_id', None)
     if family_id is None:
         return flask.redirect(flask.url_for('family_view', family_id=DEFAULT_FAMILY_EXAMPLE, example=1))
     else:
@@ -176,22 +184,19 @@ def family_view() -> Any:
 @app.route('/domain_view', methods=['GET'])
 def domain_view() -> Any:
     values = flask.request.values 
-    family_id = values.get('family_id')
-    domain_id = values.get('domain_id')
+    family_id = values.get('family_id', None)
+    domain_id = values.get('domain_id', None)
     if domain_id is not None and SEARCHER_CACHE.value.has_domain(domain_id):
         pdb_id = SEARCHER_CACHE.value.get_pdb_for_domain(domain_id)
         family_id = SEARCHER_CACHE.value.get_family_for_domain(domain_id)
         chain, ranges = SEARCHER_CACHE.value.get_chain_ranges_for_domain(domain_id)
-        domain_info = get_domain_info(domain_id)
         # return flask.redirect(f'/static/integration/index.html?family_id={family_id}&domain_id={domain_id}')  # debug
         if family_id is None:
             return flask.redirect(flask.url_for('domain_view', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
         else:
             if _family_exists(family_id):
-                return flask.render_template('domain_view.html', family_id=domain_info.family, domain_id=domain_id, pdb=domain_info.pdb, 
-                    chain=domain_info.chain_id, ranges=domain_info.ranges, 
-                    auth_chain= f'[auth {domain_info.auth_chain_id}]' if domain_info.chain_id != domain_info.auth_chain_id else '',
-                    auth_ranges = f'[auth {domain_info.auth_ranges}]' if domain_info.ranges != domain_info.auth_ranges else '')
+                fam_info = _family_info(family_id)
+                return flask.render_template('domain_view.html', family_id=family_id, domain_id=domain_id, pdb=pdb_id, chain=chain, ranges=ranges)
             else:
                 return flask.render_template('search_fail.html', entity=family_id)
     else:
@@ -212,6 +217,10 @@ def domain_api(endpoint: str, file: str) -> Any:
     '''file should start with domain_id'''
     subdir = file[1:3]
     return flask.redirect(f'/data/db/domain/{endpoint}/{subdir}/{file}')
+
+@app.route('/base')  # debug
+def base() -> Any:
+    return ResponseTuple.plain(flask.request.url_root)
 
 @app.route('/diagram/<string:job_id>')
 def diagram(job_id: str) -> Any:
@@ -344,44 +353,7 @@ def _get_last_update() -> str:
         return Path(LAST_UPDATE_FILE).read_text().strip()
     except OSError:
         return '???'
-
-class DomainInfo(NamedTuple):
-    domain: str
-    pdb: str
-    chain_id: str
-    ranges: str
-    auth_chain_id: str
-    auth_ranges: str
-    family: str
-    def format_chain(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return self.chain_id
-        else:
-            return f'{self.chain_id} [auth {self.auth_chain_id}]'
-    def format_ranges(self) -> str:
-        if self.ranges == self.auth_ranges:
-            return self.ranges
-        else:
-            return f'{self.ranges} [auth {self.auth_ranges}]'
-    def format_auth_chain(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return ''
-        else:
-            return f'[auth {self.auth_chain_id}]'
-    def format_auth_ranges(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return ''
-        else:
-            return f'[auth {self.auth_chain_id}]'
-
-def get_domain_info(domain_id: str) -> DomainInfo:
-    path = constants.DOMAIN_INFO_FILE_TEMPLATE.format(domain=domain_id, domain_middle=domain_id[1:3])
-    try: 
-        js = json.loads(Path(path).read_text())
-        return DomainInfo(**js)
-    except OSError:
-        return DomainInfo(domain_id, '?', '?', '?', '?', '?', '?')
-
+ 
 
 EXAMPLE_DOMAINS_CACHE = DataCache(_get_example_domains)
 SEARCHER_CACHE = DataCache(lambda: Searcher(Path(DATA_DIR, 'db', 'domain_list.csv'), pdb_list_txt=Path(DATA_DIR, 'db', 'pdbs.txt')))
