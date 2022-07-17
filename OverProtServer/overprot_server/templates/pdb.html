@@ -28,8 +28,8 @@
         <table>
             {% for domain, family in domains_families %}
             <tr>
-                <td><a href="/domain_view?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}">{{domain}}</a></td>
-                <td>(<a href="/family_view?family_id={{family}}" title="Go to family {{family}}">{{family}}</a>)</td>
+                <td><a href="/domain_view?family_id={{family}}&domain_id={{domain}}" title="Go to interactive view for domain {{domain}}" onclick="showLoadingOverlay();">{{domain}}</a></td>
+                <td>(<a href="/family_view?family_id={{family}}" title="Go to family {{family}}" onclick="showLoadingOverlay();">{{family}}</a>)</td>
             </tr>
             {% endfor %}
         </table>

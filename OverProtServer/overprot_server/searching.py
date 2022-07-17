@@ -97,7 +97,7 @@ class Searcher(object):
                         self._pdbs.add(pdb)
         with open(domain_list_csv) as f:
             for line in f:
-                line = line.strip()
+                line = line.strip() 
                 if line != '':
                     family, domain, pdb, chain, ranges = line.split(SEPARATOR)
                     self._domains.add(domain)

@@ -31,7 +31,7 @@
     {% block head %}{% endblock %}
 </head>
 
-<body>
+<body onpageshow="hideLoadingOverlay();">
     <div class="d-flex flex-column" style="min-height: 100vh;">
 
         <!-- <nav class="container navbar navbar-expand-lg navbar-light bg-light mb-3"> -->
@@ -45,12 +45,12 @@
             </button>
             <div class="navbar-collapse collapse" id="navbarSupportedContent">
 
-                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/search" onsubmit="normalize_input_text('#family-input-on-panel'); makeButtonLoading('#btn-go-on-navbar');">
+                <form class="form-inline my-2 my-lg-0 ml-auto mr-4" action="/search" onsubmit="normalize_input_text('#family-input-on-panel'); showLoadingOverlay();">
                     <div class="autocomplete">
                         <input id="family-input-on-panel" class="form-control family-input" name="q" type="search" 
                             value="{{query}}" placeholder="e.g. 1.10.630.10, 2nnj, 2nnjA00" 
                             aria-label="Search" title="Enter CATH family ID or PDB ID or CATH domain ID" required>
-                        <button id="btn-go-on-navbar" class="btn btn-outline-primary family-input form-control" style="width: 5em;" type="submit"> Search </button>
+                        <button id="btn-go-on-navbar" class="btn btn-outline-primary form-control" style="width: 5em;" type="submit"> Search </button>
                     </div>
                 </form>
                 <ul class="navbar-nav">
@@ -97,6 +97,21 @@
 
     </div>
 
+    <!-- Modals -->
+    <div class="modal" id="modal-loading" tabindex="-1" role="dialog" aria-labelledby="modallabel-pdbs" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="text-center">
+                        <div class="progress" style="height: 2em;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated h-20" role="progressbar" aria-valuenow="100" aria-valuemin="100" aria-valuemax="100" style="width: 100%">Loading</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type='text/javascript'>
         initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json', '{{family_id}}', '.family-input', '.family-name');
 
@@ -110,11 +125,19 @@
             return string.trim().split(/\s+/).join(' ');
         }
 
+        /** Works only with Bootstrap >= 4.2, but that breaks modals*/
         function makeButtonLoading(buttonSelector){
             let button = $(buttonSelector);
             console.log(button);
             button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
             button.attr('disabled', 'disabled');
+        }
+        function showLoadingOverlay(delay, action){
+            delay = delay ?? 100;
+            setTimeout(() => $('#modal-loading').modal('show'), delay);
+        }
+        function hideLoadingOverlay(){
+            $('#modal-loading').modal('hide');
         }
     </script>
 
