@@ -1,14 +1,15 @@
 import os
+from pathlib import Path
 
 try:
-    OVERPROT_PYTHON = os.environ['OVERPROT_PYTHON']
-    OVERPROT_PY = os.environ['OVERPROT_PY']
-    VAR_DIR = os.environ['VAR_DIR']
+    OVERPROT_PYTHON = Path(os.environ['OVERPROT_PYTHON'])
+    OVERPROT_PY = Path(os.environ['OVERPROT_PY'])
+    VAR_DIR = Path(os.environ['VAR_DIR'])
     QUEUE_NAME = os.environ['RQ_QUEUE']
 except KeyError as ex:
     raise Exception(f'Environment variable {ex} must be defined before running this program.')
 
-DATA_DIR = os.environ.get('DATA_DIR', f'{VAR_DIR}/data')  # Directory with freely available static data (route /data maps to this dir, but in deployment it will be served by nginx)
+DATA_DIR = Path(os.environ.get('DATA_DIR', VAR_DIR/'data'))  # Directory with freely available static data (route /data maps to this dir, but in deployment it will be served by nginx)
 OVERPROT_STRUCTURE_SOURCE = os.environ.get('OVERPROT_STRUCTURE_SOURCE', '')
 
 MAXIMUM_JOB_DOMAINS = int(os.environ.get('MAXIMUM_JOB_DOMAINS', 500))
@@ -17,14 +18,14 @@ JOB_CLEANUP_TIMEOUT = 600  # seconds, extra time for cleanup in case that job ti
 COMPLETED_JOB_STORING_DAYS = 14  # Currently not implemented
 
 
-LAST_UPDATE_FILE = f'{DATA_DIR}/db/last_update.txt'
-JOBS_DIR = f'{VAR_DIR}/jobs'
-JOBS_DIR_PENDING = f'{JOBS_DIR}/Pending'
-JOBS_DIR_RUNNING = f'{JOBS_DIR}/Running'
-JOBS_DIR_COMPLETED = f'{JOBS_DIR}/Completed'
-JOBS_DIR_FAILED = f'{JOBS_DIR}/Failed'
-JOBS_DIR_ARCHIVED = f'{JOBS_DIR}/Archived'
-JOBS_DIR_DELETED = f'{JOBS_DIR}/Deleted'
+LAST_UPDATE_FILE = DATA_DIR/'db'/'last_update.txt'
+JOBS_DIR = VAR_DIR/'jobs'
+JOBS_DIR_PENDING = JOBS_DIR/'Pending'
+JOBS_DIR_RUNNING = JOBS_DIR/'Running'
+JOBS_DIR_COMPLETED = JOBS_DIR/'Completed'
+JOBS_DIR_FAILED = JOBS_DIR/'Failed'
+JOBS_DIR_ARCHIVED = JOBS_DIR/'Archived'
+JOBS_DIR_DELETED = JOBS_DIR/'Deleted'
 
 JOB_STATUSINFO_FILE = 'job_status.txt'
 JOB_INFO_FILE = 'job_info.json'

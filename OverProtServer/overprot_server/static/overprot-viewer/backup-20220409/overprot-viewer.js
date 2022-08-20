@@ -1212,7 +1212,6 @@
                 const imgData = canvas.node().toDataURL("image/png").replace("image/png", "image/octet-stream");
                 saveFile(imgData, 'overprot.png');
                 // d3.select(window).on('focus.removecanvas', () => {
-                //     console.log('picovina'); 
                 //     canvas.remove();
                 //     d3.select(window).on('focus.removecanvas', null);
                 // });

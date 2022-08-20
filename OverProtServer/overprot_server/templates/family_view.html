@@ -51,7 +51,7 @@
             </tr>
             <tr>
                 <th>Example domain:</th>
-                <td class="num"><a href="/domain/{{example_domain}}" title="Go to integrated view for domain {{example_domain}}" onclick="showLoadingOverlay();">{{example_domain}}</a></td>
+                <td class="num"><a href="/domain/{{example_domain}}" title="Go to integrated view for domain {{example_domain}}" class="show-loading"">{{example_domain}}</a></td>
                 <td><span class="info" title="Example domain for the family, as defined by CATH."></span></td>
             </tr>
         </table>
@@ -188,9 +188,28 @@
             targetElement.attr('loaded', true);
         }
 
+        function includeModalInUrl(modalSelector){
+            // This function must be called after other event listeners are added, if it is to call them.
+            const modal = $(modalSelector);
+            // Open this modal if it is specified in URL after #
+            let currentHash = window.location.hash.substring(1);
+            if (currentHash == modal.attr('id')){
+                modal.modal('show');
+            }
+            // Add referrence to this modal to URL, when it is opened
+            modal.on('show.bs.modal', () => window.location.hash = modal.attr('id'));
+            modal.on('hide.bs.modal', () => window.location.hash = '');
+        }
+        
         $('#modal-pdbs').on('show.bs.modal', () => loadContentToElement('#table-pdbs', '/data/db/family/lists/{{family_id}}/pdbs-demo.html', false, '/data/db/family/lists/{{family_id}}/pdbs.html'));
         $('#modal-domains').on('show.bs.modal', () => loadContentToElement('#table-domains', '/data/db/family/lists/{{family_id}}/domains-demo.html', false, '/data/db/family/lists/{{family_id}}/domains.html'));
         $('#modal-included-domains').on('show.bs.modal', () => loadContentToElement('#table-included-domains', '/data/db/family/lists/{{family_id}}/sample-demo.html', false, '/data/db/family/lists/{{family_id}}/sample.html'));
+
+        includeModalInUrl('#modal-pdbs');
+        includeModalInUrl('#modal-domains');
+        includeModalInUrl('#modal-included-domains');
+
+
     </script>
 
     {% endblock %}

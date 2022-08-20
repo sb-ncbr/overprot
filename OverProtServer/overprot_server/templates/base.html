@@ -132,13 +132,22 @@
             button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
             button.attr('disabled', 'disabled');
         }
-        function showLoadingOverlay(delay, action){
-            delay = delay ?? 100;
+        function showLoadingOverlay(delay = 250, repeatAfter = 0){
             setTimeout(() => $('#modal-loading').modal('show'), delay);
+            if (repeatAfter) {
+                showLoadingOverlay(repeatAfter, 0);
+            }
         }
-        function hideLoadingOverlay(){
-            $('#modal-loading').modal('hide');
+        function hideLoadingOverlay(delay = 0, repeatAfter = 500){
+            setTimeout(() => $('#modal-loading').modal('hide'), delay);
+            if (repeatAfter) {
+                hideLoadingOverlay(repeatAfter, 0);
+            }
         }
+
+        $('.show-loading').click(() => showLoadingOverlay());
+
+
     </script>
 
     {% block scripts %}{% endblock %}

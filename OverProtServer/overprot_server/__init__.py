@@ -9,7 +9,7 @@ from typing import Any, NamedTuple, Optional, Union, Dict, Set
 
 from . import constants
 from .constants import DATA_DIR, JOBS_DIR_PENDING, JOBS_DIR_RUNNING, JOBS_DIR_COMPLETED, JOBS_DIR_ARCHIVED, JOBS_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE, LAST_UPDATE_FILE
-from .data_caching import DataCache
+from .data_caching import DataCache, DataCacheWithWatchfiles
 from .searching import Searcher
 from .search_results import SearchResult, SearchResults
 from . import domain_parsing
@@ -339,9 +339,15 @@ def _get_job_file(job_id: str, *path_parts: str) -> Path:
             return path
     raise FileNotFoundError('/'.join(['...', job_id, *path_parts]))
 
+
+DOMAIN_LIST_FILE = Path(DATA_DIR, 'db', 'domain_list.csv')
+PDB_LIST_FILE = Path(DATA_DIR, 'db', 'pdbs.txt')
+EXAMPLE_DOMAINS_FILE = Path(DATA_DIR, 'db', 'cath_example_domains.csv')
+FAMILY_LIST_FILE = Path(DATA_DIR, 'db', 'families.txt')
+
 def _get_example_domains() -> Dict[str, str]:
     SEPARATOR = ';'
-    with open(Path(DATA_DIR, 'db', 'cath_example_domains.csv')) as f:
+    with open(EXAMPLE_DOMAINS_FILE) as f:
         result = {}
         for line in f:
             line = line.strip()
@@ -350,7 +356,7 @@ def _get_example_domains() -> Dict[str, str]:
     return result
 
 def _get_family_set() -> Set[str]:
-    with open(Path(DATA_DIR, 'db', 'families.txt')) as f:
+    with open(FAMILY_LIST_FILE) as f:
         result = set()
         for line in f:
             family_id = line.strip()
@@ -401,8 +407,7 @@ def get_domain_info(domain_id: str) -> DomainInfo:
     except OSError:
         return DomainInfo(domain_id, '?', '?', '?', '?', '?', '?')
 
-
-EXAMPLE_DOMAINS_CACHE = DataCache(_get_example_domains)
-SEARCHER_CACHE = DataCache(lambda: Searcher(Path(DATA_DIR, 'db', 'domain_list.csv'), pdb_list_txt=Path(DATA_DIR, 'db', 'pdbs.txt')))
-FAMILY_SET_CACHE = DataCache(_get_family_set)
-LAST_UPDATE_CACHE = DataCache(_get_last_update)
+EXAMPLE_DOMAINS_CACHE = DataCacheWithWatchfiles(_get_example_domains, [EXAMPLE_DOMAINS_FILE])
+SEARCHER_CACHE = DataCacheWithWatchfiles(lambda: Searcher(DOMAIN_LIST_FILE, pdb_list_txt=PDB_LIST_FILE), [DOMAIN_LIST_FILE, PDB_LIST_FILE])
+FAMILY_SET_CACHE = DataCacheWithWatchfiles(_get_family_set, [FAMILY_LIST_FILE])
+LAST_UPDATE_CACHE = DataCacheWithWatchfiles(_get_last_update, [LAST_UPDATE_FILE])
