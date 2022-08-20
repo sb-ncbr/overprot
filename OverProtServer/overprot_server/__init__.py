@@ -1,39 +1,20 @@
 import flask
 from markupsafe import escape
-import uuid
-from datetime import timedelta, datetime
 from http import HTTPStatus
-import json
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, Union, Dict, Set
+from typing import Any
 
 from . import constants
-from .constants import DATA_DIR, JOBS_DIR_PENDING, JOBS_DIR_RUNNING, JOBS_DIR_COMPLETED, JOBS_DIR_ARCHIVED, JOBS_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, REFRESH_TIMES, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE, LAST_UPDATE_FILE
-from .data_caching import DataCache, DataCacheWithWatchfiles
-from .searching import Searcher
-from .search_results import SearchResult, SearchResults
+from .constants import DATA_DIR, JOBS_DIR_COMPLETED, JOBS_DIR_ARCHIVED, JOBS_DIR_FAILED, JOB_ERROR_MESSAGE_FILE, MAXIMUM_JOB_DOMAINS, DEFAULT_FAMILY_EXAMPLE, DEFAULT_DOMAIN_EXAMPLE
+from .search_results import SearchResults
 from . import domain_parsing
 from . import queuing
+from .helpers import ResponseTuple, SEARCHER_CACHE, LAST_UPDATE_CACHE, EXAMPLE_DOMAINS_CACHE, calculate_time_to_refresh, family_exists, get_domain_info, get_family_info, get_family_info_for_job
 
 
 app = flask.Flask(__name__)
 app.url_map.strict_slashes = False  # This is needed because some browsers (e.g. older Opera) sometimes add trailing /, where you don't want them (WTF?)
 
-class ResponseTuple(NamedTuple):
-    response: Union[str, dict]
-    status: Optional[int] = None
-    headers: Union[list, dict, None] = None
-    @classmethod
-    def plain(cls, response, status=None, headers=None) -> 'ResponseTuple':
-        if headers is None:
-            headers = {'Content-Type': 'text/plain; charset=utf-8'}
-        else:
-            headers['Content-Type'] = 'text/plain; charset=utf-8'
-        return cls(str(response), status, headers)
-
-
-def get_uuid() -> uuid.UUID:
-    return uuid.uuid4()
 
 @app.route('/')
 def index() -> Any:
@@ -97,14 +78,14 @@ def job(job_id: str) -> Any:
     elif job_status.status in [queuing.JobStatus.PENDING, queuing.JobStatus.RUNNING]:
         now = queuing.get_current_time()
         elapsed_time = now - job_status.submission_time
-        refresh_time = _calculate_time_to_refresh(elapsed_time)
+        refresh_time = calculate_time_to_refresh(elapsed_time)
         url = flask.request.url
         return flask.render_template('waiting.html', job_id=job_id, job_name=job_status.name, job_status=job_status.status.value, 
                                      submission_time=job_status.submission_time, current_time=now, elapsed_time=elapsed_time, 
                                      url=url, refresh_time=refresh_time)
     elif job_status.status in [queuing.JobStatus.COMPLETED, queuing.JobStatus.ARCHIVED]:
         file = flask.url_for('diagram', job_id=job_id)
-        fam_info = _family_info_for_job(job_id)
+        fam_info = get_family_info_for_job(job_id)
         return flask.render_template('completed.html', file=file, job_id=job_id, job_name=job_status.name, job_status=job_status.status.value, 
                                     submission_time=job_status.submission_time, family_info=fam_info)
     elif job_status.status == queuing.JobStatus.FAILED:
@@ -127,7 +108,7 @@ def search() -> Any:
     query = query.strip()
 
     # Search families
-    if _family_exists(query):
+    if family_exists(query):
         return flask.redirect(flask.url_for('family_view', family_id=query, q=query))
 
     # Search PDBs
@@ -178,7 +159,7 @@ def domain_view() -> Any:
         return flask.redirect(flask.url_for('domain_view', family_id=DEFAULT_FAMILY_EXAMPLE, domain_id=DEFAULT_DOMAIN_EXAMPLE, example=1))
     if family_id is None or domain_id is None:
         return ResponseTuple('Must either specify both family_id and domain_id, or none of them (redirects to example)', status=HTTPStatus.UNPROCESSABLE_ENTITY)
-    if not _family_exists(family_id):
+    if not family_exists(family_id):
         return flask.render_template('404.html', entity_type='Family', entity_id=family_id), HTTPStatus.NOT_FOUND
     if not SEARCHER_CACHE.value.has_domain(domain_id):
         return flask.render_template('404.html', entity_type='Domain', entity_id=domain_id), HTTPStatus.NOT_FOUND
@@ -208,8 +189,8 @@ def family_view() -> Any:
     if family_id is None:
         return flask.redirect(flask.url_for('family_view', family_id=DEFAULT_FAMILY_EXAMPLE, example=1))
     else:
-        if _family_exists(family_id):
-            fam_info = _family_info(family_id)
+        if family_exists(family_id):
+            fam_info = get_family_info(family_id)
             example_domain = EXAMPLE_DOMAINS_CACHE.value.get(family_id)
             return flask.render_template('family_view.html', family_id=family_id, family_info=fam_info, example_domain=example_domain, 
                 last_update=LAST_UPDATE_CACHE.value, query=values.get('q', ''))
@@ -252,6 +233,7 @@ def results(job_id: str, file: str) -> Any:
         except FileNotFoundError:
             return flask.send_file(Path(JOBS_DIR_FAILED, job_id, file))
 
+
 # DEBUG
 @app.route('/settings')
 def settings() -> Any:
@@ -291,123 +273,3 @@ def data(file: str):
         return ResponseTuple(f'File {file} does not exist.', status=HTTPStatus.NOT_FOUND)
     # return f'{file} -- {escape(file)}'
 
-
-def _calculate_time_to_refresh(elapsed_time: timedelta) -> int:
-    elapsed_seconds = int(elapsed_time.total_seconds())
-    try:
-        next_refresh = next(t for t in REFRESH_TIMES if t > elapsed_seconds)
-        return next_refresh - elapsed_seconds
-    except StopIteration:
-        return -elapsed_seconds % REFRESH_TIMES[-1]
-
-def _family_exists(family_id: str) -> bool:
-    '''More efficient than using Searcher (reads less data)'''
-    return family_id in FAMILY_SET_CACHE.value
-
-def _family_info(family_id: str) -> Dict[str, str]:
-    SEP = ':'
-    result = {}
-    try:
-        with open(Path(DATA_DIR, 'db', 'family', 'lists', family_id, f'family_info.txt')) as f:
-            for line in f:
-                if SEP in line:
-                    key, value = line.split(SEP, maxsplit=1)
-                    result[key.strip()] = value.strip()
-        return result
-    except OSError:
-        return {}
-
-def _family_info_for_job(job_id: str) -> Dict[str, str]:
-    SEP = ':'
-    result = {}
-    try:
-        family_info_file = _get_job_file(job_id, 'lists', 'family_info.txt')
-    except FileNotFoundError:
-        return {}
-    with open(family_info_file) as f:
-        for line in f:
-            if SEP in line:
-                key, value = line.split(SEP, maxsplit=1)
-                result[key.strip()] = value.strip()
-    return result
-
-def _get_job_file(job_id: str, *path_parts: str) -> Path:
-    '''Get path to file jobs/*/job_id/*path_parts of given job, where * can be Completed, Archived, Failed, or Pending etc. '''
-    for db_dir in (JOBS_DIR_COMPLETED, JOBS_DIR_ARCHIVED, JOBS_DIR_FAILED, JOBS_DIR_PENDING):
-        path = Path(db_dir, job_id, *path_parts)
-        if path.exists():
-            return path
-    raise FileNotFoundError('/'.join(['...', job_id, *path_parts]))
-
-
-DOMAIN_LIST_FILE = Path(DATA_DIR, 'db', 'domain_list.csv')
-PDB_LIST_FILE = Path(DATA_DIR, 'db', 'pdbs.txt')
-EXAMPLE_DOMAINS_FILE = Path(DATA_DIR, 'db', 'cath_example_domains.csv')
-FAMILY_LIST_FILE = Path(DATA_DIR, 'db', 'families.txt')
-
-def _get_example_domains() -> Dict[str, str]:
-    SEPARATOR = ';'
-    with open(EXAMPLE_DOMAINS_FILE) as f:
-        result = {}
-        for line in f:
-            line = line.strip()
-            family, example = line.split(SEPARATOR)
-            result[family] = example
-    return result
-
-def _get_family_set() -> Set[str]:
-    with open(FAMILY_LIST_FILE) as f:
-        result = set()
-        for line in f:
-            family_id = line.strip()
-            if family_id != '':
-                result.add(family_id)
-    return result
-
-def _get_last_update() -> str:
-    try:
-        return Path(LAST_UPDATE_FILE).read_text().strip()
-    except OSError:
-        return '???'
-
-class DomainInfo(NamedTuple):
-    domain: str
-    pdb: str
-    chain_id: str
-    ranges: str
-    auth_chain_id: str
-    auth_ranges: str
-    family: str
-    def format_chain(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return self.chain_id
-        else:
-            return f'{self.chain_id} [auth {self.auth_chain_id}]'
-    def format_ranges(self) -> str:
-        if self.ranges == self.auth_ranges:
-            return self.ranges
-        else:
-            return f'{self.ranges} [auth {self.auth_ranges}]'
-    def format_auth_chain(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return ''
-        else:
-            return f'[auth {self.auth_chain_id}]'
-    def format_auth_ranges(self) -> str:
-        if self.chain_id == self.auth_chain_id:
-            return ''
-        else:
-            return f'[auth {self.auth_chain_id}]'
-
-def get_domain_info(domain_id: str) -> DomainInfo:
-    path = constants.DOMAIN_INFO_FILE_TEMPLATE.format(domain=domain_id, domain_middle=domain_id[1:3])
-    try: 
-        js = json.loads(Path(path).read_text())
-        return DomainInfo(**js)
-    except OSError:
-        return DomainInfo(domain_id, '?', '?', '?', '?', '?', '?')
-
-EXAMPLE_DOMAINS_CACHE = DataCacheWithWatchfiles(_get_example_domains, [EXAMPLE_DOMAINS_FILE])
-SEARCHER_CACHE = DataCacheWithWatchfiles(lambda: Searcher(DOMAIN_LIST_FILE, pdb_list_txt=PDB_LIST_FILE), [DOMAIN_LIST_FILE, PDB_LIST_FILE])
-FAMILY_SET_CACHE = DataCacheWithWatchfiles(_get_family_set, [FAMILY_LIST_FILE])
-LAST_UPDATE_CACHE = DataCacheWithWatchfiles(_get_last_update, [LAST_UPDATE_FILE])
