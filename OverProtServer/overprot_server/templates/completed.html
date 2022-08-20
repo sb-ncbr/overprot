@@ -10,19 +10,19 @@
     <div class="col border m-3 p-3">
         <table>
             <tr>
-                <td class='label'>Job name:</td>
+                <td class="label">Job name:</td>
                 <td>{{job_name}}</td>
             </tr>
             <tr>
-                <td class='label'>Job ID:</td>
+                <td class="label">Job ID:</td>
                 <td>{{job_id}}</td>
             </tr>
             <tr>
-                <td class='label'>Status:</td>
+                <td class="label">Status:</td>
                 <td>{{job_status}}</td>
             </tr>
             <tr>
-                <td class='label'>Submission time:</td>
+                <td class="label">Submission time:</td>
                 <td>{{submission_time}}</td>
             </tr>
         </table>
@@ -68,8 +68,8 @@
         </table>
 
         <h3 class="pt-3">Download</h3>
-        <p>Results: <a href='/results/{{job_id}}/results.zip'>results.zip</a></p>
-        <p>All data: <a href='/results/{{job_id}}/data.zip'>data.zip</a></p>
+        <p>Results: <a href="/results/{{job_id}}/results.zip">results.zip</a></p>
+        <p>All data: <a href="/results/{{job_id}}/data.zip">data.zip</a></p>
     </div>
 </div>
 
@@ -142,7 +142,7 @@
 
 {% block scripts %}
 
-<script type='text/javascript'>
+<script>
     function loadContentToElement(element, source, overwrite=false, fullSource=null){
         let targetElement = $(element);
         if (targetElement.attr('loaded') && !overwrite){

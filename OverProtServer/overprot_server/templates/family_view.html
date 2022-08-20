@@ -9,8 +9,8 @@
 <div class="row">
     <div class="col">
         <h3>
-            Family: &nbsp; <span class='family-id'>{{family_id}}</span> &nbsp;
-            <span class='family-name' style='font-style: italic;'>&nbsp;</span>
+            Family: &nbsp; <span class="family-id">{{family_id}}</span> &nbsp;
+            <span class="family-name" style="font-style: italic;">&nbsp;</span>
         </h3>
         <overprot-viewer id="main-viewer" file="/data/db/family/diagram/diagram-{{family_id}}.json" height="300" width="1200" 
             color-method="sheet" shape-method="symcdf" beta-connectivity="true" occurrence-threshold="0.2" 
@@ -164,7 +164,7 @@
 
     {% block scripts %}
 
-    <script type='text/javascript'>
+    <script>
         function loadContentToElement(element, source, overwrite=false, fullSource=null){
             let targetElement = $(element);
             if (targetElement.attr('loaded') && !overwrite){

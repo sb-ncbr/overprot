@@ -1,12 +1,12 @@
 <html>
     <head>	
-        <meta charset='UTF-8'>
-        <link rel='stylesheet' type='text/css' href='/static/web/bootstrap/bootstrap.min.css'>
-        <link rel='stylesheet' type='text/css' href='/static/overprot-viewer/overprot-viewer.min.css'>
-        <link rel='stylesheet' type='text/css' href='web.css'>
-        <script type='text/javascript' src='/static/overprot-viewer/d3.v5.min.js'></script>
-        <script type='text/javascript' src='/static/overprot-viewer/d3-selection-multi.v1.min.js'></script>
-        <script type='text/javascript' src='/static/overprot-viewer/overprot-viewer.min.js'></script>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="/static/web/bootstrap/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="/static/overprot-viewer/overprot-viewer.min.css">
+        <link rel="stylesheet" type="text/css" href="web.css">
+        <script src="/static/overprot-viewer/d3.v5.min.js"></script>
+        <script src="/static/overprot-viewer/d3-selection-multi.v1.min.js"></script>
+        <script src="/static/overprot-viewer/overprot-viewer.min.js"></script>
     </head>
     <body>
         <div class="d-flex flex-column" style="min-height: 100vh;">
@@ -45,35 +45,35 @@
             </nav>
 
 
-            <div class='container'>
+            <div class="container">
                 <p>This page demonstrates OverProt results on several selected protein families.</p>
                 <hr>
                 <h3>3.40.50.2300 &nbsp; <em>Response regulator (Rossmann fold)</em> &nbsp; – sample of 4 domains</h3>
-                <overprot-viewer id='Rossmann-4' file='/static/sample_data/rossmann_3-40-50-2300_sample4/diagram-ABCD.json'></overprot-viewer>
+                <overprot-viewer id="Rossmann-4" file="/static/sample_data/rossmann_3-40-50-2300_sample4/diagram-ABCD.json"></overprot-viewer>
                 <hr>
                 <h3>3.40.50.2300 &nbsp; <em>Response regulator (Rossmann fold)</em> &nbsp; – whole family</h3>
-                <overprot-viewer id='Rossmann' file='/data/db/family/diagram/diagram-3.40.50.2300.json'></overprot-viewer>
+                <overprot-viewer id="Rossmann" file="/data/db/family/diagram/diagram-3.40.50.2300.json"></overprot-viewer>
                 <hr>
                 <h3>1.10.630.10 &nbsp; <em>Cytochrome P450</em> &nbsp;</h3>
-                <overprot-viewer id='Cyp' file='/data/db/family/diagram/diagram-1.10.630.10.json'></overprot-viewer>
+                <overprot-viewer id="Cyp" file="/data/db/family/diagram/diagram-1.10.630.10.json"></overprot-viewer>
                 <hr>
                 <h3>2.60.40.10 &nbsp; <em>Immunoglobulin</em> &nbsp;</h3>
-                <overprot-viewer id='Immunoglobulin' file='/data/db/family/diagram/diagram-2.60.40.10.json'></overprot-viewer>
+                <overprot-viewer id="Immunoglobulin" file="/data/db/family/diagram/diagram-2.60.40.10.json"></overprot-viewer>
                 <hr>
                 <h3>1.10.510.10 &nbsp; <em>Phosphotransferase</em> &nbsp;</h3>
-                <overprot-viewer id='Phosphotransferase' file='/data/db/family/diagram/diagram-1.10.510.10.json'></overprot-viewer>
+                <overprot-viewer id="Phosphotransferase" file="/data/db/family/diagram/diagram-1.10.510.10.json"></overprot-viewer>
                 <hr>
                 <h3>1.10.490.10 &nbsp; <em>Globin</em> &nbsp;</h3>
-                <overprot-viewer id='Globin' file='/data/db/family/diagram/diagram-1.10.490.10.json'></overprot-viewer>
+                <overprot-viewer id="Globin" file="/data/db/family/diagram/diagram-1.10.490.10.json"></overprot-viewer>
                 <hr>
                 <h3>2.40.128.20 &nbsp; <em>Lipocalin</em> &nbsp;</h3>
-                <overprot-viewer id='Lipocalin' file='/data/db/family/diagram/diagram-2.40.128.20.json'></overprot-viewer>
+                <overprot-viewer id="Lipocalin" file="/data/db/family/diagram/diagram-2.40.128.20.json"></overprot-viewer>
                 <hr>
                 <h3>UniProt P14779 &nbsp; <em>Cytochrome P450 BM3 (Bacillus megaterium)</em> &nbsp;</h3>
-                <overprot-viewer id='BM3' file='/static/sample_data/per_uniprot/diagram_P14779.json'></overprot-viewer>
+                <overprot-viewer id="BM3" file="/static/sample_data/per_uniprot/diagram_P14779.json"></overprot-viewer>
                 <hr>
                 <h3>UniProt P29373 &nbsp; <em>Cellular retinoic acid-binding protein 2 (Homo sapiens), PDB ID 1cbs</em> &nbsp;</h3>
-                <overprot-viewer id='1cbs' file='/static/sample_data/per_uniprot/diagram_P29373.json'></overprot-viewer>
+                <overprot-viewer id="1cbs" file="/static/sample_data/per_uniprot/diagram_P29373.json"></overprot-viewer>
 
             </div>
 
@@ -82,19 +82,19 @@
                 <hr>
                 <div class="row align-items-center">
                     <div class="col-3">
-                        <img src='/static/images/Elixirlogo.png' class="img-fluid d-block mx-auto">
+                        <img src="/static/images/Elixirlogo.png" class="img-fluid d-block mx-auto">
                     </div>
                     <div class="col-9">
                         OverProt is a part of services provided by ELIXIR – European research infrastructure for biological information. 
                         For other services provided by ELIXIR's Czech Republic Node visit 
-                        <a href='http://www.elixir-czech.cz' target="_blank">www.elixir-czech.cz</a>.
+                        <a href="http://www.elixir-czech.cz" target="_blank">www.elixir-czech.cz</a>.
                     </div>
                 </div>
             </footer>
 
         </div>
 
-        <script type='text/javascript'>
+        <script>
             initFamilyInputAutocompleteAndFamilyName('/data/db/cath_b_names_options.json','{{family_id}}', 'family-input', 'family-name');
         </script>
     

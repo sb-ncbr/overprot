@@ -18,27 +18,27 @@
     <div class="col border m-3 p-3">
         <table>
             <tr>
-                <td class='label'>Job name:</td>
+                <td class="label">Job name:</td>
                 <td>{{job_name}}</td>
             </tr>
             <tr>
-                <td class='label'>Job ID:</td>
+                <td class="label">Job ID:</td>
                 <td>{{job_id}}</td>
             </tr>
             <tr>
-                <td class='label'>Status:</td>
+                <td class="label">Status:</td>
                 <td>{{job_status}}</td>
             </tr>
             <tr>
-                <td class='label'>Submission time:</td>
+                <td class="label">Submission time:</td>
                 <td>{{submission_time}}</td>
             </tr>
             <tr>
-                <td class='label'>Current time:</td>
+                <td class="label">Current time:</td>
                 <td>{{current_time}}</td>
             </tr>
             <tr>
-                <td class='label'>Elapsed time:</td>
+                <td class="label">Elapsed time:</td>
                 <td>{{elapsed_time}}</td>
             </tr>
         </table>
@@ -50,9 +50,9 @@
         <p>
             Save this link to get to your results later:
             <br>
-            <a href='{{url}}' id='submission-url'>{{url}}</a>
+            <a href="{{url}}" id="submission-url">{{url}}</a>
             <input type="button" class="btn btn-outline-primary mx-2" value="Copy link" onclick="navigator.clipboard.writeText('{{url}}'); document.getElementById('copy-confirmation').innerHTML='&check;Copied';">
-            <span id='copy-confirmation'></span>
+            <span id="copy-confirmation"></span>
         </p>
         <p>
             Autorefresh in {{refresh_time}} seconds
