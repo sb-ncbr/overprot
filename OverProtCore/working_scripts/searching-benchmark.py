@@ -1,7 +1,7 @@
 from overprot.libs.lib_logging import Timing
 from pathlib import Path
 
-from searching31 import Searcher
+from searching1x import Searcher
 
 with Timing():
     DATA = Path('/home/adam/Workspace/Python/OverProt/docker_mount/data/db/domain_list.csv')
@@ -9,8 +9,6 @@ with Timing():
     searcher = Searcher(DATA)
 
 results = searcher.get_domains_families_for_pdb('5w97')
-# for dom, fam in results:
-#     print(dom, fam)
 print(len(results))
 print(searcher.search_domain('5w97h00'))
 print(searcher.search_pdb('1TQN'))
@@ -24,3 +22,8 @@ print(searcher.search_pdb('1TQN'))
 # --> try to drop _domain_to_fam_pdb_chain_ranges? (can be read from files) -> would get to 1.72
 
 
+# v1 ~ 2.62 (original, 3 _domain_to_X dicts)
+# v1x ~ 1.83 (original, no _domain_to_X)
+# v3 ~ 2.14 (_BaseReprManager with ranges, 3 _domain_to_X dicts)
+# v3.1 ~ 1.88 (_BaseReprManager with ranges, 1 _domain_to_fam_pdb_chain_ranges dict)
+# v3x ~ 1.73 (_BaseReprManager with ranges, no _domain_to_X)

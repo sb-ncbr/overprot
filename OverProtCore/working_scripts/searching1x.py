@@ -45,10 +45,8 @@ class _BaseReprManager(Generic[TExact, TInsensitive, TNeutral]):
     def search(self, insensitive_key: TInsensitive) -> set[TExact]:
         '''Find preferred name for this value (e.g. 1TQn -> 1tqn)'''
         neutral = self.neutralize(insensitive_key)
-        if neutral in self.index:
-            return self.index[neutral]
-        else: 
-            return set()  # avoid adding key into defaultdict self.index
+        return self.index[neutral]
+        # return self.index.get(self.neutralize(insensitive_key))
  
 TExactStr = TypeVar('TExactStr', bound=str)
 TInsensitiveStr = TypeVar('TInsensitiveStr', bound=str, contravariant=True)

@@ -99,11 +99,9 @@ class Searcher(object):
     _all_domains: list[DomainId]
     _all_families: list[FamilyId]
     _pdb_range_dict: dict[PdbId, tuple[int,int]]  # maps PDBs to ranges in _all_domains and _all_families
-    _domain_to_fam_pdb_chain_ranges: dict[DomainId, tuple[FamilyId, PdbId, ChainId, Ranges]]
     
     def __init__(self, domain_list_csv: Path, pdb_list_txt: Path|None = None) -> None:
         SEPARATOR = ';'
-        self._domain_to_fam_pdb_chain_ranges = {}
         pdbs: set[PdbId] = set()
         doms: set[DomainId] = set()
         fams: set[FamilyId] = set()
@@ -124,7 +122,6 @@ class Searcher(object):
                     doms.add(domain)
                     fams.add(family)
                     pdb_dom_fam.append((pdb, domain, family))
-                    self._domain_to_fam_pdb_chain_ranges[domain] = (family, pdb, chain,ranges)
             self._pdbs = CaseManager(pdbs)
             self._domains = CaseManager(doms)
             self._families = fams
@@ -170,22 +167,4 @@ class Searcher(object):
             return list(zip(doms, fams))
         except KeyError:
             return []
-    def get_family_for_domain(self, domain: DomainId, default = '?') -> FamilyId:
-        try:
-            fam, pdb, chain, ranges = self._domain_to_fam_pdb_chain_ranges.get(domain)
-            return fam
-        except KeyError:
-            return default
-    def get_pdb_for_domain(self, domain: DomainId, default = '?') -> PdbId:
-        try:
-            fam, pdb, chain, ranges = self._domain_to_fam_pdb_chain_ranges.get(domain)
-            return pdb
-        except KeyError:
-            return '?'
-    def get_chain_ranges_for_domain(self, domain: DomainId, default = ('?', '?')) -> tuple[ChainId, Ranges]:
-        try:
-            fam, pdb, chain, ranges = self._domain_to_fam_pdb_chain_ranges.get(domain)
-            return (chain, ranges)
-        except KeyError:
-            return default
     
